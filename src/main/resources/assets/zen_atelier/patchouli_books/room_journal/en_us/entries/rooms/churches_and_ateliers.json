@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.churches_and_ateliers.name",
+  "icon": "minecraft:brewing_stand",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.atelier",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.churches_and_ateliers.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.churches_and_ateliers.page.2"
+    }
+  ]
+}

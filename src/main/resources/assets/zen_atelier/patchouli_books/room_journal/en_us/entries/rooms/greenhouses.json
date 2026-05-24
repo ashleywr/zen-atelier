@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.greenhouses.name",
+  "icon": "minecraft:flowering_azalea",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.greenhouse",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.greenhouses.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.greenhouses.page.2"
+    }
+  ]
+}

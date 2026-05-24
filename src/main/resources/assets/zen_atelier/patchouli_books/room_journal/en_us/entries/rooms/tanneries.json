@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.tanneries.name",
+  "icon": "minecraft:cauldron",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.tannery",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.tanneries.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.tanneries.page.2"
+    }
+  ]
+}

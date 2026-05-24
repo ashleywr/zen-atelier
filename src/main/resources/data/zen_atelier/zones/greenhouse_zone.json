@@ -1,0 +1,8 @@
+{
+  "id": "zen_atelier:greenhouse_zone",
+  "display_name": "zone.zen_atelier.greenhouse",
+  "sealed": true,
+  "base_temperature": 25.0,
+  "base_humidity": 80.0,
+  "spawns": {}
+}

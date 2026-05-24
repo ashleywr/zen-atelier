@@ -1,0 +1,8 @@
+{
+  "id": "zen_atelier:farm_pen_zone",
+  "display_name": "zone.zen_atelier.farm_pen",
+  "sealed": false,
+  "base_temperature": 15.0,
+  "base_humidity": 60.0,
+  "spawns": {}
+}

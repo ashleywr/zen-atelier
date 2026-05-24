@@ -1,0 +1,15 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.anchors_and_names.name",
+  "icon": "minecraft:oak_sign",
+  "category": "zen_atelier:basics",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.anchors_and_names.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.anchors_and_names.page.2"
+    }
+  ]
+}

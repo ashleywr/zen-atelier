@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.churches.name",
+  "icon": "minecraft:bell",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.church",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.churches.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.churches.page.2"
+    }
+  ]
+}

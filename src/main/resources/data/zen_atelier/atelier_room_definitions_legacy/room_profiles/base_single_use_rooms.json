@@ -1,0 +1,616 @@
+{
+  "schema_version": 1,
+  "description": "Datapack-loaded profile metadata for Atelier room classifiers. Scoring is still handled by Java classifiers until profile scorers are migrated.",
+  "room_profiles": [
+    {
+      "id": "zen_atelier:smithy",
+      "display_name": "room_type.zen_atelier.smithy",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "implemented",
+      "category": "equipment",
+      "primary_use": "smelting, repairing, and gear upgrades",
+      "anchors": [
+        "minecraft:anvil",
+        "minecraft:smithing_table",
+        "minecraft:grindstone",
+        "minecraft:blast_furnace"
+      ],
+      "required_features": [
+        {
+          "signal": "smithing_or_repair_block",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "heat_source",
+        "tool_storage",
+        "stone_or_metal_materials",
+        "ventilation",
+        "lighting"
+      ],
+      "penalty_signals": [
+        "sleep_blocks",
+        "plant_overgrowth",
+        "flammable_density"
+      ],
+      "conflict_tags": [
+        "sleep",
+        "plant"
+      ],
+      "mix_tags": [
+        "utility",
+        "hot",
+        "equipment"
+      ]
+    },
+    {
+      "id": "zen_atelier:masonry",
+      "display_name": "room_type.zen_atelier.masonry",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "implemented",
+      "category": "crafting",
+      "primary_use": "stone cutting and blockwork",
+      "anchors": [
+        "minecraft:stonecutter"
+      ],
+      "required_features": [
+        {
+          "signal": "stonecutter",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "stone_materials",
+        "storage",
+        "lighting",
+        "clear_floor_space"
+      ],
+      "penalty_signals": [
+        "sleep_blocks",
+        "plant_overgrowth"
+      ],
+      "conflict_tags": [
+        "sleep"
+      ],
+      "mix_tags": [
+        "utility",
+        "crafting",
+        "stone"
+      ]
+    },
+    {
+      "id": "zen_atelier:map_room",
+      "display_name": "room_type.zen_atelier.map_room",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "implemented",
+      "category": "navigation",
+      "primary_use": "maps, exploration planning, and travel records",
+      "anchors": [
+        "minecraft:cartography_table"
+      ],
+      "required_features": [
+        {
+          "signal": "cartography_table",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "item_frames",
+        "maps",
+        "bookshelves",
+        "lighting",
+        "clear_wall_space"
+      ],
+      "penalty_signals": [
+        "industrial_blocks",
+        "low_wall_space"
+      ],
+      "conflict_tags": [
+        "industrial"
+      ],
+      "mix_tags": [
+        "scholarly",
+        "planning",
+        "quiet"
+      ]
+    },
+    {
+      "id": "zen_atelier:loom_room",
+      "display_name": "room_type.zen_atelier.loom_room",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "implemented",
+      "category": "textiles",
+      "primary_use": "weaving, banners, and soft decor",
+      "anchors": [
+        "minecraft:loom"
+      ],
+      "required_features": [
+        {
+          "signal": "loom",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "carpet",
+        "wool",
+        "lighting",
+        "storage"
+      ],
+      "penalty_signals": [
+        "heat_source",
+        "industrial_blocks"
+      ],
+      "conflict_tags": [
+        "hot",
+        "industrial"
+      ],
+      "mix_tags": [
+        "utility",
+        "crafting",
+        "textiles"
+      ]
+    },
+    {
+      "id": "zen_atelier:fletchery",
+      "display_name": "room_type.zen_atelier.fletchery",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "implemented",
+      "category": "ranged",
+      "primary_use": "arrows, bows, and ranged gear staging",
+      "anchors": [
+        "minecraft:fletching_table"
+      ],
+      "required_features": [
+        {
+          "signal": "fletching_table",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "storage",
+        "wood_materials",
+        "lighting",
+        "clear_floor_space"
+      ],
+      "penalty_signals": [
+        "sleep_blocks",
+        "wet_blocks"
+      ],
+      "conflict_tags": [
+        "sleep",
+        "wet"
+      ],
+      "mix_tags": [
+        "utility",
+        "crafting",
+        "ranged"
+      ]
+    },
+    {
+      "id": "zen_atelier:gardener_shed",
+      "display_name": "room_type.zen_atelier.gardener_shed",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "implemented",
+      "category": "growing",
+      "primary_use": "compost, tools, and planting supplies",
+      "anchors": [
+        "minecraft:composter"
+      ],
+      "required_features": [
+        {
+          "signal": "composter",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "plants",
+        "storage",
+        "lighting",
+        "water_access"
+      ],
+      "penalty_signals": [
+        "industrial_blocks",
+        "sleep_blocks"
+      ],
+      "conflict_tags": [
+        "industrial",
+        "sleep"
+      ],
+      "mix_tags": [
+        "utility",
+        "plant",
+        "village"
+      ]
+    },
+    {
+      "id": "zen_atelier:tannery",
+      "display_name": "room_type.zen_atelier.tannery",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "implemented",
+      "category": "crafting",
+      "primary_use": "leatherwork, dyeing, and washing",
+      "anchors": [
+        "minecraft:cauldron"
+      ],
+      "required_features": [
+        {
+          "signal": "cauldron",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "water_access",
+        "storage",
+        "lighting",
+        "ventilation"
+      ],
+      "penalty_signals": [
+        "sleep_blocks",
+        "food_prep_overlap"
+      ],
+      "conflict_tags": [
+        "sleep",
+        "food"
+      ],
+      "mix_tags": [
+        "utility",
+        "wet",
+        "crafting"
+      ]
+    },
+    {
+      "id": "zen_atelier:church",
+      "display_name": "room_type.zen_atelier.church",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "candidate",
+      "category": "village",
+      "primary_use": "village chapel and cleric gathering space",
+      "anchors": [
+        "minecraft:brewing_stand"
+      ],
+      "required_features": [
+        {
+          "signal": "brewing_stand",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "lighting",
+        "enclosure",
+        "storage"
+      ],
+      "penalty_signals": [
+        "cauldron",
+        "plant_overgrowth",
+        "heat_source"
+      ],
+      "conflict_tags": [
+        "alchemy",
+        "hot"
+      ],
+      "mix_tags": [
+        "village",
+        "quiet",
+        "faith"
+      ]
+    },
+    {
+      "id": "zen_atelier:atelier",
+      "display_name": "room_type.zen_atelier.atelier",
+      "zone_definition": "zen_atelier:atelier_zone",
+      "status": "implemented",
+      "category": "alchemy",
+      "primary_use": "potion brewing and botanical alchemy",
+      "anchors": [
+        "minecraft:brewing_stand",
+        "minecraft:cauldron"
+      ],
+      "required_features": [
+        {
+          "signal": "brewing_stand",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "cauldron",
+        "flower_pots",
+        "botany",
+        "lighting",
+        "enclosure",
+        "rare_blocks"
+      ],
+      "penalty_signals": [
+        "sleep_blocks",
+        "food_prep_overlap",
+        "low_storage"
+      ],
+      "conflict_tags": [
+        "sleep",
+        "food"
+      ],
+      "mix_tags": [
+        "alchemy",
+        "magic",
+        "atelier"
+      ]
+    },
+    {
+      "id": "zen_atelier:bedroom",
+      "display_name": "room_type.zen_atelier.bedroom",
+      "zone_definition": "zen_atelier:bedroom_zone",
+      "status": "implemented",
+      "category": "rest",
+      "primary_use": "sleeping and respawn",
+      "anchors": [
+        "#minecraft:beds"
+      ],
+      "required_features": [
+        {
+          "signal": "bed",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "enclosure",
+        "lighting",
+        "carpet",
+        "storage",
+        "coherent_material_palette",
+        "coherent_bed_color_palette"
+      ],
+      "penalty_signals": [
+        "utility_heat",
+        "crowded_work_blocks",
+        "low_enclosure"
+      ],
+      "conflict_tags": [
+        "rest",
+        "hot",
+        "industrial"
+      ],
+      "mix_tags": [
+        "rest",
+        "quiet",
+        "private"
+      ]
+    },
+    {
+      "id": "zen_atelier:enchanting_room",
+      "display_name": "room_type.zen_atelier.enchanting_room",
+      "zone_definition": "zen_atelier:enchanting_zone",
+      "status": "implemented",
+      "category": "magic",
+      "primary_use": "enchanting gear",
+      "anchors": [
+        "minecraft:enchanting_table"
+      ],
+      "required_features": [
+        {
+          "signal": "enchanting_table",
+          "minimum": 1
+        },
+        {
+          "signal": "bookshelf",
+          "minimum": 3
+        }
+      ],
+      "quality_signals": [
+        "bookshelf_count",
+        "symmetry",
+        "lighting",
+        "rare_blocks",
+        "enclosure"
+      ],
+      "penalty_signals": [
+        "missing_bookshelves",
+        "industrial_blocks",
+        "sleep_blocks"
+      ],
+      "conflict_tags": [
+        "industrial",
+        "wet",
+        "sleep"
+      ],
+      "mix_tags": [
+        "magic",
+        "scholarly",
+        "quiet"
+      ]
+    },
+    {
+      "id": "zen_atelier:library",
+      "display_name": "room_type.zen_atelier.library",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "candidate",
+      "category": "knowledge",
+      "primary_use": "books, reading, and lectern work",
+      "anchors": [
+        "minecraft:lectern",
+        "minecraft:bookshelf",
+        "minecraft:chiseled_bookshelf"
+      ],
+      "required_features": [
+        {
+          "signal": "bookshelf",
+          "minimum": 6
+        }
+      ],
+      "quality_signals": [
+        "bookshelf_count",
+        "lectern",
+        "seating",
+        "lighting",
+        "quiet_decor"
+      ],
+      "penalty_signals": [
+        "industrial_blocks",
+        "excess_heat",
+        "low_bookshelf_count"
+      ],
+      "conflict_tags": [
+        "industrial",
+        "hot"
+      ],
+      "mix_tags": [
+        "scholarly",
+        "quiet"
+      ]
+    },
+    {
+      "id": "zen_atelier:greenhouse",
+      "display_name": "room_type.zen_atelier.greenhouse",
+      "zone_definition": "zen_atelier:greenhouse_zone",
+      "status": "implemented",
+      "category": "growing",
+      "primary_use": "protected plants and crop growth",
+      "anchors": [
+        "#minecraft:crops",
+        "#minecraft:flowers",
+        "#minecraft:saplings"
+      ],
+      "required_features": [
+        {
+          "signal": "plant",
+          "minimum": 3
+        },
+        {
+          "signal": "glass",
+          "minimum": 8
+        }
+      ],
+      "quality_signals": [
+        "plant_diversity",
+        "glass_count",
+        "water_access",
+        "sunlight",
+        "humidity"
+      ],
+      "penalty_signals": [
+        "low_glass",
+        "low_light",
+        "industrial_blocks"
+      ],
+      "conflict_tags": [
+        "industrial",
+        "sleep"
+      ],
+      "mix_tags": [
+        "plant",
+        "wet",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "zen_atelier:storage_room",
+      "display_name": "room_type.zen_atelier.storage_room",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "candidate",
+      "category": "storage",
+      "primary_use": "bulk item storage",
+      "anchors": [
+        "minecraft:chest",
+        "minecraft:barrel"
+      ],
+      "required_features": [
+        {
+          "signal": "storage",
+          "minimum": 4
+        }
+      ],
+      "quality_signals": [
+        "storage_count",
+        "labeled_blocks",
+        "walkable_access",
+        "lighting",
+        "material_order"
+      ],
+      "penalty_signals": [
+        "blocked_containers",
+        "low_lighting",
+        "too_many_unrelated_primary_anchors"
+      ],
+      "conflict_tags": [],
+      "mix_tags": [
+        "utility",
+        "support"
+      ]
+    },
+    {
+      "id": "zen_atelier:workshop",
+      "display_name": "room_type.zen_atelier.workshop",
+      "zone_definition": "zen_zones:utility_zone",
+      "status": "detected_in_zen_zones",
+      "category": "crafting",
+      "primary_use": "general crafting and item staging",
+      "anchors": [
+        "minecraft:crafting_table"
+      ],
+      "required_features": [
+        {
+          "signal": "crafting_table",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "storage",
+        "tool_blocks",
+        "work_surfaces",
+        "lighting",
+        "clear_floor_space"
+      ],
+      "penalty_signals": [
+        "sleep_blocks",
+        "plant_overgrowth",
+        "low_storage"
+      ],
+      "conflict_tags": [
+        "sleep",
+        "wet"
+      ],
+      "mix_tags": [
+        "utility",
+        "crafting"
+      ]
+    },
+    {
+      "id": "zen_atelier:kitchen",
+      "display_name": "room_type.zen_atelier.kitchen",
+      "zone_definition": "zen_zones:kitchen_zone",
+      "status": "detected_in_zen_zones",
+      "category": "food",
+      "primary_use": "cooking, food storage, and meal preparation",
+      "anchors": [
+        "minecraft:furnace",
+        "minecraft:smoker",
+        "minecraft:campfire"
+      ],
+      "required_features": [
+        {
+          "signal": "cooking_block",
+          "minimum": 1
+        }
+      ],
+      "quality_signals": [
+        "food_storage",
+        "water_access",
+        "work_surfaces",
+        "ventilation",
+        "lighting"
+      ],
+      "penalty_signals": [
+        "sleep_blocks",
+        "enchanting_blocks",
+        "no_storage"
+      ],
+      "conflict_tags": [
+        "sleep",
+        "scholarly"
+      ],
+      "mix_tags": [
+        "utility",
+        "hot",
+        "food"
+      ]
+    }
+  ]
+}

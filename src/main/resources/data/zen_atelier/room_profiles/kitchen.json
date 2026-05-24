@@ -1,0 +1,28 @@
+{
+  "id": "zen_atelier:kitchen",
+  "display_name": "room_type.zen_atelier.kitchen",
+  "zone_definition": "zen_zones:kitchen_zone",
+  "anchors": [
+    "minecraft:furnace",
+    "minecraft:smoker",
+    "minecraft:campfire"
+  ],
+  "required_features": [
+    {
+      "signal": "cooking_block",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "food_storage",
+    "water_access",
+    "work_surfaces",
+    "ventilation",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "sleep_blocks",
+    "enchanting_blocks",
+    "no_storage"
+  ]
+}

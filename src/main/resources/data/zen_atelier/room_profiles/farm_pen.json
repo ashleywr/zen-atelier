@@ -1,0 +1,12 @@
+{
+  "id": "zen_atelier:farm_pen",
+  "display_name": "room_type.zen_atelier.farm_pen",
+  "zone_definition": "zen_atelier:farm_pen_zone",
+  "required_features": [],
+  "required_surfaces": [
+    {
+      "block": "#minecraft:fence_gates",
+      "minimum": 1
+    }
+  ]
+}

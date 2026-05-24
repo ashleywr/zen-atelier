@@ -1,0 +1,32 @@
+{
+  "id": "zen_atelier:greenhouse",
+  "display_name": "room_type.zen_atelier.greenhouse",
+  "zone_definition": "zen_atelier:greenhouse_zone",
+  "anchors": [
+    "#minecraft:crops",
+    "#minecraft:flowers",
+    "#minecraft:saplings"
+  ],
+  "required_features": [
+    {
+      "signal": "plant",
+      "minimum": 3
+    },
+    {
+      "signal": "glass",
+      "minimum": 8
+    }
+  ],
+  "quality_signals": [
+    "plant_diversity",
+    "glass_count",
+    "water_access",
+    "sunlight",
+    "humidity"
+  ],
+  "penalty_signals": [
+    "low_glass",
+    "low_light",
+    "industrial_blocks"
+  ]
+}

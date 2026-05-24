@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "description": "Rare allusive room names for strongly composed Zen Atelier rooms.",
+  "room_epithets": [
+    {
+      "id": "zen_atelier:blooming_alembic",
+      "display_name": "The Blooming Alembic",
+      "applies_to": [
+        "zen_atelier:atelier"
+      ],
+      "minimum_score": 88,
+      "priority": 120,
+      "required_features": {
+        "botany": 6,
+        "lighting": 3
+      }
+    },
+    {
+      "id": "zen_atelier:moonlit_stillroom",
+      "display_name": "The Moonlit Stillroom",
+      "applies_to": [
+        "zen_atelier:atelier"
+      ],
+      "minimum_score": 80,
+      "priority": 110,
+      "required_features": {
+        "cauldrons": 1
+      },
+      "maximum_features": {
+        "lighting": 0
+      }
+    },
+    {
+      "id": "zen_atelier:glass_crucible",
+      "display_name": "The Glass Crucible",
+      "applies_to": [
+        "zen_atelier:atelier"
+      ],
+      "minimum_score": 78,
+      "priority": 90,
+      "required_features": {
+        "glass": 6,
+        "cauldrons": 1
+      }
+    },
+    {
+      "id": "zen_atelier:philosophers_pantry",
+      "display_name": "The Philosopher's Pantry",
+      "applies_to": [
+        "zen_atelier:atelier"
+      ],
+      "minimum_score": 72,
+      "priority": 70,
+      "required_features": {
+        "storage": 3
+      }
+    },
+    {
+      "id": "zen_atelier:quiet_cot",
+      "display_name": "The Quiet Cot",
+      "applies_to": [
+        "zen_atelier:bedroom"
+      ],
+      "minimum_score": 88,
+      "priority": 100,
+      "required_features": {
+        "beds": 1
+      },
+      "maximum_features": {
+        "beds": 1,
+        "scan_positions": 40
+      }
+    },
+    {
+      "id": "zen_atelier:last_lantern",
+      "display_name": "The Last Lantern",
+      "applies_to": [
+        "zen_atelier:bedroom"
+      ],
+      "minimum_score": 82,
+      "priority": 90,
+      "required_features": {
+        "lighting": 1,
+        "carpet": 2
+      },
+      "maximum_features": {
+        "lighting": 1
+      }
+    },
+    {
+      "id": "zen_atelier:sakura_rest",
+      "display_name": "The Sakura Rest",
+      "applies_to": [
+        "zen_atelier:bedroom"
+      ],
+      "minimum_score": 82,
+      "priority": 80,
+      "required_features": {
+        "material_cherry": 10
+      }
+    },
+    {
+      "id": "zen_atelier:glass_orchard",
+      "display_name": "The Glass Orchard",
+      "applies_to": [
+        "zen_atelier:greenhouse"
+      ],
+      "minimum_score": 90,
+      "priority": 120,
+      "required_features": {
+        "glass": 16,
+        "plants": 8
+      }
+    },
+    {
+      "id": "zen_atelier:foxfire_greenhouse",
+      "display_name": "The Foxfire Greenhouse",
+      "applies_to": [
+        "zen_atelier:greenhouse"
+      ],
+      "minimum_score": 82,
+      "priority": 80,
+      "required_features": {
+        "plants": 12
+      }
+    },
+    {
+      "id": "zen_atelier:midnight_archive_enchanting",
+      "display_name": "The Midnight Archive",
+      "applies_to": [
+        "zen_atelier:enchanting_room"
+      ],
+      "minimum_score": 88,
+      "priority": 120,
+      "required_features": {
+        "bookshelves": 12
+      },
+      "maximum_features": {
+        "lighting": 1
+      }
+    },
+    {
+      "id": "zen_atelier:spellcard_library",
+      "display_name": "The Spellcard Library",
+      "applies_to": [
+        "zen_atelier:enchanting_room"
+      ],
+      "minimum_score": 84,
+      "priority": 100,
+      "required_features": {
+        "bookshelves": 10
+      }
+    },
+    {
+      "id": "zen_atelier:midnight_archive_library",
+      "display_name": "The Midnight Archive",
+      "applies_to": [
+        "zen_atelier:library"
+      ],
+      "minimum_score": 86,
+      "priority": 120,
+      "required_features": {
+        "bookshelves": 12
+      },
+      "maximum_features": {
+        "lighting": 1
+      }
+    },
+    {
+      "id": "zen_atelier:shrine_bell_library",
+      "display_name": "The Shrine-Bell Library",
+      "applies_to": [
+        "zen_atelier:library"
+      ],
+      "minimum_score": 80,
+      "priority": 80,
+      "required_features": {
+        "lecterns": 1,
+        "lighting": 2
+      }
+    },
+    {
+      "id": "zen_atelier:runebound_foundry",
+      "display_name": "The Runebound Foundry",
+      "applies_to": [
+        "zen_atelier:smithy"
+      ],
+      "minimum_score": 86,
+      "priority": 110,
+      "required_features": {
+        "material_stone": 10,
+        "heat_sources": 1
+      }
+    },
+    {
+      "id": "zen_atelier:perfect_ratio_foundry",
+      "display_name": "The Perfect Ratio Foundry",
+      "applies_to": [
+        "zen_atelier:smithy"
+      ],
+      "minimum_score": 80,
+      "priority": 80,
+      "required_features": {
+        "storage": 3
+      }
+    },
+    {
+      "id": "zen_atelier:hearth_below",
+      "display_name": "The Hearth Below",
+      "applies_to": [
+        "zen_atelier:kitchen"
+      ],
+      "minimum_score": 82,
+      "priority": 100,
+      "required_features": {
+        "heat_sources": 2,
+        "storage": 3
+      }
+    },
+    {
+      "id": "zen_atelier:laughing_pantry",
+      "display_name": "The Laughing Pantry",
+      "applies_to": [
+        "zen_atelier:kitchen"
+      ],
+      "minimum_score": 78,
+      "priority": 80,
+      "required_features": {
+        "storage": 4
+      }
+    },
+    {
+      "id": "zen_atelier:skyfarers_map_room",
+      "display_name": "The Skyfarer's Map Room",
+      "applies_to": [
+        "zen_atelier:map_room"
+      ],
+      "minimum_score": 82,
+      "priority": 100,
+      "required_features": {
+        "cartography_tables": 1,
+        "bookshelves": 2
+      }
+    },
+    {
+      "id": "zen_atelier:navigators_chartroom",
+      "display_name": "The Navigator's Chartroom",
+      "applies_to": [
+        "zen_atelier:map_room"
+      ],
+      "minimum_score": 78,
+      "priority": 80,
+      "required_features": {
+        "storage": 2
+      }
+    },
+    {
+      "id": "zen_atelier:builders_blueprint_room",
+      "display_name": "The Builder's Blueprint Room",
+      "applies_to": [
+        "zen_atelier:workshop"
+      ],
+      "minimum_score": 84,
+      "priority": 100,
+      "required_features": {
+        "crafting": 1,
+        "storage": 4
+      }
+    },
+    {
+      "id": "zen_atelier:hammer_and_heart_workshop",
+      "display_name": "The Hammer-and-Heart Workshop",
+      "applies_to": [
+        "zen_atelier:workshop"
+      ],
+      "minimum_score": 80,
+      "priority": 90,
+      "required_features": {
+        "material_stone": 8
+      }
+    },
+    {
+      "id": "zen_atelier:crimson_captains_stash",
+      "display_name": "The Crimson Captain's Stash",
+      "applies_to": [
+        "zen_atelier:storage_room"
+      ],
+      "minimum_score": 85,
+      "priority": 100,
+      "required_features": {
+        "storage": 8
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.enchanting_rooms.name",
+  "icon": "minecraft:enchanting_table",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.enchanting_room",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.enchanting_rooms.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.enchanting_rooms.page.2"
+    }
+  ]
+}

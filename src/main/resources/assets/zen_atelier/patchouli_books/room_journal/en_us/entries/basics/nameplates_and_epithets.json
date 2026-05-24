@@ -1,0 +1,15 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.nameplates_and_epithets.name",
+  "icon": "minecraft:birch_sign",
+  "category": "zen_atelier:basics",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.nameplates_and_epithets.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.nameplates_and_epithets.page.2"
+    }
+  ]
+}

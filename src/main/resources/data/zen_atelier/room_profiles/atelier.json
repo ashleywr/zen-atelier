@@ -1,0 +1,32 @@
+{
+  "id": "zen_atelier:atelier",
+  "display_name": "room_type.zen_atelier.atelier",
+  "zone_definition": "zen_atelier:atelier_zone",
+  "anchors": [
+    "minecraft:brewing_stand",
+    "minecraft:cauldron"
+  ],
+  "required_features": [
+    {
+      "signal": "brewing_stand",
+      "minimum": 1
+    },
+    {
+      "signal": "cauldron",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "cauldron",
+    "flower_pots",
+    "botany",
+    "lighting",
+    "enclosure",
+    "rare_blocks"
+  ],
+  "penalty_signals": [
+    "sleep_blocks",
+    "food_prep_overlap",
+    "low_storage"
+  ]
+}

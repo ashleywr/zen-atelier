@@ -1,0 +1,26 @@
+{
+  "id": "zen_atelier:workshop",
+  "display_name": "room_type.zen_atelier.workshop",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:crafting_table"
+  ],
+  "required_features": [
+    {
+      "signal": "crafting_table",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "storage",
+    "tool_blocks",
+    "work_surfaces",
+    "lighting",
+    "clear_floor_space"
+  ],
+  "penalty_signals": [
+    "sleep_blocks",
+    "plant_overgrowth",
+    "low_storage"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "zen_atelier:enchanting_zone",
+  "display_name": "zone.zen_atelier.enchanting",
+  "sealed": true,
+  "base_temperature": 18.0,
+  "base_humidity": 40.0,
+  "spawns": {}
+}

@@ -1,0 +1,24 @@
+{
+  "id": "zen_atelier:loom_room",
+  "display_name": "room_type.zen_atelier.loom_room",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:loom"
+  ],
+  "required_features": [
+    {
+      "signal": "loom",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "carpet",
+    "wool",
+    "lighting",
+    "storage"
+  ],
+  "penalty_signals": [
+    "heat_source",
+    "industrial_blocks"
+  ]
+}

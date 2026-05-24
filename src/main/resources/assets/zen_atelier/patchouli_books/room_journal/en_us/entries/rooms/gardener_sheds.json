@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.gardener_sheds.name",
+  "icon": "minecraft:composter",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.gardener_shed",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.gardener_sheds.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.gardener_sheds.page.2"
+    }
+  ]
+}

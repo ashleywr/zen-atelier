@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:compass"
+    },
+    "title": "Discover: Loom_room",
+    "description": "A place of textiles",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "discovered": {
+      "trigger": "zen_atelier:room_discovery",
+      "room_id": "zen_atelier:loom_room"
+    }
+  },
+  "requirements": [
+    [
+      "discovered"
+    ]
+  ]
+}
+

@@ -1,0 +1,57 @@
+### Ignore all dot folders except .github (CI/CD workflows) ###
+.*/
+!.github/
+!.gitignore
+
+### Gradle ###
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+
+### Build Artifacts ###
+reports/
+logs/
+libs/
+net/
+META-INF/
+vendor-sources/
+assets/
+out/
+!**/src/**/out/
+bin/
+!**/src/**/bin/
+
+### Minecraft Modding ###
+run/
+!**/src/**/run/
+**/src/generated/**/.cache/
+repo/
+!**/src/**/repo/
+
+### Development ###
+internal/
+
+### Environment & Secrets ###
+*.env
+.env.local
+.env.*.local
+
+### Build Files ###
+*.class
+*.jar
+*.zip
+
+### Python ###
+__pycache__/
+*.pyc
+venv/
+
+### IDE Files ###
+*.iws
+*.iml
+*.ipr
+*.swp
+*.swo
+*~
+.DS_Store
+

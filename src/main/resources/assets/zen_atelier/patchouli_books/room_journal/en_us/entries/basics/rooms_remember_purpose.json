@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.rooms_remember_purpose.name",
+  "icon": "minecraft:compass",
+  "category": "zen_atelier:basics",
+  "priority": true,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.rooms_remember_purpose.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.rooms_remember_purpose.page.2"
+    }
+  ]
+}

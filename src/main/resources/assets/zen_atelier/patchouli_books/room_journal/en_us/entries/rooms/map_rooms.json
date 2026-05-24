@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.map_rooms.name",
+  "icon": "minecraft:cartography_table",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.map_room",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.map_rooms.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.map_rooms.page.2"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "zen_atelier:library",
+  "display_name": "room_type.zen_atelier.library",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:lectern",
+    "minecraft:bookshelf",
+    "minecraft:chiseled_bookshelf"
+  ],
+  "required_features": [
+    {
+      "signal": "bookshelf",
+      "minimum": 6
+    }
+  ],
+  "quality_signals": [
+    "bookshelf_count",
+    "lectern",
+    "seating",
+    "lighting",
+    "quiet_decor"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "excess_heat",
+    "low_bookshelf_count"
+  ]
+}

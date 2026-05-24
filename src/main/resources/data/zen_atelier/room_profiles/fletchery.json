@@ -1,0 +1,24 @@
+{
+  "id": "zen_atelier:fletchery",
+  "display_name": "room_type.zen_atelier.fletchery",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:fletching_table"
+  ],
+  "required_features": [
+    {
+      "signal": "fletching_table",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "storage",
+    "wood_materials",
+    "lighting",
+    "clear_floor_space"
+  ],
+  "penalty_signals": [
+    "sleep_blocks",
+    "wet_blocks"
+  ]
+}

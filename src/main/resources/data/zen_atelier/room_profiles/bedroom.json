@@ -1,0 +1,27 @@
+{
+  "id": "zen_atelier:bedroom",
+  "display_name": "room_type.zen_atelier.bedroom",
+  "zone_definition": "zen_atelier:bedroom_zone",
+  "anchors": [
+    "#minecraft:beds"
+  ],
+  "required_features": [
+    {
+      "signal": "bed",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "enclosure",
+    "lighting",
+    "carpet",
+    "storage",
+    "coherent_material_palette",
+    "coherent_bed_color_palette"
+  ],
+  "penalty_signals": [
+    "utility_heat",
+    "crowded_work_blocks",
+    "low_enclosure"
+  ]
+}

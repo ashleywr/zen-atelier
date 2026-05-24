@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.libraries.name",
+  "icon": "minecraft:lectern",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.library",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.libraries.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.libraries.page.2"
+    }
+  ]
+}

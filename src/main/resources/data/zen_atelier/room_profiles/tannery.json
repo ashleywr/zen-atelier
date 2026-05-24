@@ -1,0 +1,24 @@
+{
+  "id": "zen_atelier:tannery",
+  "display_name": "room_type.zen_atelier.tannery",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:cauldron"
+  ],
+  "required_features": [
+    {
+      "signal": "cauldron",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "water_access",
+    "storage",
+    "lighting",
+    "ventilation"
+  ],
+  "penalty_signals": [
+    "sleep_blocks",
+    "food_prep_overlap"
+  ]
+}

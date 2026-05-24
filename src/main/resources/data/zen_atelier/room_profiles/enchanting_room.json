@@ -1,0 +1,30 @@
+{
+  "id": "zen_atelier:enchanting_room",
+  "display_name": "room_type.zen_atelier.enchanting_room",
+  "zone_definition": "zen_atelier:enchanting_zone",
+  "anchors": [
+    "minecraft:enchanting_table"
+  ],
+  "required_features": [
+    {
+      "signal": "enchanting_table",
+      "minimum": 1
+    },
+    {
+      "signal": "bookshelf",
+      "minimum": 3
+    }
+  ],
+  "quality_signals": [
+    "bookshelf_count",
+    "symmetry",
+    "lighting",
+    "rare_blocks",
+    "enclosure"
+  ],
+  "penalty_signals": [
+    "missing_bookshelves",
+    "industrial_blocks",
+    "sleep_blocks"
+  ]
+}

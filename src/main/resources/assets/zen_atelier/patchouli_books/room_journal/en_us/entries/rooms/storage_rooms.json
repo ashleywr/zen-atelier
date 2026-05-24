@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.storage_rooms.name",
+  "icon": "minecraft:chest",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.storage_room",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.storage_rooms.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.storage_rooms.page.2"
+    }
+  ]
+}

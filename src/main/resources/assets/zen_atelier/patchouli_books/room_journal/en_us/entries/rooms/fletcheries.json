@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.fletcheries.name",
+  "icon": "minecraft:fletching_table",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.fletchery",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.fletcheries.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.fletcheries.page.2"
+    }
+  ]
+}

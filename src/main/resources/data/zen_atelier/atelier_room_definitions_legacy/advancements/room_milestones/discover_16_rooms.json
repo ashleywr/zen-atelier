@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:writable_book"
+    },
+    "title": "Master Dweller",
+    "description": "Discover all room types",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "zen_atelier:milestone_reached",
+      "count": 16
+    }
+  },
+  "requirements": [
+    [
+      "milestone"
+    ]
+  ]
+}
+

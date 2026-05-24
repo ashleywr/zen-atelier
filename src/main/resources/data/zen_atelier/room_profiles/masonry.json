@@ -1,0 +1,24 @@
+{
+  "id": "zen_atelier:masonry",
+  "display_name": "room_type.zen_atelier.masonry",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:stonecutter"
+  ],
+  "required_features": [
+    {
+      "signal": "stonecutter",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "stone_materials",
+    "storage",
+    "lighting",
+    "clear_floor_space"
+  ],
+  "penalty_signals": [
+    "sleep_blocks",
+    "plant_overgrowth"
+  ]
+}

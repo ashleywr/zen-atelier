@@ -1,0 +1,23 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:compass"
+    },
+    "title": "Discover: Bedroom",
+    "description": "A place of rest",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "discovered": {
+      "trigger": "zen_atelier:room_discovery",
+      "room_id": "zen_atelier:bedroom"
+    }
+  },
+  "requirements": [
+    [
+      "discovered"
+    ]
+  ]
+}

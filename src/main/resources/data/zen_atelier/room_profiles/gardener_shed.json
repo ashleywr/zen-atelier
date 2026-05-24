@@ -1,0 +1,24 @@
+{
+  "id": "zen_atelier:gardener_shed",
+  "display_name": "room_type.zen_atelier.gardener_shed",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:composter"
+  ],
+  "required_features": [
+    {
+      "signal": "composter",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "plants",
+    "storage",
+    "lighting",
+    "water_access"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "sleep_blocks"
+  ]
+}

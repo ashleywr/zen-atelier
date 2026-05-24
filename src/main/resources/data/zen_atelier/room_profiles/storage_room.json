@@ -1,0 +1,27 @@
+{
+  "id": "zen_atelier:storage_room",
+  "display_name": "room_type.zen_atelier.storage_room",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:chest",
+    "minecraft:barrel"
+  ],
+  "required_features": [
+    {
+      "signal": "storage",
+      "minimum": 4
+    }
+  ],
+  "quality_signals": [
+    "storage_count",
+    "labeled_blocks",
+    "walkable_access",
+    "lighting",
+    "material_order"
+  ],
+  "penalty_signals": [
+    "blocked_containers",
+    "low_lighting",
+    "too_many_unrelated_primary_anchors"
+  ]
+}

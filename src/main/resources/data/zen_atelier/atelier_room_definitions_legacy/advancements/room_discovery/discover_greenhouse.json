@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:compass"
+    },
+    "title": "Discover: Greenhouse",
+    "description": "A place of growth",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "discovered": {
+      "trigger": "zen_atelier:room_discovery",
+      "room_id": "zen_atelier:greenhouse"
+    }
+  },
+  "requirements": [
+    [
+      "discovered"
+    ]
+  ]
+}
+

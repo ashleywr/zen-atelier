@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:compass"
+    },
+    "title": "Discover: Gardener_shed",
+    "description": "A place of cultivation",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "discovered": {
+      "trigger": "zen_atelier:room_discovery",
+      "room_id": "zen_atelier:gardener_shed"
+    }
+  },
+  "requirements": [
+    [
+      "discovered"
+    ]
+  ]
+}
+

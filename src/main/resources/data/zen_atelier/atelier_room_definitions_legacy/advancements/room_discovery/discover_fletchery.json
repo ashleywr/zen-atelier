@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:compass"
+    },
+    "title": "Discover: Fletchery",
+    "description": "A place of precision",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "discovered": {
+      "trigger": "zen_atelier:room_discovery",
+      "room_id": "zen_atelier:fletchery"
+    }
+  },
+  "requirements": [
+    [
+      "discovered"
+    ]
+  ]
+}
+

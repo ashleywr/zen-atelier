@@ -1,0 +1,11 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.room_discoveries.name",
+  "icon": "minecraft:compass",
+  "category": "zen_atelier:rooms",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.room_discoveries.page.1"
+    }
+  ]
+}

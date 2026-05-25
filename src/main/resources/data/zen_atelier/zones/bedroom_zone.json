@@ -1,0 +1,8 @@
+{
+  "id": "zen_atelier:bedroom_zone",
+  "display_name": "zone.zen_atelier.bedroom",
+  "sealed": true,
+  "base_temperature": 21.0,
+  "base_humidity": 45.0,
+  "spawns": {}
+}

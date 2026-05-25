@@ -1,0 +1,25 @@
+{
+  "id": "zen_atelier:map_room",
+  "display_name": "room_type.zen_atelier.map_room",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:cartography_table"
+  ],
+  "required_features": [
+    {
+      "signal": "cartography_table",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "item_frames",
+    "maps",
+    "bookshelves",
+    "lighting",
+    "clear_wall_space"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "low_wall_space"
+  ]
+}

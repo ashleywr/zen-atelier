@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.masonry_shops.name",
+  "icon": "minecraft:stonecutter",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.masonry",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.masonry_shops.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.masonry_shops.page.2"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "zen_atelier:church",
+  "display_name": "room_type.zen_atelier.church",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:brewing_stand"
+  ],
+  "required_features": [
+    {
+      "signal": "brewing_stand",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "lighting",
+    "enclosure",
+    "storage"
+  ],
+  "penalty_signals": [
+    "cauldron",
+    "plant_overgrowth",
+    "heat_source"
+  ]
+}

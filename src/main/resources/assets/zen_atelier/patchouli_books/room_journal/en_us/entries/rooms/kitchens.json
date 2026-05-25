@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.kitchens.name",
+  "icon": "minecraft:smoker",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.kitchen",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.kitchens.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.kitchens.page.2"
+    }
+  ]
+}

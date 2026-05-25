@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.loom_rooms.name",
+  "icon": "minecraft:loom",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.loom_room",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.loom_rooms.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.loom_rooms.page.2"
+    }
+  ]
+}

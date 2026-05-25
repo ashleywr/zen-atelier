@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.bedrooms.name",
+  "icon": "minecraft:red_bed",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.bedroom",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.bedrooms.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.bedrooms.page.2"
+    }
+  ]
+}

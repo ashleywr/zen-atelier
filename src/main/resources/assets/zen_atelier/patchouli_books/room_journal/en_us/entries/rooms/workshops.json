@@ -1,0 +1,16 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.village_workrooms.name",
+  "icon": "minecraft:crafting_table",
+  "category": "zen_atelier:rooms",
+  "flag": "zen_atelier.discovered.workshop",
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.village_workrooms.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.village_workrooms.page.2"
+    }
+  ]
+}

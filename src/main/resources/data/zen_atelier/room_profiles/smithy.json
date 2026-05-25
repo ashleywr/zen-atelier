@@ -1,0 +1,29 @@
+{
+  "id": "zen_atelier:smithy",
+  "display_name": "room_type.zen_atelier.smithy",
+  "zone_definition": "zen_zones:utility_zone",
+  "anchors": [
+    "minecraft:anvil",
+    "minecraft:smithing_table",
+    "minecraft:grindstone",
+    "minecraft:blast_furnace"
+  ],
+  "required_features": [
+    {
+      "signal": "smithing_or_repair_block",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "heat_source",
+    "tool_storage",
+    "stone_or_metal_materials",
+    "ventilation",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "sleep_blocks",
+    "plant_overgrowth",
+    "flammable_density"
+  ]
+}

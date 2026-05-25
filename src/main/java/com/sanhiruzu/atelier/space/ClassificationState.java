@@ -12,10 +12,6 @@ public enum ClassificationState {
         this.bits = bits;
     }
 
-    public int getBits() {
-        return bits;
-    }
-
     public static ClassificationState fromBits(int bits) {
         return switch (bits) {
             case 0 -> SOLID;
@@ -24,5 +20,9 @@ public enum ClassificationState {
             case 3 -> PARTIAL;
             default -> throw new IllegalArgumentException("Invalid state bits: " + bits);
         };
+    }
+
+    public int getBits() {
+        return bits;
     }
 }

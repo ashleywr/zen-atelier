@@ -21,6 +21,10 @@ public class RoomDiscoveryCriterion extends SimpleCriterionTrigger<RoomDiscovery
         this.trigger(player, instance -> instance.matches(profileId));
     }
 
+    public Criterion<TriggerInstance> createCriterion(Optional<String> profileId) {
+        return new Criterion<>(this, new TriggerInstance(Optional.empty(), profileId));
+    }
+
     public record TriggerInstance(Optional<ContextAwarePredicate> player,
                                   Optional<String> profileId) implements SimpleCriterionTrigger.SimpleInstance {
         public static final Codec<TriggerInstance> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -36,9 +40,5 @@ public class RoomDiscoveryCriterion extends SimpleCriterionTrigger<RoomDiscovery
         public Optional<ContextAwarePredicate> player() {
             return player;
         }
-    }
-
-    public Criterion<TriggerInstance> createCriterion(Optional<String> profileId) {
-        return new Criterion<>(this, new TriggerInstance(Optional.empty(), profileId));
     }
 }

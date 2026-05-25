@@ -26,7 +26,7 @@ public final class AtelierBrewingBonus {
             return 0;
         }
 
-        int score = Math.max(0, Math.min(100, Math.round(room.getQuality() * 100)));
+        int score = Math.clamp(Math.round(room.getQuality() * 100), 0, 100);
         int interval = 5 - Math.min(4, score / 25);
         return level.getGameTime() % interval == 0L ? 1 : 0;
     }

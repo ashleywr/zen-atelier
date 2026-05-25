@@ -21,6 +21,10 @@ public class MilestoneReachedCriterion extends SimpleCriterionTrigger<MilestoneR
         this.trigger(player, instance -> instance.matches(count));
     }
 
+    public Criterion<TriggerInstance> createCriterion(Optional<Integer> count) {
+        return new Criterion<>(this, new TriggerInstance(Optional.empty(), count));
+    }
+
     public record TriggerInstance(Optional<ContextAwarePredicate> player,
                                   Optional<Integer> count) implements SimpleCriterionTrigger.SimpleInstance {
         public static final Codec<TriggerInstance> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -36,9 +40,5 @@ public class MilestoneReachedCriterion extends SimpleCriterionTrigger<MilestoneR
         public Optional<ContextAwarePredicate> player() {
             return player;
         }
-    }
-
-    public Criterion<TriggerInstance> createCriterion(Optional<Integer> count) {
-        return new Criterion<>(this, new TriggerInstance(Optional.empty(), count));
     }
 }

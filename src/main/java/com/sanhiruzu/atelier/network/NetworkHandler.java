@@ -69,10 +69,8 @@ public class NetworkHandler {
     private static void handlePlayerZoneSync(SyncPlayerZonePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
-            if (player != null) {
-                Zone zone = payload.zoneId() != null ? new Zone(payload.zoneId()) : null;
-                player.getData(ZoneAttachment.ZONE.get()).setCurrentZone(zone);
-            }
+            Zone zone = payload.zoneId() != null ? new Zone(payload.zoneId()) : null;
+            player.getData(ZoneAttachment.ZONE.get()).setCurrentZone(zone);
         });
     }
 

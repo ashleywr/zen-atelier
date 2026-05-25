@@ -11,9 +11,11 @@ import java.util.Random;
 public final class ZoneVfxManager {
     private static final int BOUNDS_DISPLAY_MS = 10000;
     private static final int PARTICLE_RING_SPACING = 2;
-
-    private static long showBoundsUntilMs = -1;
     private static final Queue<ParticleEmission> particleQueue = new LinkedList<>();
+    private static long showBoundsUntilMs = -1;
+
+    private ZoneVfxManager() {
+    }
 
     public static void onZoneRegistered(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         try {
@@ -104,8 +106,5 @@ public final class ZoneVfxManager {
 
     private record ParticleEmission(double x, double y, double z, double vx, double vy, double vz,
                                     net.minecraft.core.particles.ParticleOptions particleType) {
-    }
-
-    private ZoneVfxManager() {
     }
 }

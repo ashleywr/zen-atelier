@@ -21,6 +21,8 @@ import java.util.*;
 
 public class ClassificationEventHandler {
 
+    static final int MIN_ZONE_VOLUME = 4;
+
     @SubscribeEvent
     public static void onChunkLoad(ChunkEvent.Load event) {
         if (event.getLevel().isClientSide()) return;
@@ -72,6 +74,10 @@ public class ClassificationEventHandler {
         // ChunkClassificationData is persisted via NBT attachment automatically.
     }
 
+    // ==========================================================================
+    // Block break → zone expansion
+    // ==========================================================================
+
     @SubscribeEvent
     public static void onLevelUnload(LevelEvent.Unload event) {
         LevelAccessor levelAccessor = event.getLevel();
@@ -86,7 +92,7 @@ public class ClassificationEventHandler {
     }
 
     // ==========================================================================
-    // Block break → zone expansion
+    // Block place → zone shrinking / new enclosure detection
     // ==========================================================================
 
     @SubscribeEvent
@@ -148,7 +154,7 @@ public class ClassificationEventHandler {
     }
 
     // ==========================================================================
-    // Block place → zone shrinking / new enclosure detection
+    // Explosion → zone expansion from destroyed blocks
     // ==========================================================================
 
     @SubscribeEvent
@@ -178,7 +184,7 @@ public class ClassificationEventHandler {
 
                 // If placed block is an entry type adjacent to interior,
                 // it might create a new entry point for an existing enclosure
-                if (isEntryBlock(serverLevel.getBlockState(pos))) {
+                if (Zone.isEntryBlock(serverLevel.getBlockState(pos))) {
                     for (Direction dir : Direction.values()) {
                         BlockPos neighbor = pos.relative(dir);
                         UUID neighborZoneId = registry.getRegionIdAt(neighbor);
@@ -229,7 +235,7 @@ public class ClassificationEventHandler {
             // If an entry block was placed adjacent to a grace-period zone (e.g. door in a
             // different wall position), that may recover the zone without triggering
             // EnclosureDetector (which skips already-mapped interior blocks).
-            if (isEntryBlock(serverLevel.getBlockState(pos))) {
+            if (Zone.isEntryBlock(serverLevel.getBlockState(pos))) {
                 for (Direction dir : Direction.values()) {
                     BlockPos neighbor = pos.relative(dir);
                     UUID adjId = registry.getRegionIdAt(neighbor);
@@ -266,7 +272,7 @@ public class ClassificationEventHandler {
     }
 
     // ==========================================================================
-    // Explosion → zone expansion from destroyed blocks
+    // Helpers
     // ==========================================================================
 
     @SubscribeEvent
@@ -310,10 +316,6 @@ public class ClassificationEventHandler {
             }
         }
     }
-
-    // ==========================================================================
-    // Helpers
-    // ==========================================================================
 
     private static void markChangedChunkForZoneRecheck(ServerLevel level, BlockPos pos) {
         ZoneRegistry zoneRegistry = ZoneRegistry.get(level);
@@ -363,7 +365,8 @@ public class ClassificationEventHandler {
 
     private static UUID findAdjacentZoneId(SpaceRegionRegistry registry, BlockPos pos) {
         UUID found = null;
-        for (BlockPos neighbor : getNeighbors(pos)) {
+        for (Direction dir : Direction.values()) {
+            BlockPos neighbor = pos.relative(dir);
             UUID id = registry.getRegionIdAt(neighbor);
             if (id == null) continue;
             if (found == null) {
@@ -376,23 +379,6 @@ public class ClassificationEventHandler {
         }
         return found;
     }
-
-    private static List<BlockPos> getNeighbors(BlockPos pos) {
-        return Arrays.asList(
-                pos.above(), pos.below(),
-                pos.north(), pos.south(),
-                pos.east(), pos.west()
-        );
-    }
-
-    private static boolean isEntryBlock(net.minecraft.world.level.block.state.BlockState state) {
-        return state.is(net.minecraft.tags.BlockTags.DOORS)
-                || state.is(net.minecraft.tags.BlockTags.TRAPDOORS)
-                || state.is(net.minecraft.tags.BlockTags.STAIRS)
-                || state.is(net.minecraft.tags.BlockTags.SLABS);
-    }
-
-    static final int MIN_ZONE_VOLUME = 4;
 
     private static boolean isAdjacentToGracePeriodZone(Set<BlockPos> enclosed,
                                                        SpaceRegionRegistry registry,
@@ -421,7 +407,7 @@ public class ClassificationEventHandler {
                 BlockPos neighbor = pos.relative(dir);
                 if (enclosed.contains(neighbor)) continue;
                 var state = level.getBlockState(neighbor);
-                if (!state.isAir() && isEntryBlock(state)) return true;
+                if (!state.isAir() && Zone.isEntryBlock(state)) return true;
             }
         }
         return false;

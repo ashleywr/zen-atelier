@@ -41,7 +41,7 @@ class ZoneLifecycleTest {
         zoneRegistry.registerZone(zone);
 
         // No ZoneData in cache — simulate the guard from enterGracePeriod
-        boolean needsImmediateDissolve = zoneRegistry.getZone(zoneId) == null;
+        boolean needsImmediateDissolve = zoneRegistry.getRoom(zoneId) == null;
         if (needsImmediateDissolve && !zone.isDissolved()) {
             zone.dissolveForTest(registry, zoneRegistry);
         }
@@ -74,13 +74,13 @@ class ZoneLifecycleTest {
         zoneRegistry.putForTest(zoneId, roomData);
 
         // Guard check — should NOT trigger because ZoneData exists
-        boolean needsImmediateDissolve = zoneRegistry.getZone(zoneId) == null;
+        boolean needsImmediateDissolve = zoneRegistry.getRoom(zoneId) == null;
 
         assertFalse(needsImmediateDissolve,
                 "Guard must NOT trigger: zone HAS cached ZoneData");
         assertFalse(zone.isDissolved(),
                 "Zone with cached data must survive");
-        assertNotNull(zoneRegistry.getZone(zoneId),
+        assertNotNull(zoneRegistry.getRoom(zoneId),
                 "ZoneData must still be in cache");
     }
 
@@ -104,7 +104,7 @@ class ZoneLifecycleTest {
         zoneRegistry.putForTest(zoneId, roomData);
 
         // Guard check
-        boolean needsImmediateDissolve = zoneRegistry.getZone(zoneId) == null;
+        boolean needsImmediateDissolve = zoneRegistry.getRoom(zoneId) == null;
 
         assertFalse(needsImmediateDissolve,
                 "Guard must NOT trigger for disabled zone — it was previously valid");
@@ -163,7 +163,7 @@ class ZoneLifecycleTest {
                 "Step 2: door removed → no live entry");
 
         // Guard check: zone still has cached data, so grace period would start
-        assertNotNull(zoneRegistry.getZone(zoneId),
+        assertNotNull(zoneRegistry.getRoom(zoneId),
                 "Step 3: ZoneData still cached → would enter grace period (not dissolve)");
 
         // Simulate grace period expiry → dissolve
@@ -206,7 +206,7 @@ class ZoneLifecycleTest {
             }
 
             // Guard check
-            boolean shouldDissolve = zoneRegistry.getZone(zoneId) == null;
+            boolean shouldDissolve = zoneRegistry.getRoom(zoneId) == null;
             if (shouldDissolve && !zone.isDissolved()) {
                 zone.dissolveForTest(registry, zoneRegistry);
             }
@@ -308,7 +308,7 @@ class ZoneLifecycleTest {
         Zone zone = new Zone(zoneId, Set.of(), 0);
         zoneRegistry.registerZone(zone);
 
-        boolean needsImmediateDissolve = zoneRegistry.getZone(zoneId) == null;
+        boolean needsImmediateDissolve = zoneRegistry.getRoom(zoneId) == null;
         if (needsImmediateDissolve && !zone.isDissolved()) {
             zone.dissolveForTest(registry, zoneRegistry);
         }
@@ -335,7 +335,7 @@ class ZoneLifecycleTest {
         assertTrue(zone.isDissolved());
 
         // Guard check after dissolution — must be safe to call
-        boolean needsImmediateDissolve = zoneRegistry.getZone(zoneId) == null;
+        boolean needsImmediateDissolve = zoneRegistry.getRoom(zoneId) == null;
         if (needsImmediateDissolve && !zone.isDissolved()) {
             zone.dissolveForTest(registry, zoneRegistry);
         }

@@ -5,7 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import java.util.UUID;
 
-public class ClassifiedRegion {
+public record ClassifiedRegion(UUID id, int volume, int openingArea) {
     private static final Codec<UUID> UUID_CODEC = Codec.STRING.xmap(
             UUID::fromString,
             UUID::toString
@@ -13,37 +13,14 @@ public class ClassifiedRegion {
 
     public static final Codec<ClassifiedRegion> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
-                    UUID_CODEC.fieldOf("id").forGetter(ClassifiedRegion::getId),
-                    Codec.INT.fieldOf("volume").forGetter(ClassifiedRegion::getVolume),
-                    Codec.INT.fieldOf("openingArea").forGetter(ClassifiedRegion::getOpeningArea)
+                    UUID_CODEC.fieldOf("id").forGetter(ClassifiedRegion::id),
+                    Codec.INT.fieldOf("volume").forGetter(ClassifiedRegion::volume),
+                    Codec.INT.fieldOf("openingArea").forGetter(ClassifiedRegion::openingArea)
             ).apply(instance, ClassifiedRegion::new)
     );
-    private final UUID id;
-    private final int volume;
-    private final int openingArea;
 
     public ClassifiedRegion(int volume, int openingArea) {
-        this.id = UUID.randomUUID();
-        this.volume = volume;
-        this.openingArea = openingArea;
-    }
-
-    public ClassifiedRegion(UUID id, int volume, int openingArea) {
-        this.id = id;
-        this.volume = volume;
-        this.openingArea = openingArea;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public int getVolume() {
-        return volume;
-    }
-
-    public int getOpeningArea() {
-        return openingArea;
+        this(UUID.randomUUID(), volume, openingArea);
     }
 
     public float getEnclosureScore() {

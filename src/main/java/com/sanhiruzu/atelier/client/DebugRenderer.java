@@ -3,8 +3,11 @@ package com.sanhiruzu.atelier.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.sanhiruzu.atelier.space.SpaceRegionRegistry;
+import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.Zone;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
+import com.sanhiruzu.atelier.ui.adapter.ZoneHudAdapter;
+import com.sanhiruzu.atelier.ui.client.RoomHudColors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -55,12 +58,12 @@ public class DebugRenderer {
 
                 Set<BlockPos> blocks = registry.getBlocksInRegion(zoneId);
                 if (!blocks.isEmpty()) {
-                    renderBlockBoundaryWireframe(stack, buffers, blocks, cameraPos, colorForZone(zoneId));
+                    renderBlockBoundaryWireframe(stack, buffers, blocks, cameraPos, colorForZone(zone));
                 } else if (zone.hasSpatialExtent()) {
                     renderBox(stack, buffers,
                             zone.getMinX(), zone.getMinY(), zone.getMinZ(),
                             zone.getMaxX() + 1, zone.getMaxY() + 1, zone.getMaxZ() + 1,
-                            cameraPos, colorForZone(zoneId));
+                            cameraPos, colorForZone(zone));
                 }
             }
         } catch (ConcurrentModificationException e) {
@@ -216,6 +219,18 @@ public class DebugRenderer {
         float saturation = 0.70f + (((hash >>> 16) & 0xFF) / 255.0f) * 0.25f;
         float value = 0.85f + (((hash >>> 24) & 0xFF) / 255.0f) * 0.15f;
         return hsvToRgb(hue, saturation, value);
+    }
+
+    public static int colorForZone(com.sanhiruzu.atelier.space.zone.ZoneData zoneData) {
+        if (zoneData instanceof RoomData room) {
+            ZoneHudAdapter.ZoneHudSnapshot snapshot = ZoneHudAdapter.snapshotFromZoneData(room);
+            String typeInfo = snapshot.activeProfiles();
+            if ((typeInfo == null || typeInfo.isBlank()) && room.getZoneTypeId() != null) {
+                typeInfo = room.getZoneTypeId().toString();
+            }
+            return RoomHudColors.forTypeInfo(typeInfo, room.isDegraded());
+        }
+        return colorForZone(zoneData.getRegionId());
     }
 
     private static int hsvToRgb(float hue, float saturation, float value) {

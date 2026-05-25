@@ -5,6 +5,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.sanhiruzu.atelier.space.SpaceQuery;
 import com.sanhiruzu.atelier.space.zone.QualityEvaluator;
 import com.sanhiruzu.atelier.space.zone.RoomData;
+import com.sanhiruzu.atelier.space.zone.RoomImprovementHints;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -32,7 +33,7 @@ public class InspectZoneCommand {
         ServerLevel level = source.getLevel();
         BlockPos pos = BlockPos.containing(source.getPosition());
 
-        ZoneData zone = SpaceQuery.getZoneAt(level, pos);
+        ZoneData zone = SpaceQuery.getRoomAt(level, pos);
         if (zone == null) {
             source.sendFailure(Component.literal("Not standing in a classified zone."));
             return 0;
@@ -100,9 +101,11 @@ public class InspectZoneCommand {
             }
 
             // Blocks
+            sb.append("  \"light_level\": ").append(room.getLightLevel()).append(",\n");
             appendBlockMap(sb, "furniture_blocks", room.getFurnitureCounts());
             appendBlockMap(sb, "surface_blocks", room.getSurfaceCounts());
             appendBlockMap(sb, "signals", room.getSignalCounts());
+            appendStringList(sb, "improvement_hints", RoomImprovementHints.forRoom(room));
         } else {
             sb.append("  \"volume\": ").append(zone.getVolume()).append(",\n");
             sb.append("  \"enclosure_score\": ").append(String.format("%.3f", zone.getEnclosureScore())).append(",\n");
@@ -140,5 +143,19 @@ public class InspectZoneCommand {
             sb.append("\n");
         }
         sb.append("  },\n");
+    }
+
+    private static void appendStringList(StringBuilder sb, String key, java.util.List<String> values) {
+        sb.append("  \"").append(key).append("\": [\n");
+        for (int i = 0; i < values.size(); i++) {
+            sb.append("    \"").append(escapeJson(values.get(i))).append("\"");
+            if (i + 1 < values.size()) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  ],\n");
+    }
+
+    private static String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

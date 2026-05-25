@@ -24,7 +24,7 @@ public class ZoneAPI {
     @Nullable
     public static ZoneData getZoneAt(Level level, BlockPos pos) {
         if (level.isClientSide()) return null;
-        return SpaceQuery.getZoneAt(level, pos);
+        return SpaceQuery.getRoomAt(level, pos);
     }
 
     /**
@@ -34,7 +34,7 @@ public class ZoneAPI {
     @Nullable
     public static ZoneData getZone(Level level, UUID zoneId) {
         if (level.isClientSide()) return null;
-        return ZoneRegistry.get(level).getZone(zoneId);
+        return ZoneRegistry.get(level).getRoom(zoneId);
     }
 
     /**
@@ -91,7 +91,7 @@ public class ZoneAPI {
         @SuppressWarnings("unchecked")
         public static <T> T get(UUID zoneId, String key, Class<T> type) {
             Object value = get(zoneId, key);
-            if (value == null || !type.isInstance(value)) return null;
+            if (!type.isInstance(value)) return null;
             return (T) value;
         }
 

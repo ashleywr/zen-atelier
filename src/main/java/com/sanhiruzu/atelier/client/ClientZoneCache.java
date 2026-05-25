@@ -21,7 +21,8 @@ public class ClientZoneCache {
         if (payload.isOutdoor()) {
             data = new OutdoorZoneData(payload.zoneId(), payload.volume(), payload.enclosureScore(), BlockPos.ZERO);
         } else {
-            RoomData room = new RoomData(payload.zoneId(), payload.volume(), payload.enclosureScore(), Map.of(), payload.quality());
+            RoomData room = new RoomData(payload.zoneId(), payload.volume(), payload.enclosureScore(),
+                    Map.of(), Map.of(), Map.of(), payload.quality(), payload.lightLevel());
             room.setZoneTypeId(payload.zoneTypeId());
             room.setDegraded(payload.degraded());
             if (payload.epithetName() != null) {

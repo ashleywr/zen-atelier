@@ -6,9 +6,8 @@ import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.Zone;
 import com.sanhiruzu.atelier.space.zone.ZoneAttachment;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
+import com.sanhiruzu.atelier.zone.RoomText;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 import java.nio.charset.StandardCharsets;
@@ -31,7 +30,7 @@ public final class ZoneHudAdapter {
 
     public static ZoneHudSnapshot snapshotFromZoneData(ZoneData zoneData) {
         if (zoneData.isOutdoor()) {
-            return new ZoneHudSnapshot(zoneData.getRegionId(), "Outdoor", "", "", "", "", 0);
+            return new ZoneHudSnapshot(zoneData.getRegionId(), "Outdoor", "", "", "", "", 0, -1);
         }
 
         RoomData room = (RoomData) zoneData;
@@ -53,7 +52,8 @@ public final class ZoneHudAdapter {
                 "",
                 "",
                 gameplayInfo,                   // Bottom line: "Bedroom | Workshop | Atelier"
-                score
+                score,
+                room.getLightLevel()
         );
     }
 
@@ -78,7 +78,7 @@ public final class ZoneHudAdapter {
         } else if (room.getGeneratedName() != null && !room.getGeneratedName().isEmpty()) {
             baseName = room.getGeneratedName();
         } else if (room.getZoneTypeId() != null) {
-            baseName = formatZoneTypeName(room.getZoneTypeId());
+            baseName = RoomText.roomTypeName(room.getZoneTypeId());
         } else {
             baseName = "Room";
         }
@@ -94,10 +94,13 @@ public final class ZoneHudAdapter {
         }
 
         if (room.getZoneTypeId() == null) {
-            return degradedPrefix;
+            String light = lightLabel(room.getLightLevel());
+            if (degradedPrefix.isEmpty()) return light;
+            if (light.isEmpty()) return degradedPrefix;
+            return degradedPrefix + " · " + light;
         }
 
-        String primaryType = formatZoneTypeName(room.getZoneTypeId());
+        String primaryType = RoomText.roomTypeName(room.getZoneTypeId());
         java.util.Map<String, Integer> signals = room.getSignalCounts();
 
         java.util.Map<String, String[]> typeSignals = java.util.Map.ofEntries(
@@ -140,22 +143,26 @@ public final class ZoneHudAdapter {
                 ? String.join(" | ", detectedTypes)
                 : "";
 
-        if (degradedPrefix.isEmpty()) return typePart;
-        if (typePart.isEmpty()) return degradedPrefix;
-        return degradedPrefix + " · " + typePart;
+        String roomInfo;
+        if (degradedPrefix.isEmpty()) {
+            roomInfo = typePart;
+        } else if (typePart.isEmpty()) {
+            roomInfo = degradedPrefix;
+        } else {
+            roomInfo = degradedPrefix + " · " + typePart;
+        }
+
+        String light = lightLabel(room.getLightLevel());
+        if (roomInfo.isEmpty()) return light;
+        if (light.isEmpty()) return roomInfo;
+        return roomInfo + " · " + light;
     }
 
-    private static String formatZoneTypeName(ResourceLocation id) {
-        // Convention: room profiles ship a translation key "room_type.<namespace>.<path>" so
-        // localized HUD names live in the lang file rather than being derived from the path.
-        // Fall back to a sentence-cased path if the key is missing.
-        String key = "room_type." + id.getNamespace() + "." + id.getPath();
-        Component component = Component.translatable(key);
-        String localized = component.getString();
-        if (!localized.equals(key)) return localized;
-
-        String path = id.getPath().replace('_', ' ');
-        return path.isEmpty() ? id.toString() : Character.toUpperCase(path.charAt(0)) + path.substring(1);
+    private static String lightLabel(int lightLevel) {
+        if (lightLevel < 0 || lightLevel >= 8) return "";
+        if (lightLevel == 0) return "Pitch Black";
+        if (lightLevel <= 4) return "Dark";
+        return "Gloomy";
     }
 
     public static Optional<ZoneHudSnapshot> snapshotForClassification(ClassificationState state, int regionCount, int chunkX, int chunkZ) {
@@ -170,7 +177,7 @@ public final class ZoneHudAdapter {
                 : regionCount + " detected region(s)";
 
         UUID stableChunkId = UUID.nameUUIDFromBytes(("chunk:" + chunkX + ":" + chunkZ).getBytes(StandardCharsets.UTF_8));
-        return Optional.of(new ZoneHudSnapshot(stableChunkId, stateName, "", "", "", detail, score));
+        return Optional.of(new ZoneHudSnapshot(stableChunkId, stateName, "", "", "", detail, score, -1));
     }
 
     public record ZoneHudSnapshot(
@@ -180,7 +187,8 @@ public final class ZoneHudAdapter {
             String uniqueName,
             String customName,
             String activeProfiles,
-            int score
+            int score,
+            int lightLevel
     ) {
     }
 }

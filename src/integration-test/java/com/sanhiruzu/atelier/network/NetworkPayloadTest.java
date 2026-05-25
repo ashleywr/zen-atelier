@@ -23,6 +23,7 @@ public class NetworkPayloadTest {
     private RegistryFriendlyByteBuf testBuffer;
 
     @BeforeEach
+    @SuppressWarnings("deprecation")
     void setUp() {
         testBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), null);
     }
@@ -202,7 +203,7 @@ public class NetworkPayloadTest {
     @Test
     void testSyncZoneGridPayload_indoorNoType() {
         UUID regionId = UUID.fromString("12345678-1234-1234-1234-123456789abc");
-        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 85, 0.92f, 0.78f, null, false, null, null, -50, 0, -50, 50, 100, 50);
+        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 85, 0.92f, 0.78f, 7, null, false, null, null, -50, 0, -50, 50, 100, 50);
 
         SyncZoneGridPayload.CODEC.encode(testBuffer, original);
         testBuffer.readerIndex(0);
@@ -213,6 +214,7 @@ public class NetworkPayloadTest {
         assertEquals(85, decoded.volume(), "volume should round-trip");
         assertEquals(0.92f, decoded.enclosureScore(), 0.001f, "enclosureScore should round-trip");
         assertEquals(0.78f, decoded.quality(), 0.001f, "quality should round-trip");
+        assertEquals(7, decoded.lightLevel(), "lightLevel should round-trip");
         assertNull(decoded.zoneTypeId(), "null zoneTypeId should round-trip as null");
         assertFalse(decoded.degraded(), "degraded should round-trip as false");
     }
@@ -221,7 +223,7 @@ public class NetworkPayloadTest {
     void testSyncZoneGridPayload_indoorWithZoneType() {
         UUID regionId = UUID.randomUUID();
         ResourceLocation typeId = ResourceLocation.fromNamespaceAndPath("zen_atelier", "atelier");
-        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 120, 0.95f, 1.0f, typeId, true, null, null, -100, 0, -100, 100, 150, 100);
+        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 120, 0.95f, 1.0f, 15, typeId, true, null, null, -100, 0, -100, 100, 150, 100);
 
         SyncZoneGridPayload.CODEC.encode(testBuffer, original);
         testBuffer.readerIndex(0);
@@ -230,13 +232,14 @@ public class NetworkPayloadTest {
         assertEquals(regionId, decoded.zoneId(), "zoneId should round-trip");
         assertEquals(typeId, decoded.zoneTypeId(), "zoneTypeId should round-trip");
         assertEquals(1.0f, decoded.quality(), 0.001f, "quality=1.0 should round-trip");
+        assertEquals(15, decoded.lightLevel(), "lightLevel should round-trip");
         assertTrue(decoded.degraded(), "degraded=true should round-trip");
     }
 
     @Test
     void testSyncZoneGridPayload_outdoor() {
         UUID regionId = UUID.randomUUID();
-        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, true, 0, 0.0f, 0.0f, null, false, null, null, -50, 0, -50, 50, 100, 50);
+        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, true, 0, 0.0f, 0.0f, -1, null, false, null, null, -50, 0, -50, 50, 100, 50);
 
         SyncZoneGridPayload.CODEC.encode(testBuffer, original);
         testBuffer.readerIndex(0);
@@ -244,6 +247,7 @@ public class NetworkPayloadTest {
 
         assertEquals(regionId, decoded.zoneId(), "zoneId should round-trip");
         assertTrue(decoded.isOutdoor(), "isOutdoor=true should round-trip");
+        assertEquals(-1, decoded.lightLevel(), "outdoor lightLevel should round-trip");
         assertNull(decoded.zoneTypeId(), "outdoor zone has no zoneTypeId");
     }
 

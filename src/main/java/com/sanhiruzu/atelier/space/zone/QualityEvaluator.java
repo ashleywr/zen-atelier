@@ -15,25 +15,6 @@ public class QualityEvaluator {
     private static final float FURNITURE_MAX = 0.20f;
     private static final float THEME_MAX = 0.15f;
 
-    public static class QualityBreakdown {
-        public float sizeScore;
-        public float enclosureScore;
-        public float furnitureScore;
-        public float themeScore;
-        public float totalQuality;
-
-        // For HUD display
-        public Map<String, Float> components = new HashMap<>();
-
-        public QualityBreakdown() {
-            this.sizeScore = 0;
-            this.enclosureScore = 0;
-            this.furnitureScore = 0;
-            this.themeScore = 0;
-            this.totalQuality = 0;
-        }
-    }
-
     public static QualityBreakdown evaluate(int volume, float enclosureScore, Map<String, Integer> furnitureCounts, Map<String, Integer> signalCounts) {
         return evaluate(volume, enclosureScore, furnitureCounts, signalCounts, null);
     }
@@ -156,9 +137,7 @@ public class QualityEvaluator {
             try {
                 ResourceLocation rl = ResourceLocation.parse(blockKey);
                 Block block = BuiltInRegistries.BLOCK.get(rl);
-                if (block != null) {
-                    blockRarity = BlockRarityCache.getRarity(block);
-                }
+                blockRarity = BlockRarityCache.getRarity(block);
             } catch (Exception e) {
                 // Silently use default if parsing fails
             }
@@ -177,5 +156,24 @@ public class QualityEvaluator {
         // Combine rarity (normalized from 0.5-2.0 to 0-1) with diversity
         float rarityNormalized = (avgRarity - 0.5f) / 1.5f; // Maps [0.5, 2.0] to [0, 1]
         return (rarityNormalized * 0.6f + diversityBonus * 0.4f);
+    }
+
+    public static class QualityBreakdown {
+        public float sizeScore;
+        public float enclosureScore;
+        public float furnitureScore;
+        public float themeScore;
+        public float totalQuality;
+
+        // For HUD display
+        public final Map<String, Float> components = new HashMap<>();
+
+        public QualityBreakdown() {
+            this.sizeScore = 0;
+            this.enclosureScore = 0;
+            this.furnitureScore = 0;
+            this.themeScore = 0;
+            this.totalQuality = 0;
+        }
     }
 }

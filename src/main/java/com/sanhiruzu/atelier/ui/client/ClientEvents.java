@@ -52,7 +52,8 @@ public final class ClientEvents {
                         snapshot.customName(),
                         snapshot.activeProfiles(),
                         snapshot.score(),
-                        snapshot.uniqueName()  // Quality breakdown is stored in uniqueName field
+                        snapshot.uniqueName(),  // Quality breakdown is stored in uniqueName field
+                        snapshot.lightLevel()
                 ),
                 () -> {
                     UUID lastId = ClientZoneData.getCurrentZoneId();

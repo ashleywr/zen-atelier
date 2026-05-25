@@ -44,7 +44,7 @@ public class ZenAtelierRenderEvents {
                 if (zoneData != null && zoneData.hasSpatialExtent()) {
                     float alpha = ClientZoneData.isDebugMode() ? 1.0f : ZoneVfxManager.getBoundsAlpha();
                     int color = ClientZoneData.isDebugMode()
-                            ? DebugRenderer.colorForZone(zone.getId())
+                            ? DebugRenderer.colorForZone(zoneData)
                             : zoneData instanceof com.sanhiruzu.atelier.space.zone.RoomData room && room.isDegraded()
                               ? 0xFFAA44  // Amber for degraded
                               : 0x88CCFF; // Light blue for normal

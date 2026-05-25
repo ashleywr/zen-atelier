@@ -3,6 +3,9 @@ package com.sanhiruzu.atelier.ui.client;
 import java.util.UUID;
 
 public final class ClientZoneData {
+    private static final int ROOM_HUD_REVEAL_TICKS = 100; // 5 seconds at 20 ticks/s
+    private static final int SCORE_REVEAL_THRESHOLD = 8;
+    private static final int LOST_FLASH_TICKS = 80; // 4 seconds at 20 ticks/s
     private static UUID currentZoneId;
     private static String currentZoneName = "";
     private static String currentGeneratedName = "";
@@ -11,15 +14,12 @@ public final class ClientZoneData {
     private static String currentActiveProfiles = "";
     private static String qualityBreakdown = "";
     private static int currentZenScore;
+    private static int currentLightLevel = -1;
     private static boolean inZone;
     private static boolean debugMode;
     private static int roomHudTicks = 0;
-    private static final int ROOM_HUD_REVEAL_TICKS = 100; // 5 seconds at 20 ticks/s
-
     // "Room lost" flash: shown for LOST_FLASH_TICKS after the zone disappears.
     private static int zoneLostFlashTicks = 0;
-    private static final int LOST_FLASH_TICKS = 80; // 4 seconds at 20 ticks/s
-
     // Grace period — zone lost its entry, countdown before permanent deletion
     private static UUID gracePeriodZoneId = null;
     private static int gracePeriodTicksRemaining = 0;
@@ -28,7 +28,15 @@ public final class ClientZoneData {
     }
 
     public static void update(UUID id, String name, String generatedName, String uniqueName, String customName, String activeProfiles, int score, String qualityBreakdown) {
+        update(id, name, generatedName, uniqueName, customName, activeProfiles, score, qualityBreakdown, -1);
+    }
+
+    public static void update(UUID id, String name, String generatedName, String uniqueName, String customName, String activeProfiles, int score, String qualityBreakdown, int lightLevel) {
         boolean enteredOrChangedRoom = !inZone || !java.util.Objects.equals(currentZoneId, id);
+        int clampedScore = Math.clamp(score, 0, 100);
+        boolean meaningfulDisplayChange = !java.util.Objects.equals(currentZoneName, name != null ? name : "")
+                || !java.util.Objects.equals(currentActiveProfiles, activeProfiles != null ? activeProfiles : "")
+                || Math.abs(currentZenScore - clampedScore) >= SCORE_REVEAL_THRESHOLD;
         currentZoneId = id;
         currentZoneName = name != null ? name : "";
         currentGeneratedName = generatedName != null ? generatedName : "";
@@ -36,8 +44,11 @@ public final class ClientZoneData {
         currentCustomName = customName != null ? customName : "";
         currentActiveProfiles = activeProfiles != null ? activeProfiles : "";
         ClientZoneData.qualityBreakdown = qualityBreakdown != null ? qualityBreakdown : "";
-        currentZenScore = Math.max(0, Math.min(100, score));
-        if (enteredOrChangedRoom || debugMode) roomHudTicks = ROOM_HUD_REVEAL_TICKS;
+        currentZenScore = clampedScore;
+        currentLightLevel = Math.clamp(lightLevel, -1, 15);
+        if (enteredOrChangedRoom || debugMode || meaningfulDisplayChange) {
+            roomHudTicks = ROOM_HUD_REVEAL_TICKS;
+        }
         if (!inZone) zoneLostFlashTicks = 0; // entering a zone cancels the flash
         inZone = true;
     }
@@ -78,13 +89,13 @@ public final class ClientZoneData {
         return hasRoomHudSnapshot() && roomHudTicks > 0;
     }
 
+    public static boolean isDebugMode() {
+        return debugMode;
+    }
+
     public static void setDebugMode(boolean enabled) {
         debugMode = enabled;
         if (enabled && inZone) revealRoomHud();
-    }
-
-    public static boolean isDebugMode() {
-        return debugMode;
     }
 
     private static boolean hasRoomHudSnapshot() {
@@ -164,6 +175,10 @@ public final class ClientZoneData {
         return currentZenScore;
     }
 
+    public static int getCurrentLightLevel() {
+        return currentLightLevel;
+    }
+
     public static void forgetRoomSnapshot() {
         currentZoneId = null;
         currentZoneName = "";
@@ -173,6 +188,7 @@ public final class ClientZoneData {
         currentActiveProfiles = "";
         qualityBreakdown = "";
         currentZenScore = 0;
+        currentLightLevel = -1;
         roomHudTicks = 0;
     }
 
@@ -185,6 +201,7 @@ public final class ClientZoneData {
         currentActiveProfiles = "";
         qualityBreakdown = "";
         currentZenScore = 0;
+        currentLightLevel = -1;
         inZone = false;
         debugMode = false;
         roomHudTicks = 0;

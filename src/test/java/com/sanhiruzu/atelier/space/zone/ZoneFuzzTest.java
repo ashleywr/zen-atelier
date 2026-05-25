@@ -181,7 +181,7 @@ class ZoneFuzzTest {
                         }
                     }
                     case 5 -> { // guard: if never-evaluated, dissolve immediately
-                        if (!z.zone.isDissolved() && zoneRegistry.getZone(z.zone.getId()) == null) {
+                        if (!z.zone.isDissolved() && zoneRegistry.getRoom(z.zone.getId()) == null) {
                             for (BlockPos pos : new ArrayList<>(z.interior)) {
                                 registry.unmapBlock(pos);
                             }
@@ -377,7 +377,7 @@ class ZoneFuzzTest {
 
     @Test
     void fuzz_neverEvaluatedZone_neverShowsGracePeriod() {
-        // The guard must ensure: if getZone(zoneId) == null, the zone dissolves
+        // The guard must ensure: if getRoom(zoneId) == null, the zone dissolves
         // immediately. This invariant must hold for EVERY random room shape.
         for (int seed = 0; seed < 2000; seed++) {
             RandomGenerator rng = new Random(seed);
@@ -404,7 +404,7 @@ class ZoneFuzzTest {
             }
 
             // Apply the guard (simulating enterGracePeriod check)
-            boolean hasCachedData = zoneRegistry.getZone(zoneId) != null;
+            boolean hasCachedData = zoneRegistry.getRoom(zoneId) != null;
             if (!hasCachedData && !zone.isDissolved()) {
                 zone.dissolveForTest(registry, zoneRegistry);
             }

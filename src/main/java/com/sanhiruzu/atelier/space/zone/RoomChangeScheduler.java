@@ -19,6 +19,15 @@ public final class RoomChangeScheduler {
     private final Set<UUID> dirtyRooms = new HashSet<>();
     private long lastDayIndex = -1L;
 
+    private static boolean isDebugEnabled(ServerLevel level) {
+        for (ServerPlayer player : level.players()) {
+            if (player.getPersistentData().getBoolean("spaceregion_debug")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void markDirty(Zone zone, ServerLevel level, ZoneRegistry registry) {
         if (zone.isDissolved()) return;
         dirtyRooms.add(zone.getId());
@@ -50,15 +59,6 @@ public final class RoomChangeScheduler {
             if (zone == null || zone.isDissolved()) continue;
             registry.evaluateRoomAndSyncNow(zone, level);
         }
-    }
-
-    private static boolean isDebugEnabled(ServerLevel level) {
-        for (ServerPlayer player : level.players()) {
-            if (player.getPersistentData().getBoolean("spaceregion_debug")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     boolean shouldResolve(long dayIndex, boolean debugEnabled) {

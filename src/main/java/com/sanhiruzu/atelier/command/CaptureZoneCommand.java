@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.sanhiruzu.atelier.space.BlockPosBounds;
 import com.sanhiruzu.atelier.space.SpaceQuery;
 import com.sanhiruzu.atelier.space.SpaceRegionRegistry;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
@@ -38,7 +39,7 @@ public class CaptureZoneCommand {
         ServerLevel level = source.getLevel();
 
         BlockPos playerPos = BlockPos.containing(source.getPosition());
-        ZoneData zone = SpaceQuery.getZoneAt(level, playerPos);
+        ZoneData zone = SpaceQuery.getRoomAt(level, playerPos);
         if (zone == null) {
             source.sendFailure(Component.literal("Not standing in a classified zone — try moving inside the building and running again."));
             return 0;
@@ -51,19 +52,10 @@ public class CaptureZoneCommand {
             return 0;
         }
 
-        // Compute bounding box with 1-block margin so walls/ceiling/floor are included.
-        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-        for (BlockPos pos : regionBlocks) {
-            if (pos.getX() < minX) minX = pos.getX();
-            if (pos.getY() < minY) minY = pos.getY();
-            if (pos.getZ() < minZ) minZ = pos.getZ();
-            if (pos.getX() > maxX) maxX = pos.getX();
-            if (pos.getY() > maxY) maxY = pos.getY();
-            if (pos.getZ() > maxZ) maxZ = pos.getZ();
-        }
-        BlockPos origin = new BlockPos(minX - 1, minY - 1, minZ - 1);
-        Vec3i size = new Vec3i(maxX - minX + 3, maxY - minY + 3, maxZ - minZ + 3);
+        // 1-block margin includes walls, ceiling, and floor in the capture.
+        BlockPosBounds bounds = BlockPosBounds.enclosing(regionBlocks).orElseThrow().inflate(1);
+        BlockPos origin = bounds.minCorner();
+        Vec3i size = bounds.size();
 
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, origin, size, false, null);

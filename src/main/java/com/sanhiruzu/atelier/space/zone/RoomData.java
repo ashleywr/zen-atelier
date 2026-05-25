@@ -13,6 +13,7 @@ public class RoomData extends ZoneData {
     private final Map<String, Integer> signalCounts;
     private final Map<String, Integer> surfaceCounts;
     private final float quality;
+    private final int lightLevel;
     @Nullable
     private QualityEvaluator.QualityBreakdown qualityBreakdown;
     @Nullable
@@ -38,11 +39,16 @@ public class RoomData extends ZoneData {
     }
 
     public RoomData(UUID regionId, int volume, float enclosureScore, Map<String, Integer> furnitureCounts, Map<String, Integer> signalCounts, Map<String, Integer> surfaceCounts, float quality) {
+        this(regionId, volume, enclosureScore, furnitureCounts, signalCounts, surfaceCounts, quality, -1);
+    }
+
+    public RoomData(UUID regionId, int volume, float enclosureScore, Map<String, Integer> furnitureCounts, Map<String, Integer> signalCounts, Map<String, Integer> surfaceCounts, float quality, int lightLevel) {
         super(regionId, volume, enclosureScore);
         this.furnitureCounts = new HashMap<>(furnitureCounts);
         this.signalCounts = new HashMap<>(signalCounts);
         this.surfaceCounts = new HashMap<>(surfaceCounts);
         this.quality = quality;
+        this.lightLevel = lightLevel;
         this.zoneTypeId = null;
         this.degraded = false;
     }
@@ -66,6 +72,10 @@ public class RoomData extends ZoneData {
 
     public float getQuality() {
         return quality;
+    }
+
+    public int getLightLevel() {
+        return lightLevel;
     }
 
     @Nullable

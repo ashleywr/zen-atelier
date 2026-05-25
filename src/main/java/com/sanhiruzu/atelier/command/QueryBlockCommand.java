@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
+@SuppressWarnings("SameReturnValue")
 public class QueryBlockCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("atelier")
@@ -29,7 +30,7 @@ public class QueryBlockCommand {
                                         )
                                 )
                         )
-                        .executes(ctx -> queryBlockAtPlayer(ctx))
+                        .executes(QueryBlockCommand::queryBlockAtPlayer)
                 )
         );
     }
@@ -76,7 +77,7 @@ public class QueryBlockCommand {
         com.sanhiruzu.atelier.space.zone.ZoneRegistry zoneRegistry = com.sanhiruzu.atelier.space.zone.ZoneRegistry.get(level);
         com.sanhiruzu.atelier.space.zone.ZoneData zoneData = null;
         if (region != null) {
-            zoneData = zoneRegistry.getZone(region.getId());
+            zoneData = zoneRegistry.getRoom(region.getId());
         }
 
         // Build response

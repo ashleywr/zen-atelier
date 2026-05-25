@@ -21,10 +21,6 @@ import java.util.*;
  */
 public class ZoneSavedData extends SavedData {
     private static final String DATA_NAME = "atelier_zones";
-
-    public record ZoneRecord(Set<BlockPos> blocks, int openingArea, @Nullable String customName) {
-    }
-
     private final Map<UUID, ZoneRecord> zones = new HashMap<>();
 
     private static ZoneSavedData create() {
@@ -96,5 +92,8 @@ public class ZoneSavedData extends SavedData {
 
     public Map<UUID, ZoneRecord> getZones() {
         return Collections.unmodifiableMap(zones);
+    }
+
+    public record ZoneRecord(Set<BlockPos> blocks, int openingArea, @Nullable String customName) {
     }
 }

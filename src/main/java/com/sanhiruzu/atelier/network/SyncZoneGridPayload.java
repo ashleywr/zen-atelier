@@ -14,6 +14,7 @@ public record SyncZoneGridPayload(
         int volume,
         float enclosureScore,
         float quality,
+        int lightLevel,
         @Nullable ResourceLocation zoneTypeId,
         boolean degraded,
         @Nullable String epithetName,
@@ -37,6 +38,7 @@ public record SyncZoneGridPayload(
                 buf.writeVarInt(p.volume);
                 buf.writeFloat(p.enclosureScore);
                 buf.writeFloat(p.quality);
+                buf.writeVarInt(p.lightLevel);
                 if (p.zoneTypeId != null) {
                     buf.writeBoolean(true);
                     buf.writeResourceLocation(p.zoneTypeId);
@@ -69,6 +71,7 @@ public record SyncZoneGridPayload(
                 int volume = buf.readVarInt();
                 float enclosureScore = buf.readFloat();
                 float quality = buf.readFloat();
+                int lightLevel = buf.readVarInt();
                 ResourceLocation zoneTypeId = buf.readBoolean() ? buf.readResourceLocation() : null;
                 boolean degraded = buf.readBoolean();
                 String epithetName = buf.readBoolean() ? buf.readUtf() : null;
@@ -80,7 +83,7 @@ public record SyncZoneGridPayload(
                 int maxY = buf.readInt();
                 int maxZ = buf.readInt();
                 return new SyncZoneGridPayload(
-                        zoneId, isOutdoor, volume, enclosureScore, quality,
+                        zoneId, isOutdoor, volume, enclosureScore, quality, lightLevel,
                         zoneTypeId, degraded, epithetName, generatedName,
                         minX, minY, minZ, maxX, maxY, maxZ);
             }

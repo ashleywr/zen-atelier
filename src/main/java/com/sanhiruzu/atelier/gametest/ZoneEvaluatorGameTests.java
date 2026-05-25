@@ -42,21 +42,21 @@ public class ZoneEvaluatorGameTests {
                 "Expected at least one classified region in structure");
 
         for (ClassifiedRegion cr : allRegions) {
-            Set<BlockPos> blocks = allBlocks.getOrDefault(cr.getId(), Set.of());
+            Set<BlockPos> blocks = allBlocks.getOrDefault(cr.id(), Set.of());
             helper.assertTrue(!blocks.isEmpty(),
                     "Region has no blocks; cannot compute room data");
 
             // Populate registry so computeRoomData can find the blocks.
-            if (registry.getRegion(cr.getId()) == null) {
-                registry.registerRegion(new SpaceRegion(cr.getId(),
-                        ClassificationState.INSIDE, 0, cr.getOpeningArea()));
+            if (registry.getRegion(cr.id()) == null) {
+                registry.registerRegion(new SpaceRegion(cr.id(),
+                        ClassificationState.INSIDE, 0, cr.openingArea()));
             }
             for (BlockPos pos : blocks) {
-                registry.mapBlockToRegion(pos, cr.getId());
+                registry.mapBlockToRegion(pos, cr.id());
             }
 
             RoomData roomData = ZoneEvaluator.computeRoomData(
-                    registry.getRegion(cr.getId()), level);
+                    registry.getRegion(cr.id()), level);
 
             helper.assertTrue(roomData.getVolume() > 0,
                     "Volume should be > 0, got " + roomData.getVolume());
@@ -71,7 +71,7 @@ public class ZoneEvaluatorGameTests {
             for (BlockPos pos : blocks) {
                 registry.unmapBlock(pos);
             }
-            registry.removeRegion(cr.getId());
+            registry.removeRegion(cr.id());
         }
 
         helper.succeed();

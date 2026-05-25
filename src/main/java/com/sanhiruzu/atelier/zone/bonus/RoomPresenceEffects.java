@@ -71,15 +71,6 @@ public final class RoomPresenceEffects {
         return 0;
     }
 
-    private static class EffectConfig {
-        final Holder<MobEffect> effect;
-        final int baseDuration;
-        final int maxLevel;
-
-        EffectConfig(Holder<MobEffect> effect, int baseDuration, int maxLevel) {
-            this.effect = effect;
-            this.baseDuration = baseDuration;
-            this.maxLevel = maxLevel;
-        }
+    private record EffectConfig(Holder<MobEffect> effect, int baseDuration, int maxLevel) {
     }
 }

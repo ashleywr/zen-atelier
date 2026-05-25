@@ -26,8 +26,7 @@ public class ZoneEvaluator {
         // INSIDE positions are air; placed furniture got reclassified out of regionToBlocks.
         // Walk solid neighbors of the inside air instead, deduplicated, and drop anything that
         // also borders OUTSIDE air (walls/ceilings) so only interior blocks remain.
-        Set<BlockPos> candidates = new HashSet<>();
-        candidates.addAll(mappedBlocks);
+        Set<BlockPos> candidates = new HashSet<>(mappedBlocks);
         for (BlockPos pos : mappedBlocks) {
             for (Direction dir : Direction.values()) {
                 BlockPos neighbor = pos.relative(dir);
@@ -65,6 +64,20 @@ public class ZoneEvaluator {
             }
         }
 
+        // Count water blocks adjacent to interior air blocks (deduplicated).
+        // Water coverage signal injected directly into signalCounts (not via Signals predicates,
+        // since water is non-solid and requires special handling).
+        Set<BlockPos> waterNeighbors = new HashSet<>();
+        for (BlockPos pos : airBlocks) {
+            for (Direction dir : Direction.values()) {
+                BlockPos waterPos = pos.relative(dir);
+                if (level.getBlockState(waterPos).is(Blocks.WATER)) {
+                    waterNeighbors.add(waterPos);
+                }
+            }
+        }
+        signalCounts.put("water_coverage", waterNeighbors.size());
+
         // Use blocks.size() for volume — regionToBlocks is always accurate (updated by
         // mapBlockToRegion/unmapBlock on every furniture event), whereas SpaceRegion.volume
         // is only set at bootstrap and not updated on furniture placement/removal.
@@ -82,12 +95,26 @@ public class ZoneEvaluator {
         float spaciousness = floorXZ.isEmpty() ? 1f : (float) volume / floorXZ.size();
 
         QualityEvaluator.QualityBreakdown breakdown = QualityEvaluator.evaluate(volume, enclosureScore, furnitureCounts, signalCounts);
-        RoomData room = new RoomData(region.getId(), volume, enclosureScore, furnitureCounts, signalCounts, surfaceCounts, breakdown.totalQuality);
+        int lightLevel = computeMinimumLightLevel(airBlocks, level);
+        RoomData room = new RoomData(region.getId(), volume, enclosureScore, furnitureCounts, signalCounts,
+                surfaceCounts, breakdown.totalQuality, lightLevel);
         room.setQualityBreakdown(breakdown);
         room.setSpaciousness(spaciousness);
         room.setGeometryProfile(ZoneGeometryProfile.compute(airBlocks, level,
                 zone != null ? Optional.ofNullable(zone.getMainEntry()) : Optional.empty()));
         return room;
+    }
+
+    private static int computeMinimumLightLevel(Set<BlockPos> airBlocks, Level level) {
+        if (airBlocks.isEmpty()) return -1;
+
+        int min = 15;
+        for (BlockPos pos : airBlocks) {
+            // Minimum room light is more actionable than average light: one dark
+            // corner is the part players need to fix.
+            min = Math.min(min, level.getMaxLocalRawBrightness(pos));
+        }
+        return min;
     }
 
     public static OutdoorZoneData computeOutdoorZoneData(SpaceRegion region, Level level, BlockPos samplePos) {

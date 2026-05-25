@@ -2,7 +2,6 @@ package com.sanhiruzu.atelier.space.zone;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
 
 import java.util.*;
@@ -16,23 +15,11 @@ public record ZoneGeometryProfile(
         int subAreaCount,
         boolean hasVerticalConnector
 ) {
-    public enum CeilingStatus {
-        SEALED,
-        COVERED,
-        OPEN
-    }
-
     public static ZoneGeometryProfile compute(Set<BlockPos> zoneBlocks, Level level, Optional<Zone.ZoneEntry> entry) {
         return compute(zoneBlocks,
                 pos -> level.getBlockState(pos).isAir(),
                 pos -> !level.getBlockState(pos).isAir(),
-                pos -> {
-                    var state = level.getBlockState(pos);
-                    return state.is(BlockTags.TRAPDOORS)
-                            || state.is(BlockTags.STAIRS)
-                            || state.is(BlockTags.SLABS)
-                            || state.is(BlockTags.CLIMBABLE);
-                },
+                pos -> ZoneBlockPredicates.isConnectorBlock(level.getBlockState(pos)),
                 entry.map(Zone.ZoneEntry::primaryBlock).orElse(null));
     }
 
@@ -163,22 +150,17 @@ public record ZoneGeometryProfile(
     }
 
     private static boolean hasNearbyConnector(BlockPos interiorPos, BlockPos airNeighbor, Predicate<BlockPos> isConnector) {
-        for (BlockPos origin : List.of(interiorPos, airNeighbor)) {
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        if (isConnector.test(origin.offset(dx, dy, dz))) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
+        return ZoneBlockPredicates.hasNearbyMatchingBlock(interiorPos, airNeighbor, isConnector);
     }
 
     private static long columnKey(BlockPos pos) {
         return ((long) pos.getX() << 32) ^ (pos.getZ() & 0xFFFFFFFFL);
+    }
+
+    public enum CeilingStatus {
+        SEALED,
+        COVERED,
+        OPEN
     }
 
     private record CeilingMetrics(CeilingStatus status, int openings) {

@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -34,16 +35,18 @@ public class EnclosureDetector {
      *
      * <p>Skips air that is already part of an existing zone.</p>
      */
+    @SuppressWarnings("JavadocReference")
     @Nullable
     public static Set<BlockPos> detect(ServerLevel level, BlockPos placedBlock) {
         SpaceRegionRegistry registry = SpaceRegionRegistry.get(level);
+        RoomConnectivity.BlockLookup lookup = RoomConnectivity.forLevel(level);
         Set<BlockPos> testedSeeds = new HashSet<>();
 
         // Pass 1: 3D — fully enclosed (ceiling present)
         for (Direction dir : Direction.values()) {
             BlockPos neighbor = placedBlock.relative(dir);
             if (!testedSeeds.add(neighbor)) continue;
-            if (!level.getBlockState(neighbor).isAir()) continue;
+            if (!RoomConnectivity.isRoomAir(lookup, neighbor)) continue;
             if (registry.getRegionIdAt(neighbor) != null) continue;
 
             Set<BlockPos> enclosed = tryBoundedFloodFill(level, registry, neighbor);
@@ -55,7 +58,7 @@ public class EnclosureDetector {
         for (Direction dir : Direction.values()) {
             BlockPos neighbor = placedBlock.relative(dir);
             if (!testedH.add(neighbor)) continue;
-            if (!level.getBlockState(neighbor).isAir()) continue;
+            if (!RoomConnectivity.isRoomAir(lookup, neighbor)) continue;
             if (registry.getRegionIdAt(neighbor) != null) continue;
 
             Set<BlockPos> enclosed = tryHorizontalFloodFill(level, registry, neighbor);
@@ -67,20 +70,31 @@ public class EnclosureDetector {
 
     @Nullable
     static Set<BlockPos> tryHorizontalFloodFill(ServerLevel level, SpaceRegionRegistry registry, BlockPos seed) {
+        RoomConnectivity.BlockLookup lookup = RoomConnectivity.forLevel(level);
         int y = seed.getY();
-        return bfs(seed, Direction.Plane.HORIZONTAL,
+        RoomComponent component = RoomComponentScanner.scanBounded(seed,
+                RoomConnectivity::horizontalNeighbors,
                 next -> next.getY() == y
-                        && level.getBlockState(next).isAir()
+                        && RoomConnectivity.isRoomAir(lookup, next)
                         && registry.getRegionIdAt(next) == null,
+                next -> next.getY() == y,
                 MAX_INTERIOR_BLOCKS);
+        return component != null ? component.interiorBlocks() : null;
     }
 
     @Nullable
     static Set<BlockPos> tryBoundedFloodFill(ServerLevel level, SpaceRegionRegistry registry, BlockPos seed) {
-        return bfs(seed, Arrays.asList(Direction.values()),
-                next -> level.getBlockState(next).isAir()
+        RoomConnectivity.BlockLookup lookup = RoomConnectivity.forLevel(level);
+        RoomComponent component = RoomComponentScanner.scanBoundedEdges(seed,
+                pos -> RoomConnectivity.allEdges(lookup, pos),
+                next -> RoomConnectivity.isRoomAir(lookup, next)
                         && registry.getRegionIdAt(next) == null,
+                lookup::canRead,
                 MAX_INTERIOR_BLOCKS);
+        if (component == null) return null;
+
+        RoomComponent room = RoomPartitioner.partitionContaining(component, seed);
+        return room.interiorBlocks();
     }
 
     /**
@@ -99,6 +113,20 @@ public class EnclosureDetector {
                              Iterable<Direction> directions,
                              Predicate<BlockPos> isPassable,
                              int limit) {
+        return bfs(seed, pos -> {
+            List<BlockPos> neighbors = new ArrayList<>();
+            for (Direction dir : directions) {
+                neighbors.add(pos.relative(dir));
+            }
+            return neighbors;
+        }, isPassable, limit);
+    }
+
+    @Nullable
+    static Set<BlockPos> bfs(BlockPos seed,
+                             Function<BlockPos, Iterable<BlockPos>> neighbors,
+                             Predicate<BlockPos> isPassable,
+                             int limit) {
         Set<BlockPos> visited = new HashSet<>();
         Queue<BlockPos> queue = new ArrayDeque<>();
         visited.add(seed);
@@ -107,8 +135,7 @@ public class EnclosureDetector {
         while (!queue.isEmpty()) {
             if (visited.size() > limit) return null;
             BlockPos pos = queue.poll();
-            for (Direction dir : directions) {
-                BlockPos next = pos.relative(dir);
+            for (BlockPos next : neighbors.apply(pos)) {
                 if (visited.contains(next)) continue;
                 if (!isPassable.test(next)) continue;
                 if (visited.size() >= limit) return null;

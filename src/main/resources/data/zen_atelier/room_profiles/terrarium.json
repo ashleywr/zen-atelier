@@ -1,0 +1,28 @@
+{
+  "id": "zen_atelier:terrarium",
+  "display_name": "room_type.zen_atelier.terrarium",
+  "zone_definition": "zen_atelier:terrarium",
+  "anchors": [
+    "#minecraft:flowers",
+    "#minecraft:saplings"
+  ],
+  "required_features": [
+    {
+      "signal": "frog_plant",
+      "minimum": 2
+    },
+    {
+      "signal": "water_coverage",
+      "minimum": 3
+    }
+  ],
+  "quality_signals": [
+    "frog_plant",
+    "water_coverage",
+    "plant_diversity",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "industrial_blocks"
+  ]
+}

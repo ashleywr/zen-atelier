@@ -16,6 +16,7 @@ import java.util.UUID;
 
 // Utility class for sign-based zone naming. Players can write a custom name on a sign
 // placed next to a zone, then interact with the sign to apply the name to the zone.
+@SuppressWarnings("SameReturnValue")
 public class ZoneSignHandler {
 
     @SubscribeEvent

@@ -34,7 +34,7 @@ public final class RoomNameGenerator {
         String material = detectMaterial(room.getSurfaceCounts(), seededRandom);
         String descriptor = detectDescriptor(room, seededRandom);
 
-        if (descriptor != null && material != null && descriptor.equals(material)) {
+        if (descriptor != null && descriptor.equals(material)) {
             descriptor = null;
         }
 
@@ -45,11 +45,7 @@ public final class RoomNameGenerator {
             return descriptor + " " + material;
         } else if (includeMaterial) {
             return material;
-        } else if (descriptor != null) {
-            return descriptor;
-        } else {
-            return null;
-        }
+        } else return descriptor;
     }
 
     private static String detectMaterial(Map<String, Integer> surfaceCounts, Random random) {

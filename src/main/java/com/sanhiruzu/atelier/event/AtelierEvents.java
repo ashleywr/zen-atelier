@@ -78,14 +78,14 @@ public class AtelierEvents {
 
             int sleepQuality = Math.round(room.getQuality() * 100);
             if (sleepQuality < 35) {
-                ((ServerPlayer) player).addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 600, 0));
+                player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 600, 0));
                 player.displayClientMessage(Component.translatable("message.zen_atelier.poor_sleep"), true);
             } else if (sleepQuality < 55) {
                 player.displayClientMessage(Component.translatable("message.zen_atelier.restless_sleep"), true);
             } else {
                 // Apply boost: Regeneration II for 30 seconds and Saturation for 1 second
-                ((ServerPlayer) player).addEffect(new MobEffectInstance(MobEffects.REGENERATION, 600, 1));
-                ((ServerPlayer) player).addEffect(new MobEffectInstance(MobEffects.SATURATION, 20, 0));
+                player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 600, 1));
+                player.addEffect(new MobEffectInstance(MobEffects.SATURATION, 20, 0));
                 player.displayClientMessage(Component.translatable("message.zen_atelier.well_rested"), true);
             }
             player.displayClientMessage(Component.translatable("message.zen_atelier.journal_tip"), true);

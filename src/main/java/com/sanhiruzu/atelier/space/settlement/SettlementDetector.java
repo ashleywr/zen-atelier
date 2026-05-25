@@ -139,18 +139,7 @@ public class SettlementDetector {
     /**
      * Represents a detected settlement cluster.
      */
-    public static class Settlement {
-        public final Set<BlockPos> doorPositions;
-        public final int minX, maxX, minZ, maxZ, centerY;
-
-        public Settlement(Set<BlockPos> doorPositions, int minX, int maxX, int minZ, int maxZ, int centerY) {
-            this.doorPositions = doorPositions;
-            this.minX = minX;
-            this.maxX = maxX;
-            this.minZ = minZ;
-            this.maxZ = maxZ;
-            this.centerY = centerY;
-        }
+    public record Settlement(Set<BlockPos> doorPositions, int minX, int maxX, int minZ, int maxZ, int centerY) {
 
         public boolean contains(BlockPos pos) {
             return pos.getX() >= minX && pos.getX() <= maxX &&

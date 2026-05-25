@@ -48,7 +48,7 @@ public class ProfileZoneType extends ZoneType {
                         ResourceLocation.parse(spec.substring(1)));
                 Block block = BuiltInRegistries.BLOCK.get(
                         ResourceLocation.parse(entry.getKey()));
-                if (block != null && block.defaultBlockState().is(tag)) {
+                if (block.defaultBlockState().is(tag)) {
                     count += entry.getValue();
                 }
             } else {

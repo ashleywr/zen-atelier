@@ -30,10 +30,34 @@ public final class ClientPayloadHandlers {
             java.lang.reflect.Method setFlag = apiInterface.getMethod("setConfigFlag", String.class, boolean.class);
 
             for (String profileId : payload.discoveredRooms().keySet()) {
-                String roomType = profileId.contains(":") ? profileId.substring(profileId.indexOf(":") + 1) : profileId;
-                setFlag.invoke(api, ZenAtelier.MODID + ".discovered." + roomType, true);
+                setDiscoveryFlags(api, setFlag, profileId);
             }
         } catch (ReflectiveOperationException ignored) {
         }
+    }
+
+    private static void setDiscoveryFlags(Object api, java.lang.reflect.Method setFlag, String profileId)
+            throws ReflectiveOperationException {
+        int separator = profileId.indexOf(':');
+        String namespace = separator >= 0 ? profileId.substring(0, separator) : ZenAtelier.MODID;
+        String roomType = separator >= 0 ? profileId.substring(separator + 1) : profileId;
+
+        setFlag.invoke(api, ZenAtelier.MODID + ".discovered." + roomType, true);
+        setFlag.invoke(api, ZenAtelier.MODID + ".discovered.namespace." + namespace, true);
+
+        if (isAmphibianHabitatProfile(namespace, roomType)) {
+            setFlag.invoke(api, ZenAtelier.MODID + ".discovered.amphibian_habitat", true);
+        }
+    }
+
+    private static boolean isAmphibianHabitatProfile(String namespace, String roomType) {
+        String key = (namespace + ":" + roomType).toLowerCase(java.util.Locale.ROOT);
+        return key.contains("amphibia")
+                || key.contains("amphib")
+                || key.contains("frog")
+                || key.contains("toad")
+                || key.contains("terrarium")
+                || key.contains("vivarium")
+                || key.contains("habitat");
     }
 }

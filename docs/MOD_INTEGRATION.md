@@ -159,14 +159,17 @@ type. The effect scales to a higher level at 75% quality.
 
 | Work room profile | Effect |
 |---|---|
-| `minecolonies:smithy` | Haste (II at 75%+) |
-| `minecolonies:builder_hut` | Haste |
-| `minecolonies:workshop` | Haste |
+| `zen_atelier:smithy` | Haste (II at 75%+) |
+| `zen_atelier:workshop` | Haste |
+| `zen_atelier:kitchen` | Saturation |
 | `minecolonies:guard_post` | Strength |
-| `minecolonies:restaurant` | Saturation |
 | `minecolonies:farm` | Saturation |
 | `minecolonies:library` | Luck |
 | `minecolonies:arcane_study` | Luck (II at 75%+) |
+
+The `zen_atelier:` profiles above apply to both players (via presence effects) and colonists.
+Colony hut blocks for blacksmiths, cooks, and builders already satisfy those profiles'
+required features, so no separate MineColonies room profile is needed for those buildings.
 
 **Home building effects** fire when the room at the colonist's home building
 position reaches at least 50% quality.

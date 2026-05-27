@@ -1,8 +1,0 @@
-{
-  "id": "minecolonies:kitchen_zone",
-  "display_name": "zone.minecolonies.kitchen",
-  "sealed": true,
-  "base_temperature": 25.0,
-  "base_humidity": 55.0,
-  "requires_ceiling": true
-}

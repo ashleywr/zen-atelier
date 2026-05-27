@@ -40,11 +40,12 @@ final class ColonistRoomBonuses {
     private static final Map<String, EffectConfig> HOME_EFFECTS = new HashMap<>();
 
     static {
-        WORK_EFFECTS.put("minecolonies:smithy",      new EffectConfig(MobEffects.DIG_SPEED,       400, 2));
-        WORK_EFFECTS.put("minecolonies:builder_hut", new EffectConfig(MobEffects.DIG_SPEED,       400, 1));
-        WORK_EFFECTS.put("minecolonies:workshop",    new EffectConfig(MobEffects.DIG_SPEED,       400, 1));
+        // Merged into base Atelier profiles — hut blocks already satisfy the required signals.
+        WORK_EFFECTS.put("zen_atelier:smithy",       new EffectConfig(MobEffects.DIG_SPEED,       400, 2));
+        WORK_EFFECTS.put("zen_atelier:workshop",     new EffectConfig(MobEffects.DIG_SPEED,       400, 1));
+        WORK_EFFECTS.put("zen_atelier:kitchen",      new EffectConfig(MobEffects.SATURATION,      400, 1));
+        // MineColonies-only profiles with no base equivalent.
         WORK_EFFECTS.put("minecolonies:guard_post",  new EffectConfig(MobEffects.DAMAGE_BOOST,    400, 1));
-        WORK_EFFECTS.put("minecolonies:restaurant",  new EffectConfig(MobEffects.SATURATION,      400, 1));
         WORK_EFFECTS.put("minecolonies:farm",        new EffectConfig(MobEffects.SATURATION,      400, 1));
         WORK_EFFECTS.put("minecolonies:library",     new EffectConfig(MobEffects.LUCK,            400, 1));
         WORK_EFFECTS.put("minecolonies:arcane_study",new EffectConfig(MobEffects.LUCK,            400, 2));

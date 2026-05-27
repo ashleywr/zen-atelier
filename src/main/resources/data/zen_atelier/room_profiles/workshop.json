@@ -3,7 +3,10 @@
   "display_name": "room_type.zen_atelier.workshop",
   "zone_definition": "zen_zones:utility_zone",
   "anchors": [
-    "minecraft:crafting_table"
+    "minecraft:crafting_table",
+    "minecolonies:blockhutbuilder",
+    "minecolonies:blockhutlumberjack",
+    "minecolonies:blockhutsawmill"
   ],
   "required_features": [
     {

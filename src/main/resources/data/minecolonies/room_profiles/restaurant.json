@@ -1,0 +1,30 @@
+{
+  "id": "minecolonies:restaurant",
+  "display_name": "room_type.minecolonies.restaurant",
+  "zone_definition": "minecolonies:kitchen_zone",
+  "icon": "minecolonies:blockhutcook",
+  "required_mods": [
+    "minecolonies"
+  ],
+  "anchors": [
+    "minecolonies:blockhutcook",
+    "minecolonies:blockhutkitchen",
+    "minecolonies:blockhutbaker"
+  ],
+  "required_features": [
+    {
+      "signal": "minecolonies_kitchen",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "cooking_block",
+    "storage",
+    "water_access",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "sleep_blocks",
+    "enchanting_blocks"
+  ]
+}

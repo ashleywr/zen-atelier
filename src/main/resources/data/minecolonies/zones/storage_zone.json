@@ -1,0 +1,8 @@
+{
+  "id": "minecolonies:storage_zone",
+  "display_name": "zone.minecolonies.storage",
+  "sealed": true,
+  "base_temperature": 18.0,
+  "base_humidity": 45.0,
+  "requires_ceiling": true
+}

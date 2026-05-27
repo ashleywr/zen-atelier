@@ -5,6 +5,7 @@ import com.sanhiruzu.atelier.space.SpaceQuery;
 import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
+import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.zone.bonus.RoomPresenceEffects;
 import com.sanhiruzu.atelier.zone.discovery.PlayerRoomDiscovery;
 import com.sanhiruzu.atelier.zone.discovery.RoomDiscoveryHandler;
@@ -18,6 +19,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerWakeUpEvent;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -29,6 +31,10 @@ public class AtelierEvents {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             PacketDistributor.sendToPlayer(
                     serverPlayer,
+                    RoomCatalogSyncPayload.current()
+            );
+            PacketDistributor.sendToPlayer(
+                    serverPlayer,
                     new DiscoveryDataSyncPayload(PlayerRoomDiscovery.getAllBestScores(serverPlayer))
             );
             PacketDistributor.sendToPlayer(
@@ -36,6 +42,12 @@ public class AtelierEvents {
                     new ToggleDebugPayload(serverPlayer.getPersistentData().getBoolean("spaceregion_debug"))
             );
         }
+    }
+
+    @SubscribeEvent
+    public static void onDatapackSync(OnDatapackSyncEvent event) {
+        RoomCatalogSyncPayload payload = RoomCatalogSyncPayload.current();
+        event.getRelevantPlayers().forEach(player -> PacketDistributor.sendToPlayer(player, payload));
     }
 
     @SubscribeEvent

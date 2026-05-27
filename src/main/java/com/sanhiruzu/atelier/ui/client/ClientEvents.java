@@ -28,6 +28,8 @@ public final class ClientEvents {
         if (!event.getLevel().isClientSide()) return;
         ClientZoneCache.clear();
         ClientZoneData.clear();
+        ClientDiscoveryData.clear();
+        ClientRoomCatalogData.clear();
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {

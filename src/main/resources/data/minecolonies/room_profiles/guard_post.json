@@ -1,0 +1,30 @@
+{
+  "id": "minecolonies:guard_post",
+  "display_name": "room_type.minecolonies.guard_post",
+  "zone_definition": "minecolonies:guard_zone",
+  "icon": "minecolonies:blockhutguardtower",
+  "required_mods": [
+    "minecolonies"
+  ],
+  "anchors": [
+    "minecolonies:blockhutguardtower",
+    "minecolonies:blockhutbarracks",
+    "minecolonies:blockhutcombatacademy"
+  ],
+  "required_features": [
+    {
+      "signal": "minecolonies_guard",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "urban_block",
+    "stone_or_metal_materials",
+    "lighting",
+    "clear_floor_space"
+  ],
+  "penalty_signals": [
+    "plant_overgrowth",
+    "low_lighting"
+  ]
+}

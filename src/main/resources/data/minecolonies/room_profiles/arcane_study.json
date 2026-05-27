@@ -1,0 +1,30 @@
+{
+  "id": "minecolonies:arcane_study",
+  "display_name": "room_type.minecolonies.arcane_study",
+  "zone_definition": "minecolonies:arcane_zone",
+  "icon": "minecolonies:blockhutenchanter",
+  "required_mods": [
+    "minecolonies"
+  ],
+  "anchors": [
+    "minecolonies:blockhutenchanter",
+    "minecolonies:blockhutmysticalsite",
+    "minecolonies:blockhutalchemist"
+  ],
+  "required_features": [
+    {
+      "signal": "minecolonies_arcane",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "enchanting_table",
+    "brewing_stand",
+    "bookshelf",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "factory_block",
+    "industrial_blocks"
+  ]
+}

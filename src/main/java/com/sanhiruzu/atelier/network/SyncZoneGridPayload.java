@@ -24,7 +24,9 @@ public record SyncZoneGridPayload(
         int minZ,
         int maxX,
         int maxY,
-        int maxZ
+        int maxZ,
+        float externalQualityModifier,
+        @Nullable String externalStatusLabel
 ) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<SyncZoneGridPayload> TYPE =
@@ -64,6 +66,13 @@ public record SyncZoneGridPayload(
                 buf.writeInt(p.maxX);
                 buf.writeInt(p.maxY);
                 buf.writeInt(p.maxZ);
+                buf.writeFloat(p.externalQualityModifier);
+                if (p.externalStatusLabel != null) {
+                    buf.writeBoolean(true);
+                    buf.writeUtf(p.externalStatusLabel);
+                } else {
+                    buf.writeBoolean(false);
+                }
             },
             buf -> {
                 UUID zoneId = new UUID(buf.readLong(), buf.readLong());
@@ -82,10 +91,13 @@ public record SyncZoneGridPayload(
                 int maxX = buf.readInt();
                 int maxY = buf.readInt();
                 int maxZ = buf.readInt();
+                float externalQualityModifier = buf.readFloat();
+                String externalStatusLabel = buf.readBoolean() ? buf.readUtf() : null;
                 return new SyncZoneGridPayload(
                         zoneId, isOutdoor, volume, enclosureScore, quality, lightLevel,
                         zoneTypeId, degraded, epithetName, generatedName,
-                        minX, minY, minZ, maxX, maxY, maxZ);
+                        minX, minY, minZ, maxX, maxY, maxZ,
+                        externalQualityModifier, externalStatusLabel);
             }
     );
 

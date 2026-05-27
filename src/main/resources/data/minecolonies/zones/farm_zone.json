@@ -1,0 +1,8 @@
+{
+  "id": "minecolonies:farm_zone",
+  "display_name": "zone.minecolonies.farm",
+  "sealed": false,
+  "base_temperature": 22.0,
+  "base_humidity": 65.0,
+  "requires_ceiling": false
+}

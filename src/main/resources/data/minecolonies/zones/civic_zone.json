@@ -1,0 +1,8 @@
+{
+  "id": "minecolonies:civic_zone",
+  "display_name": "zone.minecolonies.civic",
+  "sealed": true,
+  "base_temperature": 20.0,
+  "base_humidity": 50.0,
+  "requires_ceiling": true
+}

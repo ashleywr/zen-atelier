@@ -501,6 +501,8 @@ public class ZoneRegistry {
         boolean degraded = zoneData instanceof RoomData room && room.isDegraded();
         String epithetName = zoneData instanceof RoomData room ? room.getEpithetName() : null;
         String generatedName = zoneData instanceof RoomData room2 ? room2.getGeneratedName() : null;
+        float extMod = zoneData instanceof RoomData room3 ? room3.getExternalQualityModifier() : 1.0f;
+        String extLabel = zoneData instanceof RoomData room4 ? room4.getExternalStatusLabel() : null;
         return new SyncZoneGridPayload(
                 zoneData.getRegionId(),
                 zoneData.isOutdoor(),
@@ -517,7 +519,9 @@ public class ZoneRegistry {
                 zoneData.getMinZ(),
                 zoneData.getMaxX(),
                 zoneData.getMaxY(),
-                zoneData.getMaxZ()
+                zoneData.getMaxZ(),
+                extMod,
+                extLabel
         );
     }
 

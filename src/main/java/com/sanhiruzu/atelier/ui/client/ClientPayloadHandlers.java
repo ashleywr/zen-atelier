@@ -2,6 +2,7 @@ package com.sanhiruzu.atelier.ui.client;
 
 import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
+import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import net.minecraft.client.Minecraft;
 
 public final class ClientPayloadHandlers {
@@ -20,6 +21,10 @@ public final class ClientPayloadHandlers {
     public static void handleDiscoveryDataSync(DiscoveryDataSyncPayload payload) {
         ClientDiscoveryData.update(payload.discoveredRooms());
         trySetPatchouliFlags(payload);
+    }
+
+    public static void handleRoomCatalogSync(RoomCatalogSyncPayload payload) {
+        ClientRoomCatalogData.update(payload.entries());
     }
 
     private static void trySetPatchouliFlags(DiscoveryDataSyncPayload payload) {

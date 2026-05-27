@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.network;
 import com.sanhiruzu.atelier.space.ChunkClassificationData;
 import com.sanhiruzu.atelier.space.ClassificationState;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
+import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -160,6 +162,32 @@ public class NetworkPayloadTest {
     }
 
     @Test
+    void testRoomCatalogSyncPayloadSerializeDeserialize() {
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        RoomCatalogSyncPayload original = new RoomCatalogSyncPayload(List.of(
+                new RoomCatalogSyncPayload.Entry(
+                        "zen_atelier:bedroom",
+                        "room_type.zen_atelier.bedroom",
+                        "minecraft:red_bed",
+                        List.of("Look for a bed.")
+                ),
+                new RoomCatalogSyncPayload.Entry(
+                        "example_mod:frog_habitat",
+                        "room_type.example_mod.frog_habitat",
+                        "minecraft:lily_pad",
+                        List.of("Look for frog-friendly plants.", "Look for nearby source water.")
+                )
+        ));
+
+        RoomCatalogSyncPayload.CODEC.encode(buffer, original);
+
+        buffer.readerIndex(0);
+        RoomCatalogSyncPayload decoded = RoomCatalogSyncPayload.CODEC.decode(buffer);
+
+        assertEquals(original.entries(), decoded.entries(), "Room catalog entries should round-trip exactly");
+    }
+
+    @Test
     void testRoomInspectPayloadSerializeDeserialize() {
         BlockPos pos = new BlockPos(-12, 73, 2048);
 
@@ -175,10 +203,13 @@ public class NetworkPayloadTest {
     @Test
     void testUiPayloadTypeResourceLocations() {
         ResourceLocation discoveryId = DiscoveryDataSyncPayload.TYPE.id();
+        ResourceLocation roomCatalogId = RoomCatalogSyncPayload.TYPE.id();
         ResourceLocation roomInspectId = RoomInspectPayload.TYPE.id();
 
         assertEquals("zen_atelier", discoveryId.getNamespace());
         assertEquals("discovery_sync", discoveryId.getPath());
+        assertEquals("zen_atelier", roomCatalogId.getNamespace());
+        assertEquals("room_catalog_sync", roomCatalogId.getPath());
         assertEquals("zen_atelier", roomInspectId.getNamespace());
         assertEquals("room_inspect", roomInspectId.getPath());
     }

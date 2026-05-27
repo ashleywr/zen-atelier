@@ -152,6 +152,11 @@ public final class ZoneHudAdapter {
             roomInfo = degradedPrefix + " · " + typePart;
         }
 
+        String extLabel = room.getExternalStatusLabel();
+        if (extLabel != null && !extLabel.isEmpty()) {
+            roomInfo = roomInfo.isEmpty() ? extLabel : extLabel + " · " + roomInfo;
+        }
+
         String light = lightLabel(room.getLightLevel());
         if (roomInfo.isEmpty()) return light;
         if (light.isEmpty()) return roomInfo;

@@ -1,0 +1,27 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.naming_rooms.name",
+  "icon": "zen_atelier:textures/gui/book_icons/naming.png",
+  "category": "zen_atelier:basics",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.naming_rooms.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.naming_rooms.page.2"
+    },
+    {
+      "type": "patchouli:relations",
+      "entries": [
+        "zen_atelier:basics/rooms_remember_purpose",
+        "zen_atelier:basics/signals_and_materials",
+        "zen_atelier:basics/anchors_and_names",
+        "zen_atelier:basics/nameplates_and_epithets"
+      ],
+      "title": "patchouli.zen_atelier.room_journal.relations.title",
+      "text": "patchouli.zen_atelier.room_journal.relations.text"
+    }
+  ]
+}

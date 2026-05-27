@@ -1,9 +1,11 @@
 package com.sanhiruzu.atelier.api;
 
 import com.sanhiruzu.atelier.space.SpaceQuery;
+import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,6 +59,23 @@ public class ZoneAPI {
         if (!(zone instanceof com.sanhiruzu.atelier.space.zone.RoomData room)) return false;
         var typeId = room.getZoneTypeId();
         return typeId != null && typeId.toString().toLowerCase().contains(typeNamePart.toLowerCase());
+    }
+
+    /**
+     * Set a quality modifier on a zone from an external mod.
+     * The modifier multiplies the zone's base quality score (1.0 = no effect, 0.5 = 50% penalty).
+     * An optional status label (e.g. "Overcrowded") appears on the Atelier HUD bottom line.
+     * Pass modifier=1.0 and label=null to clear a previously set modifier.
+     * Only triggers a client resync when the modifier value changes meaningfully.
+     */
+    public static void setZoneQualityModifier(Level level, UUID zoneId,
+            float modifier, @Nullable String statusLabel) {
+        if (level.isClientSide() || !(level instanceof ServerLevel serverLevel)) return;
+        ZoneData zone = getZone(level, zoneId);
+        if (!(zone instanceof RoomData room)) return;
+        if (Math.abs(room.getExternalQualityModifier() - modifier) < 0.01f) return;
+        room.setExternalModifier(modifier, statusLabel);
+        ZoneRegistry.get(serverLevel).sendRoomToPlayers(room, serverLevel);
     }
 
     /**

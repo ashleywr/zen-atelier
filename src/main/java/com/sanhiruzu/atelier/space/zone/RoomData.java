@@ -22,6 +22,9 @@ public class RoomData extends ZoneData {
     // open enough to count as outdoors but still carries the type marker (e.g. an open-air
     // bedroom still has a bed, so the bed should give degraded sleep benefits).
     private boolean degraded;
+    // Quality multiplier set by external mods (1.0 = no effect). Synced to client.
+    private float externalQualityModifier = 1.0f;
+    @Nullable private String externalStatusLabel = null;
     @Nullable
     private String epithetName;
     @Nullable
@@ -71,7 +74,17 @@ public class RoomData extends ZoneData {
     }
 
     public float getQuality() {
-        return quality;
+        return quality * externalQualityModifier;
+    }
+
+    public float getExternalQualityModifier() { return externalQualityModifier; }
+
+    @Nullable
+    public String getExternalStatusLabel() { return externalStatusLabel; }
+
+    public void setExternalModifier(float modifier, @Nullable String label) {
+        this.externalQualityModifier = modifier;
+        this.externalStatusLabel = label;
     }
 
     public int getLightLevel() {

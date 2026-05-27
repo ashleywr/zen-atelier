@@ -1,0 +1,28 @@
+{
+  "id": "minecolonies:residence",
+  "display_name": "room_type.minecolonies.residence",
+  "zone_definition": "minecolonies:residence_zone",
+  "icon": "minecolonies:blockhutcitizen",
+  "required_mods": [
+    "minecolonies"
+  ],
+  "anchors": [
+    "minecolonies:blockhutcitizen",
+    "minecolonies:blockhuttavern"
+  ],
+  "required_features": [
+    {
+      "signal": "minecolonies_residence",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "storage",
+    "lighting",
+    "clear_floor_space"
+  ],
+  "penalty_signals": [
+    "cooking_block",
+    "industrial_blocks"
+  ]
+}

@@ -31,6 +31,7 @@ public class ClientZoneCache {
             if (payload.generatedName() != null) {
                 room.setGeneratedName(payload.generatedName());
             }
+            room.setExternalModifier(payload.externalQualityModifier(), payload.externalStatusLabel());
             data = room;
         }
         data.setSpatialExtent(payload.minX(), payload.minY(), payload.minZ(), payload.maxX(), payload.maxY(), payload.maxZ());

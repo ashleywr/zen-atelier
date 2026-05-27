@@ -1,0 +1,15 @@
+{
+  "parent": "zen_atelier:room/root",
+  "display": {
+    "icon": {"item": "minecraft:potted_azalea"},
+    "title": "Terrarium",
+    "description": "Discover a terrarium",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "discover": {"trigger": "minecraft:impossible"}
+  }
+}

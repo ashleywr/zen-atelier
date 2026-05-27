@@ -1,0 +1,30 @@
+{
+  "id": "minecolonies:farm",
+  "display_name": "room_type.minecolonies.farm",
+  "zone_definition": "minecolonies:farm_zone",
+  "icon": "minecolonies:blockhutfarmer",
+  "required_mods": [
+    "minecolonies"
+  ],
+  "anchors": [
+    "minecolonies:blockhutfarmer",
+    "minecolonies:blockhutfield",
+    "minecolonies:blockhutplantationfield"
+  ],
+  "required_features": [
+    {
+      "signal": "minecolonies_farm",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "plant",
+    "water_coverage",
+    "lighting",
+    "clear_floor_space"
+  ],
+  "penalty_signals": [
+    "factory_block",
+    "industrial_blocks"
+  ]
+}

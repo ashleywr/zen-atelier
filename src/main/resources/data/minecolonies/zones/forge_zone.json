@@ -1,0 +1,8 @@
+{
+  "id": "minecolonies:forge_zone",
+  "display_name": "zone.minecolonies.forge",
+  "sealed": true,
+  "base_temperature": 27.0,
+  "base_humidity": 35.0,
+  "requires_ceiling": true
+}

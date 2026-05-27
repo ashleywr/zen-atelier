@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.sanhiruzu.atelier.command.CommandEventHandler;
 import com.sanhiruzu.atelier.data.DataReloadEventHandler;
 import com.sanhiruzu.atelier.event.AtelierEvents;
+import com.sanhiruzu.atelier.integration.minecolonies.MineColoniesIntegration;
 import com.sanhiruzu.atelier.network.NetworkHandler;
 import com.sanhiruzu.atelier.space.ChunkClassificationAttachment;
 import com.sanhiruzu.atelier.space.ClassificationEventHandler;
@@ -63,6 +64,7 @@ public class ZenAtelier {
 
     private void commonSetup(FMLCommonSetupEvent event) {
         LOGGER.info("HELLO FROM COMMON SETUP");
+        MineColoniesIntegration.initialize();
 
         if (Config.LOG_DIRT_BLOCK.getAsBoolean()) {
             LOGGER.info("DIRT BLOCK >> {}", BuiltInRegistries.BLOCK.getKey(Blocks.DIRT));

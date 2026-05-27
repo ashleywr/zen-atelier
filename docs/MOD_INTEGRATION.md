@@ -22,6 +22,10 @@ Example:
   "id": "example_mod:frog_habitat",
   "display_name": "room_type.example_mod.frog_habitat",
   "zone_definition": "example_mod:damp_habitat",
+  "icon": "minecraft:lily_pad",
+  "required_mods": [
+    "example_mod"
+  ],
   "anchors": [
     "#c:frog_plants",
     "#c:flowers"
@@ -55,6 +59,8 @@ Fields:
 | `id` | yes | Stable room profile id. Use your own namespace. |
 | `display_name` | yes | Translation key shown to players. |
 | `zone_definition` | yes | Zone definition id used for room atmosphere metadata. |
+| `icon` | no | Item id shown in the Room Discoveries index. Defaults to a matching anchor or signal icon. |
+| `required_mods` | no | Mod ids that must be loaded before this profile appears or matches. Useful for optional integrations bundled in another mod. |
 | `anchors` | no | Block ids or block tags that suggest this room type. Tags use `#namespace:path`. |
 | `required_features` | yes | Signal counts required for this room type to match. |
 | `quality_signals` | no | Player-facing/design metadata for quality concepts. |
@@ -128,11 +134,64 @@ Currently recognized signals:
 | `industrial_blocks` | Any `urban_block` or `factory_block` |
 | `water_coverage` | Source water touching the room interior |
 
+MineColonies is recognized as an optional built-in integration. When the
+`minecolonies` mod is loaded, Zen Atelier adds colony room profiles for town
+halls, residences, warehouses, builder huts, restaurants, libraries, smithies,
+farms, guard posts, and arcane studies. Its hut blocks also contribute to the
+closest vanilla-style signals where appropriate, such as storage, cooking,
+library, farming, smithing, workshop, and guard/worksite identity.
+
+Atelier also listens for MineColonies building completion events when
+MineColonies is present. Residence and bedroom quality inside the colony can
+recover a small, capped amount of representative building materials into the
+assigned builder hut after build, upgrade, or repair work orders. Recovery tiers
+start at 60% average comfort and reach a 20% representative-material return at
+90% comfort, capped so the bonus feels useful without replacing the builder
+request system.
+
+Atelier also applies passive mob effects to living colonist entities every 10
+seconds based on the Atelier room quality at their assigned buildings. Two
+categories of bonus are checked independently for each colonist.
+
+**Work building effects** fire when the room at the colonist's work building
+position reaches at least 40% quality and its profile id matches a known work
+type. The effect scales to a higher level at 75% quality.
+
+| Work room profile | Effect |
+|---|---|
+| `minecolonies:smithy` | Haste (II at 75%+) |
+| `minecolonies:builder_hut` | Haste |
+| `minecolonies:workshop` | Haste |
+| `minecolonies:guard_post` | Strength |
+| `minecolonies:restaurant` | Saturation |
+| `minecolonies:farm` | Saturation |
+| `minecolonies:library` | Luck |
+| `minecolonies:arcane_study` | Luck (II at 75%+) |
+
+**Home building effects** fire when the room at the colonist's home building
+position reaches at least 50% quality.
+
+| Home room profile | Effect |
+|---|---|
+| `minecolonies:residence` | Regeneration |
+| `zen_atelier:bedroom` | Regeneration |
+| `minecolonies:restaurant` | Saturation |
+| `minecolonies:farm` | Saturation |
+
+Effects are silent and show no particles or HUD icon. Their duration is 20
+seconds so each 10-second pass refreshes them with a comfortable margin. A
+colonist can receive one work effect and one home effect at the same time.
+
 ## Discovery And Patchouli Flags
 
 When a player discovers a room, Atelier syncs discovery state to the client and
 sets Patchouli config flags. You can use these flags to gate optional book
 entries.
+
+Atelier also syncs the full runtime room catalog to clients. Profiles registered
+by data packs or other mods appear in the Room Journal's Room Discoveries index,
+including undiscovered entries with inferred hints. Set `icon` in your profile
+JSON if you want that index to show a specific item.
 
 For a discovered profile id like `example_mod:frog_habitat`, Atelier sets:
 

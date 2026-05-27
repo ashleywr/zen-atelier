@@ -1,0 +1,8 @@
+{
+  "id": "minecolonies:worksite_zone",
+  "display_name": "zone.minecolonies.worksite",
+  "sealed": true,
+  "base_temperature": 20.0,
+  "base_humidity": 45.0,
+  "requires_ceiling": true
+}

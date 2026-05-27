@@ -1,6 +1,6 @@
 {
   "name": "patchouli.zen_atelier.room_journal.category.basics.name",
   "description": "patchouli.zen_atelier.room_journal.category.basics.description",
-  "icon": "minecraft:writable_book",
+  "icon": "zen_atelier:textures/gui/book_icons/field_notes.png",
   "sortnum": 0
 }

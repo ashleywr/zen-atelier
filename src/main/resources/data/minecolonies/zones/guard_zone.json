@@ -1,0 +1,8 @@
+{
+  "id": "minecolonies:guard_zone",
+  "display_name": "zone.minecolonies.guard",
+  "sealed": true,
+  "base_temperature": 19.0,
+  "base_humidity": 45.0,
+  "requires_ceiling": true
+}

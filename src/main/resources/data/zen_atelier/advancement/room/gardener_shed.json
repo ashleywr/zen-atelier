@@ -1,0 +1,15 @@
+{
+  "parent": "zen_atelier:room/root",
+  "display": {
+    "icon": {"item": "minecraft:grass_block"},
+    "title": "Gardener's Shed",
+    "description": "Discover a gardener's shed",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "discover": {"trigger": "minecraft:impossible"}
+  }
+}

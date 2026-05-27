@@ -1,0 +1,29 @@
+{
+  "id": "minecolonies:warehouse",
+  "display_name": "room_type.minecolonies.warehouse",
+  "zone_definition": "minecolonies:storage_zone",
+  "icon": "minecolonies:blockhutwarehouse",
+  "required_mods": [
+    "minecolonies"
+  ],
+  "anchors": [
+    "minecolonies:blockhutwarehouse",
+    "minecolonies:blockminecoloniesrack",
+    "minecolonies:blockstash"
+  ],
+  "required_features": [
+    {
+      "signal": "minecolonies_warehouse",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "storage",
+    "walkable_access",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "blocked_containers",
+    "too_many_unrelated_primary_anchors"
+  ]
+}

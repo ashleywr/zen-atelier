@@ -83,16 +83,6 @@ public class ZoneRegistry {
         return false;
     }
 
-    @Nullable
-    private static RoomTypeQualityProfile getRoomTypeQualityProfile(ResourceLocation typeId) {
-        String path = typeId.getPath();
-        if (path.contains("bedroom")) return RoomTypeQualityProfile.BEDROOM;
-        if (path.contains("greenhouse") || path.contains("garden")) return RoomTypeQualityProfile.GREENHOUSE;
-        if (path.contains("enchanting")) return RoomTypeQualityProfile.ENCHANTING;
-        if (path.contains("smithy") || path.contains("smith")) return RoomTypeQualityProfile.SMITHY;
-        if (path.contains("terrarium")) return RoomTypeQualityProfile.TERRARIUM;
-        return null;
-    }
 
     static void computeSpatialExtent(ZoneData zone, UUID regionId, SpaceRegionRegistry registry,
                                      java.util.function.Predicate<BlockPos> isEntry) {
@@ -1056,11 +1046,12 @@ public class ZoneRegistry {
         }
 
         if (result instanceof RoomData roomData && typeId != null) {
-            RoomTypeQualityProfile profile = getRoomTypeQualityProfile(typeId);
-            if (profile != null) {
+            com.sanhiruzu.atelier.data.RoomProfile jsonProfile =
+                    com.sanhiruzu.atelier.data.RoomProfileRegistry.get(typeId);
+            if (jsonProfile != null) {
                 var refinedBreakdown = QualityEvaluator.evaluate(roomData.getVolume(), roomData.getEnclosureScore(),
-                        roomData.getFurnitureCounts(), roomData.getSignalCounts(), profile);
-                roomData.setQualityBreakdown(refinedBreakdown);
+                        roomData.getFurnitureCounts(), roomData.getSignalCounts(),
+                        roomData.getLightLevel(), jsonProfile);
                 roomData = new RoomData(roomData.getRegionId(), roomData.getVolume(), roomData.getEnclosureScore(),
                         roomData.getFurnitureCounts(), roomData.getSignalCounts(), roomData.getSurfaceCounts(),
                         refinedBreakdown.totalQuality, roomData.getLightLevel());

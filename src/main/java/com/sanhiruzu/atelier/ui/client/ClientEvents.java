@@ -115,6 +115,11 @@ public final class ClientEvents {
                     ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "zen_meter"),
                     new ZenMeterOverlay()
             );
+            event.registerAbove(
+                    ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "zen_meter"),
+                    ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "synthesis_cauldron"),
+                    new SynthesisCauldronOverlay()
+            );
         }
     }
 }

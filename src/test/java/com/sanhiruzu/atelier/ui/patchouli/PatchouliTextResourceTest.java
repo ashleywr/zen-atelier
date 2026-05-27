@@ -13,10 +13,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PatchouliTextResourceTest {
     private static final Path BOOK_ROOT = Path.of("src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us");
     private static final Path ENTRY_ROOT = BOOK_ROOT.resolve("entries");
+    private static final Path TEMPLATE_ROOT = BOOK_ROOT.resolve("templates");
     private static final Path BOOK_JSON = Path.of("src/main/resources/data/zen_atelier/patchouli_books/room_journal/book.json");
     private static final Path ASSET_ROOT = Path.of("src/main/resources/assets/zen_atelier");
     private static final Pattern TEXTURE_REFERENCE = Pattern.compile("\"zen_atelier:(textures/[^\"]+\\.png)\"");
     private static final Pattern ENTRY_REFERENCE = Pattern.compile("\"(zen_atelier:(?:basics|rooms)/[^\"]+)\"");
+    private static final Pattern CUSTOM_PAGE_TYPE = Pattern.compile("\"type\"\\s*:\\s*\"zen_atelier:([^\"]+)\"");
+    private static final Pattern CONFIG_FLAG = Pattern.compile("\"flag\"\\s*:\\s*\"([^\"]+)\"");
 
     @Test
     void roomJournalTranslationsUsePatchouliFormattingMacros() throws IOException {
@@ -68,6 +71,34 @@ class PatchouliTextResourceTest {
         }
     }
 
+    @Test
+    void customPatchouliPageTypesHaveMatchingTemplates() throws IOException {
+        try (var files = Files.walk(ENTRY_ROOT)) {
+            assertThat(files
+                    .filter(path -> path.toString().endsWith(".json"))
+                    .flatMap(path -> customPageTypes(path).stream())
+                    .filter(type -> !Files.exists(TEMPLATE_ROOT.resolve(type + ".json")))
+                    .toList())
+                    .isEmpty();
+        }
+    }
+
+    @Test
+    void roomEntryFlagsAreInitializedByClientCode() throws IOException {
+        java.util.Set<String> initializedFlags = PatchouliDiscoveryFlags.roomTypes().stream()
+                .map(PatchouliDiscoveryFlags::roomFlag)
+                .collect(java.util.stream.Collectors.toSet());
+
+        try (var files = Files.walk(ENTRY_ROOT)) {
+            assertThat(files
+                    .filter(path -> path.toString().endsWith(".json"))
+                    .flatMap(path -> configFlags(path).stream())
+                    .filter(flag -> !initializedFlags.contains(flag))
+                    .toList())
+                    .isEmpty();
+        }
+    }
+
     private static java.util.List<String> textureReferences(Path path) {
         try {
             String json = Files.readString(path);
@@ -86,6 +117,34 @@ class PatchouliTextResourceTest {
         try {
             String json = Files.readString(path);
             Matcher matcher = ENTRY_REFERENCE.matcher(json);
+            java.util.List<String> references = new java.util.ArrayList<>();
+            while (matcher.find()) {
+                references.add(matcher.group(1));
+            }
+            return references;
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + path, e);
+        }
+    }
+
+    private static java.util.List<String> customPageTypes(Path path) {
+        try {
+            String json = Files.readString(path);
+            Matcher matcher = CUSTOM_PAGE_TYPE.matcher(json);
+            java.util.List<String> references = new java.util.ArrayList<>();
+            while (matcher.find()) {
+                references.add(matcher.group(1));
+            }
+            return references;
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + path, e);
+        }
+    }
+
+    private static java.util.List<String> configFlags(Path path) {
+        try {
+            String json = Files.readString(path);
+            Matcher matcher = CONFIG_FLAG.matcher(json);
             java.util.List<String> references = new java.util.ArrayList<>();
             while (matcher.find()) {
                 references.add(matcher.group(1));

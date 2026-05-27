@@ -4,6 +4,7 @@ import com.sanhiruzu.atelier.network.ToggleDebugPayload;
 import com.sanhiruzu.atelier.space.SpaceQuery;
 import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
+import com.sanhiruzu.atelier.synthesis.SynthesisCauldronInteractions;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.zone.bonus.RoomPresenceEffects;
@@ -21,6 +22,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerWakeUpEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = "zen_atelier")
@@ -48,6 +50,11 @@ public class AtelierEvents {
     public static void onDatapackSync(OnDatapackSyncEvent event) {
         RoomCatalogSyncPayload payload = RoomCatalogSyncPayload.current();
         event.getRelevantPlayers().forEach(player -> PacketDistributor.sendToPlayer(player, payload));
+    }
+
+    @SubscribeEvent
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        SynthesisCauldronInteractions.onRightClickBlock(event);
     }
 
     @SubscribeEvent

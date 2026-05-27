@@ -13,7 +13,7 @@
       "text": "patchouli.zen_atelier.room_journal.entry.room_discoveries.page.2"
     },
     {
-      "type": "zen_atelier:room_discovery_page"
+      "type": "zen_atelier:room_discoveries"
     },
     {
       "type": "patchouli:relations",

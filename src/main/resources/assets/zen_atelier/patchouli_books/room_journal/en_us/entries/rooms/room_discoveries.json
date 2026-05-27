@@ -13,6 +13,9 @@
       "text": "patchouli.zen_atelier.room_journal.entry.room_discoveries.page.2"
     },
     {
+      "type": "zen_atelier:room_discovery_page"
+    },
+    {
       "type": "patchouli:relations",
       "entries": [
         "zen_atelier:basics/rooms_remember_purpose",

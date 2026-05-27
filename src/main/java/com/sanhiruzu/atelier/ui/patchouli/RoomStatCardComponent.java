@@ -38,6 +38,9 @@ public class RoomStatCardComponent implements ICustomComponent {
             "tannery", "terrarium", "workshop"
     );
 
+    /** Optional: set in page JSON as {@code "room": "namespace:profile_id"} to pin the card to a specific room. */
+    public String room = "";
+
     private String roomProfileId = "";
     private int x;
     private int y;
@@ -46,6 +49,9 @@ public class RoomStatCardComponent implements ICustomComponent {
     public void build(int componentX, int componentY, int pageNum) {
         this.x = componentX;
         this.y = componentY;
+        if (!room.isEmpty()) {
+            this.roomProfileId = room;
+        }
     }
 
     public void setRoomProfile(String profileId) {

@@ -165,6 +165,13 @@ public class Signals {
         PREDICATES.put("industrial_blocks", s -> isFactoryBlock(s) || isUrbanBlock(s));
         PREDICATES.put("water_coverage", s ->
                 s.getFluidState().is(FluidTags.WATER) && s.getFluidState().isSource());
+        PREDICATES.put("carpet", s -> s.is(BlockTags.WOOL_CARPETS));
+        PREDICATES.put("wool", s -> s.is(BlockTags.WOOL));
+        PREDICATES.put("lectern", s -> s.is(Blocks.LECTERN));
+        PREDICATES.put("flower_pots", s -> s.getBlock() instanceof net.minecraft.world.level.block.FlowerPotBlock);
+        PREDICATES.put("wood_materials", s ->
+                s.is(BlockTags.PLANKS) || s.is(BlockTags.LOGS)
+                        || s.is(BlockTags.WOODEN_SLABS) || s.is(BlockTags.WOODEN_STAIRS));
         PREDICATES.put("minecolonies_town_hall", s -> isAny(s, MINECOLONIES_TOWN_HALL_BLOCKS));
         PREDICATES.put("minecolonies_residence", Signals::isMineColoniesResidence);
         PREDICATES.put("minecolonies_warehouse", s -> isAny(s, MINECOLONIES_STORAGE_BLOCKS));

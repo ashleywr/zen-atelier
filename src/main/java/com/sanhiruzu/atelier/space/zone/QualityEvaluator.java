@@ -31,7 +31,10 @@ public class QualityEvaluator {
         SIGNAL_ALIASES.put("bookshelves",        "bookshelf");
         SIGNAL_ALIASES.put("plants",             "plant");
         SIGNAL_ALIASES.put("plant_overgrowth",   "plant");
+        SIGNAL_ALIASES.put("botany",             "plant");
         SIGNAL_ALIASES.put("glass_count",        "glass");
+        SIGNAL_ALIASES.put("sunlight",           "glass");
+        SIGNAL_ALIASES.put("ventilation",        "glass");
         SIGNAL_ALIASES.put("food_storage",       "storage");
         SIGNAL_ALIASES.put("tool_storage",       "storage");
         SIGNAL_ALIASES.put("storage_count",      "storage");
@@ -39,6 +42,8 @@ public class QualityEvaluator {
         SIGNAL_ALIASES.put("sleep_blocks",       "bed");
         SIGNAL_ALIASES.put("enchanting_blocks",  "enchanting_table");
         SIGNAL_ALIASES.put("stone_materials",    "stone_or_metal_materials");
+        SIGNAL_ALIASES.put("quiet_materials",    "stone_or_metal_materials");
+        SIGNAL_ALIASES.put("wet_blocks",         "water_coverage");
     }
 
     // --- Public API ---
@@ -139,9 +144,9 @@ public class QualityEvaluator {
         if (alias != null && signalCounts.getOrDefault(alias, 0) > 0) return true;
 
         return switch (signal) {
-            case "lighting"  -> lightLevel >= 10;
-            case "enclosure" -> enclosureScore >= 0.80f;
-            default          -> false;
+            case "lighting", "light" -> lightLevel >= 10;
+            case "enclosure"         -> enclosureScore >= 0.80f;
+            default                  -> false;
         };
     }
 

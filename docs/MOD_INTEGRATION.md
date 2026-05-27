@@ -133,6 +133,38 @@ Currently recognized signals:
 | `factory_block` | Machines, pipes, furnaces, hoppers, pistons, observers, metal/redstone blocks |
 | `industrial_blocks` | Any `urban_block` or `factory_block` |
 | `water_coverage` | Source water touching the room interior |
+| `carpet` | `#minecraft:wool_carpets` |
+| `wool` | `#minecraft:wool` |
+| `lectern` | `minecraft:lectern` |
+| `flower_pots` | Any filled or empty flower pot block |
+| `wood_materials` | Planks, logs, wooden slabs, wooden stairs |
+
+### Signal Aliases for quality_signals / penalty_signals
+
+`quality_signals` and `penalty_signals` accept shorthand names in addition to the
+canonical signal names above. These aliases are resolved automatically:
+
+| Alias | Resolves to |
+|---|---|
+| `heat_source`, `excess_heat`, `utility_heat` | `cooking_block` |
+| `water_access`, `wet_blocks` | `water_coverage` |
+| `bookshelf_count`, `bookshelves` | `bookshelf` |
+| `plants`, `plant_overgrowth`, `botany` | `plant` |
+| `glass_count`, `sunlight`, `ventilation` | `glass` |
+| `food_storage`, `tool_storage`, `storage_count` | `storage` |
+| `work_surfaces` | `crafting_table` |
+| `sleep_blocks` | `bed` |
+| `enchanting_blocks` | `enchanting_table` |
+| `stone_materials`, `quiet_materials` | `stone_or_metal_materials` |
+
+Penalty signals prefixed with `low_`, `no_`, or `missing_` are active when the
+base signal is **absent**. For example `low_lighting` is active when the room is
+dark, and `missing_bookshelves` is active when there are no bookshelves.
+
+The special signal names `lighting` (light level ≥ 10) and `enclosure`
+(enclosure score ≥ 0.80) are valid in quality_signals and penalty_signals even
+though they are not block-counted signals. `light` is accepted as an alias for
+`lighting`.
 
 MineColonies is recognized as an optional built-in integration. When the
 `minecolonies` mod is loaded, Zen Atelier adds colony room profiles for town

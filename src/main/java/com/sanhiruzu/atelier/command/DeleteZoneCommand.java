@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+@SuppressWarnings("SameReturnValue")
 public class DeleteZoneCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -28,13 +29,13 @@ public class DeleteZoneCommand {
         ZoneRegistry zoneRegistry = ZoneRegistry.get(level);
         SpaceRegionRegistry regionRegistry = SpaceRegionRegistry.get(level);
 
-        var zoneIds = zoneRegistry.getAllZoneIds();
+        var zoneIds = zoneRegistry.getAllRoomIds();
         int zoneCount = zoneIds.size();
 
         // Notify clients to remove each zone before clearing server state
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger("ZenAtelier/Zones");
         for (java.util.UUID id : zoneIds) {
-            ZoneData zone = zoneRegistry.getZone(id);
+            ZoneData zone = zoneRegistry.getRoom(id);
             if (zone != null) {
                 logger.info("[DELETEZONE] Zone {}: vol={}, enc={}, bounds=({},{}) to ({},{})",
                         id.toString().substring(0, 8),

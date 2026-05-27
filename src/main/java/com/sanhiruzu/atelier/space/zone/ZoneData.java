@@ -96,11 +96,11 @@ public abstract class ZoneData {
         return disabled && disabledAtGameTime >= 0 && (currentGameTime - disabledAtGameTime) >= gracePeriodTicks;
     }
 
-    public void setInitialized(boolean initialized) {
-        this.initialized = initialized;
-    }
-
     public boolean isInitialized() {
         return initialized;
+    }
+
+    public void setInitialized(boolean initialized) {
+        this.initialized = initialized;
     }
 }

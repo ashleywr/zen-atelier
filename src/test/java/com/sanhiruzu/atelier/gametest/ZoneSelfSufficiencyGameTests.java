@@ -507,7 +507,7 @@ public class ZoneSelfSufficiencyGameTests {
 
         // The merged zone should be bigger than either original zone alone.
         UUID survivingId = zoneIds2.iterator().next();
-        ZoneData merged = ZoneRegistry.get(level).getZone(survivingId);
+        ZoneData merged = ZoneRegistry.get(level).getRoom(survivingId);
         ZoneAssertion.expect()
                 .indoor()
                 .enclosureAbove(0.5f)

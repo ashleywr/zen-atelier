@@ -96,4 +96,39 @@ class ZoneHudAdapterTest {
         assertEquals(75, snapshot.score());
         assertEquals("Exposed", snapshot.activeProfiles());
     }
+
+    @Test
+    void roomDataShowsLightLevelInHudDetail() {
+        RoomData room = new RoomData(UUID.randomUUID(), 100, 1.0f,
+                Map.of(), Map.of(), Map.of(), 0.75f, 9);
+        room.setZoneTypeId(ResourceLocation.fromNamespaceAndPath("zen_atelier", "library"));
+
+        ZoneHudAdapter.ZoneHudSnapshot snapshot = ZoneHudAdapter.snapshotFromZoneData(room);
+
+        assertEquals(9, snapshot.lightLevel());
+        assertEquals("", snapshot.activeProfiles());
+    }
+
+    @Test
+    void roomDataShowsTypeAndLightWhenDisplayNameHasFlavor() {
+        RoomData room = new RoomData(UUID.randomUUID(), 100, 1.0f,
+                Map.of(), Map.of(), Map.of(), 0.75f, 6);
+        room.setZoneTypeId(ResourceLocation.fromNamespaceAndPath("zen_atelier", "library"));
+        room.setGeneratedName("Quiet Stacks");
+
+        ZoneHudAdapter.ZoneHudSnapshot snapshot = ZoneHudAdapter.snapshotFromZoneData(room);
+
+        assertEquals("Library · Gloomy", snapshot.activeProfiles());
+    }
+
+    @Test
+    void roomDataUsesLexicalLightWarningsOnlyForLowLight() {
+        RoomData pitchBlack = new RoomData(UUID.randomUUID(), 100, 1.0f,
+                Map.of(), Map.of(), Map.of(), 0.75f, 0);
+        RoomData dark = new RoomData(UUID.randomUUID(), 100, 1.0f,
+                Map.of(), Map.of(), Map.of(), 0.75f, 4);
+
+        assertEquals("Pitch Black", ZoneHudAdapter.snapshotFromZoneData(pitchBlack).activeProfiles());
+        assertEquals("Dark", ZoneHudAdapter.snapshotFromZoneData(dark).activeProfiles());
+    }
 }

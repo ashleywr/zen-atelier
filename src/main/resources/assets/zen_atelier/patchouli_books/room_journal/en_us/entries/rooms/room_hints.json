@@ -1,8 +1,8 @@
 {
   "name": "patchouli.zen_atelier.room_journal.entry.room_hints.name",
-  "icon": "minecraft:compass",
+  "icon": "zen_atelier:textures/gui/book_icons/hints.png",
   "category": "zen_atelier:rooms",
-  "sortnum": 0,
+  "sortnum": -1,
   "pages": [
     {
       "type": "patchouli:text",
@@ -43,6 +43,17 @@
     {
       "type": "patchouli:text",
       "text": "patchouli.zen_atelier.room_journal.entry.room_hints.page.10"
+    },
+    {
+      "type": "patchouli:relations",
+      "entries": [
+        "zen_atelier:basics/rooms_remember_purpose",
+        "zen_atelier:basics/signals_and_materials",
+        "zen_atelier:basics/anchors_and_names",
+        "zen_atelier:basics/naming_rooms"
+      ],
+      "title": "patchouli.zen_atelier.room_journal.relations.title",
+      "text": "patchouli.zen_atelier.room_journal.relations.text"
     }
   ]
 }

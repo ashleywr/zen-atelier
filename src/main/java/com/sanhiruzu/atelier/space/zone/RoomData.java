@@ -13,6 +13,7 @@ public class RoomData extends ZoneData {
     private final Map<String, Integer> signalCounts;
     private final Map<String, Integer> surfaceCounts;
     private final float quality;
+    private final int lightLevel;
     @Nullable
     private QualityEvaluator.QualityBreakdown qualityBreakdown;
     @Nullable
@@ -21,6 +22,9 @@ public class RoomData extends ZoneData {
     // open enough to count as outdoors but still carries the type marker (e.g. an open-air
     // bedroom still has a bed, so the bed should give degraded sleep benefits).
     private boolean degraded;
+    // Quality multiplier set by external mods (1.0 = no effect). Synced to client.
+    private float externalQualityModifier = 1.0f;
+    @Nullable private String externalStatusLabel = null;
     @Nullable
     private String epithetName;
     @Nullable
@@ -38,11 +42,16 @@ public class RoomData extends ZoneData {
     }
 
     public RoomData(UUID regionId, int volume, float enclosureScore, Map<String, Integer> furnitureCounts, Map<String, Integer> signalCounts, Map<String, Integer> surfaceCounts, float quality) {
+        this(regionId, volume, enclosureScore, furnitureCounts, signalCounts, surfaceCounts, quality, -1);
+    }
+
+    public RoomData(UUID regionId, int volume, float enclosureScore, Map<String, Integer> furnitureCounts, Map<String, Integer> signalCounts, Map<String, Integer> surfaceCounts, float quality, int lightLevel) {
         super(regionId, volume, enclosureScore);
         this.furnitureCounts = new HashMap<>(furnitureCounts);
         this.signalCounts = new HashMap<>(signalCounts);
         this.surfaceCounts = new HashMap<>(surfaceCounts);
         this.quality = quality;
+        this.lightLevel = lightLevel;
         this.zoneTypeId = null;
         this.degraded = false;
     }
@@ -65,7 +74,21 @@ public class RoomData extends ZoneData {
     }
 
     public float getQuality() {
-        return quality;
+        return quality * externalQualityModifier;
+    }
+
+    public float getExternalQualityModifier() { return externalQualityModifier; }
+
+    @Nullable
+    public String getExternalStatusLabel() { return externalStatusLabel; }
+
+    public void setExternalModifier(float modifier, @Nullable String label) {
+        this.externalQualityModifier = modifier;
+        this.externalStatusLabel = label;
+    }
+
+    public int getLightLevel() {
+        return lightLevel;
     }
 
     @Nullable

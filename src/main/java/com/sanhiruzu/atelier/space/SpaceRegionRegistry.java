@@ -104,9 +104,6 @@ public class SpaceRegionRegistry {
         return Collections.unmodifiableSet(regions.keySet());
     }
 
-    public record MergeEvent(UUID survivingId, UUID eliminatedId) {
-    }
-
     public void removeRegion(UUID regionId) {
         regions.remove(regionId);
         Set<BlockPos> blocks = regionToBlocks.remove(regionId);
@@ -169,40 +166,45 @@ public class SpaceRegionRegistry {
     }
 
     private List<MergeEvent> stitchXBoundary(ChunkClassificationData leftData, ChunkClassificationData rightData, ChunkAccess leftChunk, ChunkAccess rightChunk) {
-        List<MergeEvent> events = new ArrayList<>();
-        for (int z = 0; z < 16; z++) {
-            for (int y = -64; y < 320; y++) {
-                ClassificationState leftState = leftData.getBlockState(15, y, z);
-                ClassificationState rightState = rightData.getBlockState(0, y, z);
-
-                if (shouldMergeRegions(leftState, rightState)) {
-                    UUID leftRegionId = blockToRegion.get(new BlockPos(leftChunk.getPos().getMinBlockX() + 15, y, leftChunk.getPos().getMinBlockZ() + z));
-                    UUID rightRegionId = blockToRegion.get(new BlockPos(rightChunk.getPos().getMinBlockX(), y, rightChunk.getPos().getMinBlockZ() + z));
-
-                    if (leftRegionId != null && rightRegionId != null && !leftRegionId.equals(rightRegionId) && regions.containsKey(rightRegionId)) {
-                        mergeRegions(leftRegionId, rightRegionId);
-                        events.add(new MergeEvent(leftRegionId, rightRegionId));
-                    }
-                }
-            }
-        }
-        return events;
+        return stitchBoundary(leftData, rightData, leftChunk, rightChunk, true);
     }
 
     private List<MergeEvent> stitchZBoundary(ChunkClassificationData frontData, ChunkClassificationData backData, ChunkAccess frontChunk, ChunkAccess backChunk) {
+        return stitchBoundary(frontData, backData, frontChunk, backChunk, false);
+    }
+
+    private List<MergeEvent> stitchBoundary(ChunkClassificationData firstData,
+                                            ChunkClassificationData secondData,
+                                            ChunkAccess firstChunk,
+                                            ChunkAccess secondChunk,
+                                            boolean alongX) {
         List<MergeEvent> events = new ArrayList<>();
-        for (int x = 0; x < 16; x++) {
+        for (int axis = 0; axis < 16; axis++) {
             for (int y = -64; y < 320; y++) {
-                ClassificationState frontState = frontData.getBlockState(x, y, 15);
-                ClassificationState backState = backData.getBlockState(x, y, 0);
+                int firstLocalX = alongX ? 15 : axis;
+                int firstLocalZ = alongX ? axis : 15;
+                int secondLocalX = alongX ? 0 : axis;
+                int secondLocalZ = alongX ? axis : 0;
 
-                if (shouldMergeRegions(frontState, backState)) {
-                    UUID frontRegionId = blockToRegion.get(new BlockPos(frontChunk.getPos().getMinBlockX() + x, y, frontChunk.getPos().getMinBlockZ() + 15));
-                    UUID backRegionId = blockToRegion.get(new BlockPos(backChunk.getPos().getMinBlockX() + x, y, backChunk.getPos().getMinBlockZ()));
+                ClassificationState firstState = firstData.getBlockState(firstLocalX, y, firstLocalZ);
+                ClassificationState secondState = secondData.getBlockState(secondLocalX, y, secondLocalZ);
 
-                    if (frontRegionId != null && backRegionId != null && !frontRegionId.equals(backRegionId) && regions.containsKey(backRegionId)) {
-                        mergeRegions(frontRegionId, backRegionId);
-                        events.add(new MergeEvent(frontRegionId, backRegionId));
+                if (shouldMergeRegions(firstState, secondState)) {
+                    UUID firstRegionId = blockToRegion.get(new BlockPos(
+                            firstChunk.getPos().getMinBlockX() + firstLocalX,
+                            y,
+                            firstChunk.getPos().getMinBlockZ() + firstLocalZ));
+                    UUID secondRegionId = blockToRegion.get(new BlockPos(
+                            secondChunk.getPos().getMinBlockX() + secondLocalX,
+                            y,
+                            secondChunk.getPos().getMinBlockZ() + secondLocalZ));
+
+                    if (firstRegionId != null
+                            && secondRegionId != null
+                            && !firstRegionId.equals(secondRegionId)
+                            && regions.containsKey(secondRegionId)) {
+                        mergeRegions(firstRegionId, secondRegionId);
+                        events.add(new MergeEvent(firstRegionId, secondRegionId));
                     }
                 }
             }
@@ -218,5 +220,8 @@ public class SpaceRegionRegistry {
         // is OUTSIDE (handle damaged ceilings where one side is exposed to sky but still part of the zone).
         // This allows zones to stitch across boundaries even when one side's ceiling is broken.
         return (isAir1 && isAir2) || (isAir1 && state2 == ClassificationState.OUTSIDE) || (state1 == ClassificationState.OUTSIDE && isAir2);
+    }
+
+    public record MergeEvent(UUID survivingId, UUID eliminatedId) {
     }
 }

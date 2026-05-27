@@ -1,0 +1,15 @@
+{
+  "parent": "zen_atelier:room/root",
+  "display": {
+    "icon": {"item": "minecraft:stone_bricks"},
+    "title": "Masonry",
+    "description": "Discover a masonry",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "discover": {"trigger": "minecraft:impossible"}
+  }
+}

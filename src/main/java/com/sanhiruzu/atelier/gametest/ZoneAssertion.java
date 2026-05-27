@@ -37,7 +37,8 @@ public final class ZoneAssertion {
 
     private static final int UNSET_INT = Integer.MIN_VALUE;
     private static final float UNSET_FLOAT = Float.NaN;
-
+    private final Map<String, Integer> requiredFurniture = new LinkedHashMap<>();
+    private final Map<String, Integer> forbiddenFurniture = new LinkedHashMap<>();
     // --- fields that may be set ---
     @Nullable
     private Boolean indoor;
@@ -50,8 +51,6 @@ public final class ZoneAssertion {
     private boolean zoneTypeSet;
     @Nullable
     private ResourceLocation zoneType;
-    private final Map<String, Integer> requiredFurniture = new LinkedHashMap<>();
-    private final Map<String, Integer> forbiddenFurniture = new LinkedHashMap<>();
 
     private ZoneAssertion() {
     }
@@ -61,6 +60,92 @@ public final class ZoneAssertion {
     }
 
     // ---- builder methods ----
+
+    /**
+     * Returns true when two zones are structurally identical, ignoring fields that
+     * are non-deterministic or identity-only:
+     * <ul>
+     *   <li>{@code regionId} (UUID) — always different across bootstrap cycles</li>
+     *   <li>{@code generatedName} — procedurally generated, may vary</li>
+     *   <li>{@code epithetName} — awarded at evaluation time, may vary</li>
+     *   <li>{@code disabled} / {@code initialized} — lifecycle state, not zone content</li>
+     *   <li>spatial extent — position in world, not zone identity</li>
+     * </ul>
+     *
+     * <p>Compared fields: {@code volume}, {@code enclosureScore} (within 0.001),
+     * {@code isOutdoor}, {@code quality}, {@code degraded}, {@code zoneTypeId},
+     * {@code furnitureCounts}, {@code signalCounts}.</p>
+     */
+    public static boolean equivalent(@Nullable ZoneData a, @Nullable ZoneData b) {
+        if (a == b) return true;
+        if (a == null || b == null) return false;
+        if (a.getClass() != b.getClass()) return false;
+        if (a.isOutdoor() != b.isOutdoor()) return false;
+        if (a.getVolume() != b.getVolume()) return false;
+        if (Math.abs(a.getEnclosureScore() - b.getEnclosureScore()) > 0.001f) return false;
+
+        if (a instanceof RoomData ra && b instanceof RoomData rb) {
+            if (Math.abs(ra.getQuality() - rb.getQuality()) > 0.001f) return false;
+            if (ra.isDegraded() != rb.isDegraded()) return false;
+            if (!Objects.equals(ra.getZoneTypeId(), rb.getZoneTypeId())) return false;
+            if (!ra.getFurnitureCounts().equals(rb.getFurnitureCounts())) return false;
+            if (!ra.getSignalCounts().equals(rb.getSignalCounts())) return false;
+        }
+
+        if (a instanceof OutdoorZoneData oa && b instanceof OutdoorZoneData ob) {
+            if (!oa.getFurnitureCounts().equals(ob.getFurnitureCounts())) return false;
+            return oa.getSignalCounts().equals(ob.getSignalCounts());
+        }
+
+        return true;
+    }
+
+    /**
+     * Convenience overload: fails the GameTest if the two zones are not equivalent.
+     */
+    public static void assertEquivalent(GameTestHelper helper,
+                                        @Nullable ZoneData expected,
+                                        @Nullable ZoneData actual,
+                                        String label) {
+        if (!equivalent(expected, actual)) {
+            String diff = describeDifference(expected, actual);
+            helper.fail("[" + label + "] zones not equivalent: " + diff);
+        }
+    }
+
+    private static String describeDifference(@Nullable ZoneData a, @Nullable ZoneData b) {
+        if (a == null) return "expected is null";
+        if (b == null) return "actual is null";
+        if (a.getClass() != b.getClass())
+            return "type mismatch: " + a.getClass().getSimpleName() + " vs " + b.getClass().getSimpleName();
+
+        StringBuilder sb = new StringBuilder();
+        if (a.isOutdoor() != b.isOutdoor())
+            sb.append("isOutdoor(").append(a.isOutdoor()).append("!=").append(b.isOutdoor()).append(") ");
+        if (a.getVolume() != b.getVolume())
+            sb.append("volume(").append(a.getVolume()).append("!=").append(b.getVolume()).append(") ");
+        if (Math.abs(a.getEnclosureScore() - b.getEnclosureScore()) > 0.001f)
+            sb.append("enclosure(").append(String.format("%.3f", a.getEnclosureScore()))
+                    .append("!=").append(String.format("%.3f", b.getEnclosureScore())).append(") ");
+
+        if (a instanceof RoomData ra && b instanceof RoomData rb) {
+            if (Math.abs(ra.getQuality() - rb.getQuality()) > 0.001f)
+                sb.append("quality(").append(String.format("%.3f", ra.getQuality()))
+                        .append("!=").append(String.format("%.3f", rb.getQuality())).append(") ");
+            if (ra.isDegraded() != rb.isDegraded())
+                sb.append("degraded(").append(ra.isDegraded()).append("!=").append(rb.isDegraded()).append(") ");
+            if (!Objects.equals(ra.getZoneTypeId(), rb.getZoneTypeId()))
+                sb.append("type(").append(ra.getZoneTypeId()).append("!=").append(rb.getZoneTypeId()).append(") ");
+            if (!ra.getFurnitureCounts().equals(rb.getFurnitureCounts()))
+                sb.append("furniture(").append(ra.getFurnitureCounts())
+                        .append("!=").append(rb.getFurnitureCounts()).append(") ");
+            if (!ra.getSignalCounts().equals(rb.getSignalCounts()))
+                sb.append("signals(").append(ra.getSignalCounts())
+                        .append("!=").append(rb.getSignalCounts()).append(") ");
+        }
+
+        return sb.isEmpty() ? "(no difference found — floating point tolerance may differ)" : sb.toString().trim();
+    }
 
     public ZoneAssertion indoor() {
         indoor = true;
@@ -123,6 +208,8 @@ public final class ZoneAssertion {
         return this;
     }
 
+    // ---- assertion ----
+
     /**
      * Assert no zone type was matched (generic room).
      */
@@ -131,6 +218,8 @@ public final class ZoneAssertion {
         zoneTypeSet = true;
         return this;
     }
+
+    // ---- equivalence ----
 
     /**
      * Assert exactly {@code count} instances of {@code blockId} in the zone's furniture map.
@@ -148,7 +237,7 @@ public final class ZoneAssertion {
         return this;
     }
 
-    // ---- assertion ----
+    // ---- internal diff helper ----
 
     /**
      * Runs all configured checks against {@code zone}.
@@ -235,95 +324,5 @@ public final class ZoneAssertion {
                         "[" + label + "] furniture[" + key + "]: expected 0 but got " + actual);
             }
         }
-    }
-
-    // ---- equivalence ----
-
-    /**
-     * Returns true when two zones are structurally identical, ignoring fields that
-     * are non-deterministic or identity-only:
-     * <ul>
-     *   <li>{@code regionId} (UUID) — always different across bootstrap cycles</li>
-     *   <li>{@code generatedName} — procedurally generated, may vary</li>
-     *   <li>{@code epithetName} — awarded at evaluation time, may vary</li>
-     *   <li>{@code disabled} / {@code initialized} — lifecycle state, not zone content</li>
-     *   <li>spatial extent — position in world, not zone identity</li>
-     * </ul>
-     *
-     * <p>Compared fields: {@code volume}, {@code enclosureScore} (within 0.001),
-     * {@code isOutdoor}, {@code quality}, {@code degraded}, {@code zoneTypeId},
-     * {@code furnitureCounts}, {@code signalCounts}.</p>
-     */
-    public static boolean equivalent(@Nullable ZoneData a, @Nullable ZoneData b) {
-        if (a == b) return true;
-        if (a == null || b == null) return false;
-        if (a.getClass() != b.getClass()) return false;
-        if (a.isOutdoor() != b.isOutdoor()) return false;
-        if (a.getVolume() != b.getVolume()) return false;
-        if (Math.abs(a.getEnclosureScore() - b.getEnclosureScore()) > 0.001f) return false;
-
-        if (a instanceof RoomData ra && b instanceof RoomData rb) {
-            if (Math.abs(ra.getQuality() - rb.getQuality()) > 0.001f) return false;
-            if (ra.isDegraded() != rb.isDegraded()) return false;
-            if (!Objects.equals(ra.getZoneTypeId(), rb.getZoneTypeId())) return false;
-            if (!ra.getFurnitureCounts().equals(rb.getFurnitureCounts())) return false;
-            if (!ra.getSignalCounts().equals(rb.getSignalCounts())) return false;
-        }
-
-        if (a instanceof OutdoorZoneData oa && b instanceof OutdoorZoneData ob) {
-            if (!oa.getFurnitureCounts().equals(ob.getFurnitureCounts())) return false;
-            if (!oa.getSignalCounts().equals(ob.getSignalCounts())) return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Convenience overload: fails the GameTest if the two zones are not equivalent.
-     */
-    public static void assertEquivalent(GameTestHelper helper,
-                                        @Nullable ZoneData expected,
-                                        @Nullable ZoneData actual,
-                                        String label) {
-        if (!equivalent(expected, actual)) {
-            String diff = describeDifference(expected, actual);
-            helper.fail("[" + label + "] zones not equivalent: " + diff);
-        }
-    }
-
-    // ---- internal diff helper ----
-
-    private static String describeDifference(@Nullable ZoneData a, @Nullable ZoneData b) {
-        if (a == null) return "expected is null";
-        if (b == null) return "actual is null";
-        if (a.getClass() != b.getClass())
-            return "type mismatch: " + a.getClass().getSimpleName() + " vs " + b.getClass().getSimpleName();
-
-        StringBuilder sb = new StringBuilder();
-        if (a.isOutdoor() != b.isOutdoor())
-            sb.append("isOutdoor(").append(a.isOutdoor()).append("!=").append(b.isOutdoor()).append(") ");
-        if (a.getVolume() != b.getVolume())
-            sb.append("volume(").append(a.getVolume()).append("!=").append(b.getVolume()).append(") ");
-        if (Math.abs(a.getEnclosureScore() - b.getEnclosureScore()) > 0.001f)
-            sb.append("enclosure(").append(String.format("%.3f", a.getEnclosureScore()))
-                    .append("!=").append(String.format("%.3f", b.getEnclosureScore())).append(") ");
-
-        if (a instanceof RoomData ra && b instanceof RoomData rb) {
-            if (Math.abs(ra.getQuality() - rb.getQuality()) > 0.001f)
-                sb.append("quality(").append(String.format("%.3f", ra.getQuality()))
-                        .append("!=").append(String.format("%.3f", rb.getQuality())).append(") ");
-            if (ra.isDegraded() != rb.isDegraded())
-                sb.append("degraded(").append(ra.isDegraded()).append("!=").append(rb.isDegraded()).append(") ");
-            if (!Objects.equals(ra.getZoneTypeId(), rb.getZoneTypeId()))
-                sb.append("type(").append(ra.getZoneTypeId()).append("!=").append(rb.getZoneTypeId()).append(") ");
-            if (!ra.getFurnitureCounts().equals(rb.getFurnitureCounts()))
-                sb.append("furniture(").append(ra.getFurnitureCounts())
-                        .append("!=").append(rb.getFurnitureCounts()).append(") ");
-            if (!ra.getSignalCounts().equals(rb.getSignalCounts()))
-                sb.append("signals(").append(ra.getSignalCounts())
-                        .append("!=").append(rb.getSignalCounts()).append(") ");
-        }
-
-        return sb.isEmpty() ? "(no difference found — floating point tolerance may differ)" : sb.toString().trim();
     }
 }

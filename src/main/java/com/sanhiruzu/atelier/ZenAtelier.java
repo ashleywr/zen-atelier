@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.sanhiruzu.atelier.command.CommandEventHandler;
 import com.sanhiruzu.atelier.data.DataReloadEventHandler;
 import com.sanhiruzu.atelier.event.AtelierEvents;
+import com.sanhiruzu.atelier.integration.minecolonies.MineColoniesIntegration;
 import com.sanhiruzu.atelier.network.NetworkHandler;
 import com.sanhiruzu.atelier.space.ChunkClassificationAttachment;
 import com.sanhiruzu.atelier.space.ClassificationEventHandler;
@@ -11,20 +12,26 @@ import com.sanhiruzu.atelier.space.ClassificationTickHandler;
 import com.sanhiruzu.atelier.space.zone.BlockRarityCache;
 import com.sanhiruzu.atelier.space.zone.ZoneAttachment;
 import com.sanhiruzu.atelier.space.zone.ZoneSignHandler;
+import com.sanhiruzu.atelier.synthesis.AlchemyWandItem;
+import com.sanhiruzu.atelier.synthesis.AlchemyWandTier;
+import com.sanhiruzu.atelier.synthesis.FlashBombItem;
+import com.sanhiruzu.atelier.synthesis.HealingSalveItem;
+import com.sanhiruzu.atelier.synthesis.SynthesisCauldronBlock;
+import com.sanhiruzu.atelier.synthesis.SynthesisCauldronBlockEntity;
+import com.sanhiruzu.atelier.synthesis.SynthesizedItem;
 import com.sanhiruzu.atelier.ui.UiBootstrap;
 import com.sanhiruzu.atelier.ui.journal.RoomJournalItem;
+import com.mojang.serialization.Codec;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.food.FoodProperties;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -46,22 +53,61 @@ public class ZenAtelier {
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
-    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
+            DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, MODID);
+    public static final DeferredRegister.DataComponents DATA_COMPONENTS =
+            DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, MODID);
 
-    public static final DeferredBlock<Block> EXAMPLE_BLOCK = BLOCKS.registerSimpleBlock("example_block", BlockBehaviour.Properties.of().mapColor(MapColor.STONE));
-    public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM = ITEMS.registerSimpleBlockItem("example_block", EXAMPLE_BLOCK);
-
-    public static final DeferredItem<Item> EXAMPLE_ITEM = ITEMS.registerSimpleItem("example_item", new Item.Properties().food(new FoodProperties.Builder()
-            .alwaysEdible().nutrition(1).saturationModifier(2f).build()));
     public static final DeferredItem<RoomJournalItem> ROOM_JOURNAL = ITEMS.register("room_journal", () -> new RoomJournalItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredBlock<SynthesisCauldronBlock> SYNTHESIS_CAULDRON = BLOCKS.registerBlock(
+            "synthesis_cauldron",
+            SynthesisCauldronBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.CAULDRON).lightLevel(state -> 5)
+    );
+    public static final DeferredItem<BlockItem> SYNTHESIS_CAULDRON_ITEM = ITEMS.registerSimpleBlockItem(SYNTHESIS_CAULDRON);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SynthesisCauldronBlockEntity>> SYNTHESIS_CAULDRON_BLOCK_ENTITY =
+            BLOCK_ENTITY_TYPES.register("synthesis_cauldron", () -> BlockEntityType.Builder.of(SynthesisCauldronBlockEntity::new, SYNTHESIS_CAULDRON.get()).build(null));
 
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.zen_atelier"))
-            .withTabsBefore(CreativeModeTabs.COMBAT)
-            .icon(() -> EXAMPLE_ITEM.get().getDefaultInstance())
-            .displayItems((parameters, output) -> {
-                output.accept(EXAMPLE_ITEM.get());
-            }).build());
+    public static final DeferredItem<AlchemyWandItem> COPPER_ALCHEMY_WAND = ITEMS.register(
+            "copper_alchemy_wand",
+            () -> new AlchemyWandItem(AlchemyWandTier.COPPER, new Item.Properties())
+    );
+    public static final DeferredItem<AlchemyWandItem> SILVER_ALCHEMY_WAND = ITEMS.register(
+            "silver_alchemy_wand",
+            () -> new AlchemyWandItem(AlchemyWandTier.SILVER, new Item.Properties())
+    );
+    public static final DeferredItem<AlchemyWandItem> GOLD_ALCHEMY_WAND = ITEMS.register(
+            "gold_alchemy_wand",
+            () -> new AlchemyWandItem(AlchemyWandTier.GOLD, new Item.Properties())
+    );
+    public static final DeferredItem<HealingSalveItem> HEALING_SALVE = ITEMS.register(
+            "healing_salve",
+            () -> new HealingSalveItem(new Item.Properties().stacksTo(16))
+    );
+    public static final DeferredItem<FlashBombItem> FLASH_BOMB = ITEMS.register(
+            "flash_bomb",
+            () -> new FlashBombItem(new Item.Properties().stacksTo(16))
+    );
+    public static final DeferredItem<SynthesizedItem> REFINED_COPPER_INGOT = ITEMS.register(
+            "refined_copper_ingot",
+            () -> new SynthesizedItem(new Item.Properties())
+    );
+    public static final DeferredItem<SynthesizedItem> REFINED_IRON_INGOT = ITEMS.register(
+            "refined_iron_ingot",
+            () -> new SynthesizedItem(new Item.Properties())
+    );
+    public static final DeferredItem<SynthesizedItem> REFINED_GOLD_INGOT = ITEMS.register(
+            "refined_gold_ingot",
+            () -> new SynthesizedItem(new Item.Properties())
+    );
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> SYNTHESIS_MODIFIER =
+            DATA_COMPONENTS.registerComponentType("synthesis_modifier", builder -> builder
+                    .persistent(Codec.STRING)
+                    .networkSynchronized(ByteBufCodecs.STRING_UTF8));
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> SYNTHESIS_QUALITY =
+            DATA_COMPONENTS.registerComponentType("synthesis_quality", builder -> builder
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
 
     public ZenAtelier(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
@@ -69,7 +115,8 @@ public class ZenAtelier {
 
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
-        CREATIVE_MODE_TABS.register(modEventBus);
+        BLOCK_ENTITY_TYPES.register(modEventBus);
+        DATA_COMPONENTS.register(modEventBus);
         ChunkClassificationAttachment.ATTACHMENT_TYPES.register(modEventBus);
         ZoneAttachment.ATTACHMENT_TYPES.register(modEventBus);
 
@@ -90,6 +137,7 @@ public class ZenAtelier {
 
     private void commonSetup(FMLCommonSetupEvent event) {
         LOGGER.info("HELLO FROM COMMON SETUP");
+        MineColoniesIntegration.initialize();
 
         if (Config.LOG_DIRT_BLOCK.getAsBoolean()) {
             LOGGER.info("DIRT BLOCK >> {}", BuiltInRegistries.BLOCK.getKey(Blocks.DIRT));
@@ -101,11 +149,26 @@ public class ZenAtelier {
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
-            event.accept(EXAMPLE_BLOCK_ITEM);
-        }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(ROOM_JOURNAL);
+            event.accept(COPPER_ALCHEMY_WAND);
+            event.accept(SILVER_ALCHEMY_WAND);
+            event.accept(GOLD_ALCHEMY_WAND);
+            event.accept(SYNTHESIS_CAULDRON_ITEM);
+        }
+
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            event.accept(REFINED_COPPER_INGOT);
+            event.accept(REFINED_IRON_INGOT);
+            event.accept(REFINED_GOLD_INGOT);
+        }
+
+        if (event.getTabKey() == CreativeModeTabs.FOOD_AND_DRINKS) {
+            event.accept(HEALING_SALVE);
+        }
+
+        if (event.getTabKey() == CreativeModeTabs.COMBAT) {
+            event.accept(FLASH_BOMB);
         }
     }
 

@@ -95,7 +95,7 @@ public class ChunkClassificationData {
 
     public boolean replaceRegionId(UUID eliminatedId, UUID survivingId, int newVolume, int newOpeningArea) {
         for (int i = 0; i < regions.size(); i++) {
-            if (regions.get(i).getId().equals(eliminatedId)) {
+            if (regions.get(i).id().equals(eliminatedId)) {
                 regions.set(i, new ClassifiedRegion(survivingId, newVolume, newOpeningArea));
                 return true;
             }
@@ -103,12 +103,12 @@ public class ChunkClassificationData {
         return false;
     }
 
-    public void setDirty(boolean dirty) {
-        this.isDirty = dirty;
-    }
-
     public boolean isDirty() {
         return isDirty;
+    }
+
+    public void setDirty(boolean dirty) {
+        this.isDirty = dirty;
     }
 
     public void serializeNBT(CompoundTag tag) {
@@ -119,9 +119,9 @@ public class ChunkClassificationData {
         for (int i = 0; i < regions.size(); i++) {
             ClassifiedRegion region = regions.get(i);
             CompoundTag regionTag = new CompoundTag();
-            regionTag.putUUID("id", region.getId());
-            regionTag.putInt("volume", region.getVolume());
-            regionTag.putInt("openingArea", region.getOpeningArea());
+            regionTag.putUUID("id", region.id());
+            regionTag.putInt("volume", region.volume());
+            regionTag.putInt("openingArea", region.openingArea());
             regionsTag.put(String.valueOf(i), regionTag);
         }
         tag.put("regions", regionsTag);

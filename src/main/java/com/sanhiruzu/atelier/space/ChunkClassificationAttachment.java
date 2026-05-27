@@ -13,7 +13,7 @@ public class ChunkClassificationAttachment {
 
     public static final Supplier<AttachmentType<ChunkClassificationData>> CHUNK_CLASSIFICATION =
             ATTACHMENT_TYPES.register("chunk_classification", () ->
-                    AttachmentType.builder(() -> new ChunkClassificationData())
+                    AttachmentType.builder(ChunkClassificationData::new)
                             .serialize(ChunkClassificationData.CODEC)
                             .build()
             );

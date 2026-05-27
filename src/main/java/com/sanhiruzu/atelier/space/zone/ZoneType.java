@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 
+@SuppressWarnings("SameReturnValue")
 public abstract class ZoneType {
     public abstract ResourceLocation getId();
 

@@ -4,19 +4,26 @@ import com.sanhiruzu.atelier.space.SpaceRegion;
 import com.sanhiruzu.atelier.space.SpaceRegionRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.SignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.player.UseItemOnBlockEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 // Utility class for sign-based zone naming. Players can write a custom name on a sign
 // placed next to a zone, then interact with the sign to apply the name to the zone.
+@SuppressWarnings("SameReturnValue")
 public class ZoneSignHandler {
+    private static final String ZONE_ID_TAG = "atelier_zone_id";
 
     @SubscribeEvent
     public static void onSignPlace(BlockEvent.EntityPlaceEvent event) {
@@ -33,10 +40,37 @@ public class ZoneSignHandler {
         if (adjacentZoneId == null) return;
 
         // Store zone UUID on the sign entity for later reference
-        SignBlockEntity signEntity = (SignBlockEntity) level.getBlockEntity(signPos);
-        if (signEntity == null) return;
+        if (!(level.getBlockEntity(signPos) instanceof SignBlockEntity signEntity)) {
+            return;
+        }
 
-        signEntity.getPersistentData().putString("atelier_zone_id", adjacentZoneId.toString());
+        signEntity.getPersistentData().putString(ZONE_ID_TAG, adjacentZoneId.toString());
+    }
+
+    @SubscribeEvent
+    public static void onUseSign(UseItemOnBlockEvent event) {
+        if (event.getUsePhase() != UseItemOnBlockEvent.UsePhase.BLOCK || event.getLevel().isClientSide()) {
+            return;
+        }
+        if (event.getPlayer() == null) {
+            return;
+        }
+        if (!(event.getLevel().getBlockEntity(event.getPos()) instanceof SignBlockEntity signEntity)) {
+            return;
+        }
+
+        boolean emptyHand = event.getItemStack().isEmpty();
+        boolean explicitApply = emptyHand && event.getPlayer().isShiftKeyDown();
+        boolean emptyHandOnWaxedSign = emptyHand && signEntity.isWaxed();
+        if (!explicitApply && !emptyHandOnWaxedSign) {
+            return;
+        }
+
+        boolean front = signEntity.isFacingFrontText(event.getPlayer());
+        boolean filtered = event.getPlayer().isTextFilteringEnabled();
+        if (applySignNameToZone(event.getLevel(), event.getPos(), front, filtered)) {
+            event.cancelWithResult(ItemInteractionResult.SUCCESS);
+        }
     }
 
     @Nullable
@@ -54,30 +88,53 @@ public class ZoneSignHandler {
 
     // Called when a player interacts with a sign that's adjacent to a zone
     // Reads the sign text and applies it as the zone's custom name
-    public static void applySignNameToZone(Level level, BlockPos signPos) {
-        if (level.isClientSide()) return;
+    public static boolean applySignNameToZone(Level level, BlockPos signPos) {
+        return applySignNameToZone(level, signPos, true, false);
+    }
 
-        SignBlockEntity signEntity = (SignBlockEntity) level.getBlockEntity(signPos);
-        if (signEntity == null) return;
+    public static boolean applySignNameToZone(Level level, BlockPos signPos, boolean front, boolean filtered) {
+        if (level.isClientSide()) return false;
 
-        String zoneIdStr = signEntity.getPersistentData().getString("atelier_zone_id");
-        if (zoneIdStr.isEmpty()) return;
+        if (!(level.getBlockEntity(signPos) instanceof SignBlockEntity signEntity)) {
+            return false;
+        }
+
+        String zoneIdStr = signEntity.getPersistentData().getString(ZONE_ID_TAG);
+        if (zoneIdStr.isEmpty()) {
+            UUID adjacentZoneId = findAdjacentZone(level, signPos);
+            if (adjacentZoneId == null) return false;
+            zoneIdStr = adjacentZoneId.toString();
+            signEntity.getPersistentData().putString(ZONE_ID_TAG, zoneIdStr);
+        }
 
         try {
             UUID zoneId = UUID.fromString(zoneIdStr);
-            String signText = getSignText(signEntity);
+            String signText = getSignText(signEntity, front, filtered);
+            if (signText.isEmpty()) {
+                signText = getSignText(signEntity, !front, filtered);
+            }
             if (!signText.isEmpty()) {
                 ZoneRegistry.get(level).setCustomName(zoneId, signText);
+                return true;
             }
         } catch (IllegalArgumentException e) {
             // Invalid UUID stored, ignore
         }
+        return false;
     }
 
-    @Nullable
-    private static String getSignText(SignBlockEntity signEntity) {
-        // Sign text reading is API-dependent on MC version - simplified for now
-        // TODO: Implement proper sign text reading once sign API is confirmed for 1.21.1
-        return null;
+    private static String getSignText(SignBlockEntity signEntity, boolean front, boolean filtered) {
+        return readSignText(signEntity.getText(front), filtered);
+    }
+
+    static String readSignText(SignText signText, boolean filtered) {
+        List<String> lines = new ArrayList<>();
+        for (int i = 0; i < SignText.LINES; i++) {
+            String line = signText.getMessage(i, filtered).getString().trim().replaceAll("\\s+", " ");
+            if (!line.isEmpty()) {
+                lines.add(line);
+            }
+        }
+        return String.join(" ", lines);
     }
 }

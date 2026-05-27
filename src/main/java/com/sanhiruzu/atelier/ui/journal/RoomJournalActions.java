@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.ui.journal;
 import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.space.SpaceQuery;
 import com.sanhiruzu.atelier.space.zone.RoomData;
+import com.sanhiruzu.atelier.space.zone.RoomImprovementHints;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
 import com.sanhiruzu.atelier.zone.discovery.RoomDiscoveryHandler;
 import net.minecraft.core.BlockPos;
@@ -54,12 +55,12 @@ public final class RoomJournalActions {
             return;
         }
 
-        if (player.distanceToSqr(Vec3.atCenterOf(pos)) > MAX_INSPECT_DISTANCE_SQ || !serverLevel.hasChunkAt(pos)) {
+        if (player.distanceToSqr(Vec3.atCenterOf(pos)) > MAX_INSPECT_DISTANCE_SQ || !isChunkLoaded(serverLevel, pos)) {
             player.sendSystemMessage(Component.literal("Room Journal: move closer to inspect that space."));
             return;
         }
 
-        ZoneData zone = SpaceQuery.getZoneAt(serverLevel, pos);
+        ZoneData zone = SpaceQuery.getRoomAt(serverLevel, pos);
         if (zone == null || zone.isOutdoor()) {
             player.sendSystemMessage(Component.literal("Room Journal: This is outdoor space."));
             return;
@@ -78,6 +79,10 @@ public final class RoomJournalActions {
         player.sendSystemMessage(Component.literal("Status: " + status));
         player.sendSystemMessage(Component.literal("Volume: " + room.getVolume() + " blocks"));
         player.sendSystemMessage(Component.literal("Enclosure: " + String.format("%.1f", room.getEnclosureScore() * 100) + "%"));
+        player.sendSystemMessage(Component.literal("Suggestions:"));
+        for (String hint : RoomImprovementHints.forRoom(room)) {
+            player.sendSystemMessage(Component.literal("- " + hint));
+        }
 
         // Trigger room discovery when inspected with the journal
         RoomDiscoveryHandler.handleDiscovery(serverPlayer, room);
@@ -98,6 +103,10 @@ public final class RoomJournalActions {
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             return false;
         }
+    }
+
+    private static boolean isChunkLoaded(ServerLevel level, BlockPos pos) {
+        return level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4) != null;
     }
 
     private static boolean tryOpenVanillaBook(ServerPlayer player, InteractionHand hand) {

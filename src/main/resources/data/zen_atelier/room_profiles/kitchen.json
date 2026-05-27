@@ -5,7 +5,10 @@
   "anchors": [
     "minecraft:furnace",
     "minecraft:smoker",
-    "minecraft:campfire"
+    "minecraft:campfire",
+    "minecolonies:blockhutcook",
+    "minecolonies:blockhutkitchen",
+    "minecolonies:blockhutbaker"
   ],
   "required_features": [
     {

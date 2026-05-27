@@ -1,0 +1,10 @@
+{
+  "components": [
+    {
+      "type": "patchouli:custom",
+      "class": "com.sanhiruzu.atelier.ui.patchouli.RoomStatCardComponent",
+      "x": 0,
+      "y": 0
+    }
+  ]
+}

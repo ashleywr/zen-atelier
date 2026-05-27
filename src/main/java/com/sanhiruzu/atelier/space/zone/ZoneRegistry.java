@@ -4,10 +4,10 @@ import com.sanhiruzu.atelier.network.*;
 import com.sanhiruzu.atelier.space.*;
 import com.sanhiruzu.atelier.space.settlement.SettlementDetector;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -25,13 +25,10 @@ public class ZoneRegistry {
     private static final long GRACE_REDUCTION_PER_BREAK = 200L; // 10 seconds shaved per additional block break during grace period
     private static final long DIRTY_ZONE_RECHECK_DELAY_TICKS = 40L;
     private static final Map<String, ZoneRegistry> INSTANCES = new HashMap<>();
-
+    final Map<UUID, String> customNames = new HashMap<>();
     // Player-facing interpretation of zones. Raw geometry/lifecycle lives in zoneEntities.
     private final Map<UUID, ZoneData> cache = new HashMap<>();
     private final Map<UUID, Zone> zoneEntities = new HashMap<>();
-    final Map<UUID, String> customNames = new HashMap<>();
-    @Nullable
-    private ZoneSavedData savedData;
     // zoneId → game tick at which the zone should be fully dissolved if not recovered
     private final Map<UUID, Long> gracePeriodExpiry = new HashMap<>();
     // chunkKey → (zoneId → blocks in that chunk): populated during zone restoration so
@@ -43,6 +40,8 @@ public class ZoneRegistry {
     private final List<DeferredExpansion> deferredExpansions = new ArrayList<>();
     private final Map<Long, Long> dirtyZoneRecheckChunks = new HashMap<>();
     private final RoomChangeScheduler roomChangeScheduler = new RoomChangeScheduler();
+    @Nullable
+    private ZoneSavedData savedData;
     private boolean restored = false;
 
     public static ZoneRegistry get(Level level) {
@@ -67,6 +66,43 @@ public class ZoneRegistry {
         return fresh;
     }
 
+    static boolean isValidPlayerBuiltZone(UUID regionId, SpaceRegionRegistry registry,
+                                          java.util.function.Predicate<BlockPos> isEntry, ZoneData zoneData) {
+        Set<BlockPos> regionBlocks = registry.getBlocksInRegion(regionId);
+        if (regionBlocks.size() < 2) return false;
+
+        for (BlockPos interiorPos : regionBlocks) {
+            if (isEntry.test(interiorPos)) return true;
+            for (Direction dir : Direction.values()) {
+                if (isEntry.test(interiorPos.relative(dir))) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+    static void computeSpatialExtent(ZoneData zone, UUID regionId, SpaceRegionRegistry registry,
+                                     java.util.function.Predicate<BlockPos> isEntry) {
+        Set<BlockPos> blocks = registry.getBlocksInRegion(regionId);
+        if (blocks.isEmpty()) return;
+        BlockPosBounds bounds = BlockPosBounds.enclosing(blocks).orElseThrow();
+
+        Set<BlockPos> entryBlocks = new HashSet<>();
+        for (BlockPos interiorPos : blocks) {
+            for (Direction dir : Direction.values()) {
+                BlockPos neighborPos = interiorPos.relative(dir);
+                if (isEntry.test(neighborPos)) {
+                    entryBlocks.add(neighborPos);
+                }
+            }
+        }
+
+        bounds.includeAll(entryBlocks).applyTo(zone);
+    }
+
     /**
      * Test-only: inserts a ZoneData entry directly into the cache.
      */
@@ -78,6 +114,8 @@ public class ZoneRegistry {
     public ZoneData getRoom(UUID regionId) {
         return cache.get(regionId);
     }
+
+    // ---- Zone entity management ----
 
     /**
      * @deprecated Use {@link #getRoom(UUID)} for player-facing room data.
@@ -117,8 +155,6 @@ public class ZoneRegistry {
         return getOrEvaluateRoom(regionId, level);
     }
 
-    // ---- Zone entity management ----
-
     public void registerZone(Zone zone) {
         zoneEntities.put(zone.getId(), zone);
     }
@@ -127,6 +163,8 @@ public class ZoneRegistry {
     public Zone getZoneById(UUID id) {
         return zoneEntities.get(id);
     }
+
+    // ---- Grace period tracking ----
 
     public Collection<Zone> getAllZones() {
         return zoneEntities.values();
@@ -144,8 +182,6 @@ public class ZoneRegistry {
         cache.remove(eliminated);
         restoredZoneIds.remove(eliminated);
     }
-
-    // ---- Grace period tracking ----
 
     public boolean isInGracePeriod(UUID zoneId) {
         Zone zone = zoneEntities.get(zoneId);
@@ -172,6 +208,8 @@ public class ZoneRegistry {
     public long getGracePeriodExpiry(UUID zoneId) {
         return gracePeriodExpiry.getOrDefault(zoneId, 0L);
     }
+
+    // ---- Zone lifecycle (moved from ClassificationScheduler) ----
 
     /**
      * Removes and returns all zone IDs whose grace period has expired.
@@ -208,8 +246,6 @@ public class ZoneRegistry {
         return expired;
     }
 
-    // ---- Zone lifecycle (moved from ClassificationScheduler) ----
-
     /**
      * Called each tick by the scheduler. Expires any zones whose grace period
      * has elapsed and dissolves them.
@@ -220,6 +256,8 @@ public class ZoneRegistry {
             dissolveGracePeriodZone(zoneId, level);
         }
     }
+
+    // ---- Zone evaluation + sync ----
 
     /**
      * Dissolves a zone that is currently in the grace-period map.
@@ -311,8 +349,6 @@ public class ZoneRegistry {
         }
     }
 
-    // ---- Zone evaluation + sync ----
-
     public void queueRoomChange(Zone zone, ServerLevel level) {
         roomChangeScheduler.markDirty(zone, level, this);
     }
@@ -368,20 +404,30 @@ public class ZoneRegistry {
             return;
         }
 
+        ZoneData previousData = getRoom(zone.getId());
         ZoneData zoneData = reEvaluateRoom(zone.getId(), level);
+        ZoneReconciliationDecision decision = ZoneReconciler.decide(previousData, zoneData, inGracePeriod);
         if (zoneData != null) {
             String zoneType = zoneData.isOutdoor() ? "Outdoor" : (zoneData instanceof RoomData ? "Room" : "Zone");
             boolean degraded = zoneData instanceof RoomData room && room.isDegraded();
-            LOGGER.trace("[ZONE] {} as {} (vol={}, enc={}){}",
+            LOGGER.trace("[ZONE] {} as {} (vol={}, enc={}){}; reconciliation={}: {}",
                     zoneData.getRegionId(), zoneType, zoneData.getVolume(),
-                    String.format("%.2f", zoneData.getEnclosureScore()), degraded ? " [DEGRADED]" : "");
-            if (inGracePeriod && removeFromGracePeriod(zone.getId()) != 0L) {
+                    String.format("%.2f", zoneData.getEnclosureScore()), degraded ? " [DEGRADED]" : "",
+                    decision.action(), decision.reason());
+            if (decision.action() == ZoneReconciliationAction.RECOVER
+                    && removeFromGracePeriod(zone.getId()) != 0L) {
                 LOGGER.debug("[ZONE] {} recovered from grace period", zone.getId().toString().substring(0, 8));
                 broadcastGracePeriod(zone.getId(), 0, level); // 0 = cancelled
             }
             sendRoomToPlayers(zoneData, level);
-        } else if (getRoom(zone.getId()) == null) {
+        } else if (decision.action() == ZoneReconciliationAction.ENTER_GRACE) {
+            LOGGER.debug("[ZONE] {} entered grace after reconciliation failed: {}",
+                    zone.getId().toString().substring(0, 8), decision.reason());
+            enterGracePeriod(zone.getId(), level);
+        } else if (decision.action() == ZoneReconciliationAction.DISSOLVE) {
             if (!zone.isDissolved()) {
+                LOGGER.debug("[ZONE] {} dissolved after reconciliation failed: {}",
+                        zone.getId().toString().substring(0, 8), decision.reason());
                 zone.dissolve(level);
             }
         }
@@ -436,18 +482,24 @@ public class ZoneRegistry {
         sendRoomTo(player, zoneData);
     }
 
+    // ---- Player zone tracking ----
+
     private SyncZoneGridPayload buildZonePayload(ZoneData zoneData) {
         float quality = zoneData instanceof RoomData room ? room.getQuality() : 0f;
+        int lightLevel = zoneData instanceof RoomData room ? room.getLightLevel() : -1;
         var typeId = zoneData instanceof RoomData room ? room.getZoneTypeId() : null;
         boolean degraded = zoneData instanceof RoomData room && room.isDegraded();
         String epithetName = zoneData instanceof RoomData room ? room.getEpithetName() : null;
         String generatedName = zoneData instanceof RoomData room2 ? room2.getGeneratedName() : null;
+        float extMod = zoneData instanceof RoomData room3 ? room3.getExternalQualityModifier() : 1.0f;
+        String extLabel = zoneData instanceof RoomData room4 ? room4.getExternalStatusLabel() : null;
         return new SyncZoneGridPayload(
                 zoneData.getRegionId(),
                 zoneData.isOutdoor(),
                 zoneData.getVolume(),
                 zoneData.getEnclosureScore(),
                 quality,
+                lightLevel,
                 typeId,
                 degraded,
                 epithetName,
@@ -457,7 +509,9 @@ public class ZoneRegistry {
                 zoneData.getMinZ(),
                 zoneData.getMaxX(),
                 zoneData.getMaxY(),
-                zoneData.getMaxZ()
+                zoneData.getMaxZ(),
+                extMod,
+                extLabel
         );
     }
 
@@ -470,6 +524,8 @@ public class ZoneRegistry {
         }
     }
 
+    // ---- Bootstrap — runs once per chunk on initial load ----
+
     void syncToPlayers(ChunkAccess chunk, ChunkClassificationData data, ServerLevel level) {
         int chunkX = chunk.getPos().x;
         int chunkZ = chunk.getPos().z;
@@ -480,8 +536,6 @@ public class ZoneRegistry {
             }
         }
     }
-
-    // ---- Player zone tracking ----
 
     public void checkAllPlayerZones(ServerLevel level) {
         for (Player player : level.players()) {
@@ -504,8 +558,6 @@ public class ZoneRegistry {
             PacketDistributor.sendToPlayer(player, new SyncPlayerZonePayload(newId));
         }
     }
-
-    // ---- Bootstrap — runs once per chunk on initial load ----
 
     /**
      * One-time bootstrap classification for a newly loaded chunk.
@@ -552,7 +604,7 @@ public class ZoneRegistry {
                 finished.add(zoneId);
             }
         }
-        restoredZoneIds.removeAll(finished);
+        finished.forEach(restoredZoneIds::remove);
     }
 
     private void bootstrapChunk(ChunkAccess chunk, ServerLevel level, int depth) {
@@ -581,16 +633,22 @@ public class ZoneRegistry {
         // ---- 2. Create Zone entities from classified regions ----
         Set<UUID> createdZoneIds = new HashSet<>();
         for (ClassifiedRegion cr : data.getRegions()) {
-            Set<BlockPos> blocks = regionBlocks.get(cr.getId());
+            Set<BlockPos> blocks = regionBlocks.get(cr.id());
             if (blocks == null || blocks.isEmpty()) continue;
 
             boolean alreadyClaimed = blocks.stream()
                     .anyMatch(p -> regionRegistry.getRegionIdAt(p) != null);
             if (alreadyClaimed) continue;
 
-            Zone zone = Zone.createFromBootstrap(cr.getId(), blocks, cr.getOpeningArea(), level);
-            if (zone != null) {
-                createdZoneIds.add(zone.getId());
+            List<Set<BlockPos>> partitions = RoomPartitioner.partitionBlocks(blocks, RoomConnectivity.forLevel(level));
+            for (int i = 0; i < partitions.size(); i++) {
+                Set<BlockPos> partition = partitions.get(i);
+                UUID zoneId = i == 0 ? cr.id() : UUID.randomUUID();
+                Zone zone = Zone.createFromBootstrap(zoneId, partition,
+                        Zone.computeOpeningAreaFor(partition, level), level);
+                if (zone != null) {
+                    createdZoneIds.add(zone.getId());
+                }
             }
         }
 
@@ -681,6 +739,8 @@ public class ZoneRegistry {
         }
     }
 
+    // ---- Zone restoration from saved data ----
+
     private boolean touchesChunk(Zone zone, int chunkX, int chunkZ) {
         for (BlockPos pos : zone.getAllOwnedBlocks()) {
             if ((pos.getX() >> 4) == chunkX && (pos.getZ() >> 4) == chunkZ) {
@@ -743,8 +803,6 @@ public class ZoneRegistry {
         }
     }
 
-    // ---- Zone restoration from saved data ----
-
     private void restoreZonesFromSavedData(ServerLevel level) {
         if (savedData == null || savedData.getZones().isEmpty()) return;
 
@@ -789,6 +847,8 @@ public class ZoneRegistry {
         LOGGER.info("[ZONE] Restored {} zone(s) from saved data", savedData.getZones().size());
     }
 
+    // ---- Deferred expansion ----
+
     private boolean isRestoredZoneLoadedForEvaluation(Zone zone, ServerLevel level) {
         Set<Long> chunks = new HashSet<>();
         for (BlockPos pos : zone.getAllOwnedBlocks()) {
@@ -827,7 +887,7 @@ public class ZoneRegistry {
         }
     }
 
-    // ---- Deferred expansion ----
+    // ---- Existing evaluation / metadata ----
 
     public void scheduleDeferredExpansion(Zone zone, BlockPos pos) {
         deferredExpansions.add(new DeferredExpansion(zone, pos));
@@ -846,11 +906,6 @@ public class ZoneRegistry {
             }
         }
     }
-
-    private record DeferredExpansion(Zone zone, BlockPos pos) {
-    }
-
-    // ---- Existing evaluation / metadata ----
 
     /**
      * Re-evaluates a zone's quality, type, and volume from current world state,
@@ -991,14 +1046,15 @@ public class ZoneRegistry {
         }
 
         if (result instanceof RoomData roomData && typeId != null) {
-            RoomTypeQualityProfile profile = getRoomTypeQualityProfile(typeId);
-            if (profile != null) {
+            com.sanhiruzu.atelier.data.RoomProfile jsonProfile =
+                    com.sanhiruzu.atelier.data.RoomProfileRegistry.get(typeId);
+            if (jsonProfile != null) {
                 var refinedBreakdown = QualityEvaluator.evaluate(roomData.getVolume(), roomData.getEnclosureScore(),
-                        roomData.getFurnitureCounts(), roomData.getSignalCounts(), profile);
-                roomData.setQualityBreakdown(refinedBreakdown);
+                        roomData.getFurnitureCounts(), roomData.getSignalCounts(),
+                        roomData.getLightLevel(), jsonProfile);
                 roomData = new RoomData(roomData.getRegionId(), roomData.getVolume(), roomData.getEnclosureScore(),
                         roomData.getFurnitureCounts(), roomData.getSignalCounts(), roomData.getSurfaceCounts(),
-                        refinedBreakdown.totalQuality);
+                        refinedBreakdown.totalQuality, roomData.getLightLevel());
                 roomData.setQualityBreakdown(refinedBreakdown);
                 roomData.setZoneTypeId(typeId);
                 if (room.isDegraded()) roomData.setDegraded(true);
@@ -1026,99 +1082,21 @@ public class ZoneRegistry {
 
     private boolean isValidPlayerBuiltZone(UUID regionId, Level level, ZoneData zoneData) {
         return isValidPlayerBuiltZone(regionId, SpaceRegionRegistry.get(level),
-                pos -> {
-                    var state = level.getBlockState(pos);
-                    return state.is(BlockTags.DOORS) || state.is(BlockTags.TRAPDOORS)
-                            || state.is(BlockTags.STAIRS) || state.is(BlockTags.SLABS);
-                },
+                pos -> Zone.isEntryBlock(level.getBlockState(pos)),
                 zoneData);
-    }
-
-    static boolean isValidPlayerBuiltZone(UUID regionId, SpaceRegionRegistry registry,
-                                          java.util.function.Predicate<BlockPos> isEntry, ZoneData zoneData) {
-        Set<BlockPos> regionBlocks = registry.getBlocksInRegion(regionId);
-        if (regionBlocks.size() < 2) return false;
-
-        for (BlockPos interiorPos : regionBlocks) {
-            if (isEntry.test(interiorPos)) return true;
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) != 1) continue;
-                        BlockPos neighborPos = interiorPos.offset(dx, dy, dz);
-                        if (isEntry.test(neighborPos)) return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
-    @Nullable
-    private static RoomTypeQualityProfile getRoomTypeQualityProfile(ResourceLocation typeId) {
-        String path = typeId.getPath();
-        if (path.contains("bedroom")) return RoomTypeQualityProfile.BEDROOM;
-        if (path.contains("greenhouse") || path.contains("garden")) return RoomTypeQualityProfile.GREENHOUSE;
-        if (path.contains("enchanting")) return RoomTypeQualityProfile.ENCHANTING;
-        if (path.contains("smithy") || path.contains("smith")) return RoomTypeQualityProfile.SMITHY;
-        return null;
     }
 
     private void computeSpatialExtent(ZoneData zone, UUID regionId, Level level) {
         computeSpatialExtent(zone, regionId, SpaceRegionRegistry.get(level),
-                pos -> {
-                    var state = level.getBlockState(pos);
-                    return state.is(BlockTags.DOORS) || state.is(BlockTags.TRAPDOORS)
-                            || state.is(BlockTags.STAIRS) || state.is(BlockTags.SLABS);
-                });
-    }
-
-    static void computeSpatialExtent(ZoneData zone, UUID regionId, SpaceRegionRegistry registry,
-                                     java.util.function.Predicate<BlockPos> isEntry) {
-        Set<BlockPos> blocks = registry.getBlocksInRegion(regionId);
-        if (blocks.isEmpty()) return;
-        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-        for (BlockPos pos : blocks) {
-            if (pos.getX() < minX) minX = pos.getX();
-            if (pos.getY() < minY) minY = pos.getY();
-            if (pos.getZ() < minZ) minZ = pos.getZ();
-            if (pos.getX() > maxX) maxX = pos.getX();
-            if (pos.getY() > maxY) maxY = pos.getY();
-            if (pos.getZ() > maxZ) maxZ = pos.getZ();
-        }
-
-        Set<BlockPos> entryBlocks = new HashSet<>();
-        for (BlockPos interiorPos : blocks) {
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) != 1) continue;
-                        BlockPos neighborPos = interiorPos.offset(dx, dy, dz);
-                        if (isEntry.test(neighborPos)) {
-                            entryBlocks.add(neighborPos);
-                        }
-                    }
-                }
-            }
-        }
-
-        for (BlockPos pos : entryBlocks) {
-            if (pos.getX() < minX) minX = pos.getX();
-            if (pos.getY() < minY) minY = pos.getY();
-            if (pos.getZ() < minZ) minZ = pos.getZ();
-            if (pos.getX() > maxX) maxX = pos.getX();
-            if (pos.getY() > maxY) maxY = pos.getY();
-            if (pos.getZ() > maxZ) maxZ = pos.getZ();
-        }
-
-        zone.setSpatialExtent(minX, minY, minZ, maxX, maxY, maxZ);
+                pos -> Zone.isEntryBlock(level.getBlockState(pos)));
     }
 
     @Nullable
     private BlockPos firstBlockOf(UUID regionId, Level level) {
         Set<BlockPos> blocks = SpaceRegionRegistry.get(level).getBlocksInRegion(regionId);
         return blocks.isEmpty() ? null : blocks.iterator().next();
+    }
+
+    private record DeferredExpansion(Zone zone, BlockPos pos) {
     }
 }

@@ -1,0 +1,30 @@
+{
+  "id": "minecolonies:library",
+  "display_name": "room_type.minecolonies.library",
+  "zone_definition": "minecolonies:study_zone",
+  "icon": "minecolonies:blockhutlibrary",
+  "required_mods": [
+    "minecolonies"
+  ],
+  "anchors": [
+    "minecolonies:blockhutlibrary",
+    "minecolonies:blockhutuniversity",
+    "minecolonies:blockhutschool"
+  ],
+  "required_features": [
+    {
+      "signal": "minecolonies_library",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "bookshelf",
+    "lighting",
+    "quiet_materials",
+    "clear_floor_space"
+  ],
+  "penalty_signals": [
+    "factory_block",
+    "industrial_blocks"
+  ]
+}

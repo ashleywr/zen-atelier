@@ -50,9 +50,7 @@ public class ClassificationScheduler {
             if (work.isExpired()) continue;
 
             ChunkAccess chunk = level.getChunk(work.chunkX, work.chunkZ);
-            if (chunk != null) {
-                zoneRegistry.bootstrapChunk(chunk, level);
-            }
+            zoneRegistry.bootstrapChunk(chunk, level);
             processed++;
         }
     }

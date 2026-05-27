@@ -1,0 +1,28 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.room_stat_cards.name",
+  "icon": "zen_atelier:textures/gui/book_icons/discoveries.png",
+  "category": "zen_atelier:rooms",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.room_stat_cards.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.room_stat_cards.page.2"
+    },
+    {
+      "type": "zen_atelier:room_stat_card"
+    },
+    {
+      "type": "patchouli:relations",
+      "entries": [
+        "zen_atelier:rooms/room_discoveries",
+        "zen_atelier:rooms/visual_room_reference"
+      ],
+      "title": "patchouli.zen_atelier.room_journal.relations.title",
+      "text": "patchouli.zen_atelier.room_journal.relations.text"
+    }
+  ]
+}

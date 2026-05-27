@@ -39,6 +39,16 @@ class ClientZoneCacheTest {
     }
 
     @Test
+    void storeZonePreservesRoomLightLevel() {
+        UUID id = UUID.randomUUID();
+        ClientZoneCache.storeZone(roomPayload(id, 0, 0, 15, 15));
+
+        RoomData room = (RoomData) ClientZoneCache.getZone(id);
+
+        assertThat(room.getLightLevel()).isEqualTo(11);
+    }
+
+    @Test
     void getZoneAtReturnsZoneWhoseBoundsContainPosition() {
         UUID id = UUID.randomUUID();
         ClientZoneCache.storeZone(roomPayload(id, 0, 0, 15, 15));
@@ -97,12 +107,12 @@ class ClientZoneCacheTest {
     // --- helpers ---
 
     private SyncZoneGridPayload roomPayload(UUID id, int minX, int minZ, int maxX, int maxZ) {
-        return new SyncZoneGridPayload(id, false, 100, 0.9f, 0.7f, null, false, null, null,
-                minX, 60, minZ, maxX, 70, maxZ);
+        return new SyncZoneGridPayload(id, false, 100, 0.9f, 0.7f, 11, null, false, null, null,
+                minX, 60, minZ, maxX, 70, maxZ, 0f, null);
     }
 
     private SyncZoneGridPayload outdoorPayload(UUID id, int minX, int minZ, int maxX, int maxZ) {
-        return new SyncZoneGridPayload(id, true, 0, 0f, 0f, null, false, null, null,
-                minX, 60, minZ, maxX, 70, maxZ);
+        return new SyncZoneGridPayload(id, true, 0, 0f, 0f, -1, null, false, null, null,
+                minX, 60, minZ, maxX, 70, maxZ, 0f, null);
     }
 }

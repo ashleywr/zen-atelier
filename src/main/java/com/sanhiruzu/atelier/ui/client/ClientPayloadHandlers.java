@@ -1,7 +1,9 @@
 package com.sanhiruzu.atelier.ui.client;
 
 import com.sanhiruzu.atelier.ZenAtelier;
+import com.sanhiruzu.atelier.ui.patchouli.PatchouliDiscoveryFlags;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
+import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import net.minecraft.client.Minecraft;
 
 public final class ClientPayloadHandlers {
@@ -19,21 +21,11 @@ public final class ClientPayloadHandlers {
 
     public static void handleDiscoveryDataSync(DiscoveryDataSyncPayload payload) {
         ClientDiscoveryData.update(payload.discoveredRooms());
-        trySetPatchouliFlags(payload);
+        PatchouliDiscoveryFlags.syncDiscoveredFlags(payload.discoveredRooms().keySet());
     }
 
-    private static void trySetPatchouliFlags(DiscoveryDataSyncPayload payload) {
-        try {
-            Class<?> patchouliApi = Class.forName("vazkii.patchouli.api.PatchouliAPI");
-            Object api = patchouliApi.getMethod("get").invoke(null);
-            Class<?> apiInterface = Class.forName("vazkii.patchouli.api.PatchouliAPI$IPatchouliAPI");
-            java.lang.reflect.Method setFlag = apiInterface.getMethod("setConfigFlag", String.class, boolean.class);
-
-            for (String profileId : payload.discoveredRooms().keySet()) {
-                String roomType = profileId.contains(":") ? profileId.substring(profileId.indexOf(":") + 1) : profileId;
-                setFlag.invoke(api, ZenAtelier.MODID + ".discovered." + roomType, true);
-            }
-        } catch (ReflectiveOperationException ignored) {
-        }
+    public static void handleRoomCatalogSync(RoomCatalogSyncPayload payload) {
+        ClientRoomCatalogData.update(payload.entries());
     }
+
 }

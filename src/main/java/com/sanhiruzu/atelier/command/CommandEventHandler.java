@@ -11,5 +11,6 @@ public class CommandEventHandler {
         CaptureZoneCommand.register(event.getDispatcher());
         DeleteZoneCommand.register(event.getDispatcher());
         InspectZoneCommand.register(event.getDispatcher());
+        RoomFixtureCommand.register(event.getDispatcher());
     }
 }

@@ -17,7 +17,8 @@ class ClientZoneDataTest {
     void updateStoresCurrentZoneDisplayData() {
         UUID id = UUID.randomUUID();
 
-        ClientZoneData.update(id, "Bedroom", "Gilded Bedroom", "The Soft Crown", "Custom Room", "bedroom, luxury", 82, "Size:30% Encl:35% Furn:20% Craft:15%");
+        ClientZoneData.update(id, "Bedroom", "Gilded Bedroom", "The Soft Crown", "Custom Room",
+                "bedroom, luxury", 82, "Size:30% Encl:35% Furn:20% Craft:15%", 12);
 
         assertTrue(ClientZoneData.isInZone());
         assertEquals(id, ClientZoneData.getCurrentZoneId());
@@ -25,6 +26,7 @@ class ClientZoneDataTest {
         assertEquals("Gilded Bedroom", ClientZoneData.getCurrentGeneratedName());
         assertEquals("bedroom, luxury", ClientZoneData.getCurrentActiveProfiles());
         assertEquals(82, ClientZoneData.getCurrentZenScore());
+        assertEquals(12, ClientZoneData.getCurrentLightLevel());
     }
 
     @Test
@@ -103,6 +105,32 @@ class ClientZoneDataTest {
 
         ClientZoneData.setDebugMode(true);
         ClientZoneData.update(ClientZoneData.getCurrentZoneId(), "Bedroom", "", "", "", "", 50, "");
+
+        assertTrue(ClientZoneData.shouldShowRoomHud());
+    }
+
+    @Test
+    void tinyScoreChangesDoNotRevealExpiredHud() {
+        UUID id = UUID.randomUUID();
+        ClientZoneData.update(id, "Bedroom", "", "", "", "Bedroom", 50, "");
+        for (int i = 0; i < 100; i++) {
+            ClientZoneData.tick();
+        }
+
+        ClientZoneData.update(id, "Bedroom", "", "", "", "Bedroom", 54, "");
+
+        assertFalse(ClientZoneData.shouldShowRoomHud());
+    }
+
+    @Test
+    void meaningfulScoreChangesRevealExpiredHud() {
+        UUID id = UUID.randomUUID();
+        ClientZoneData.update(id, "Bedroom", "", "", "", "Bedroom", 50, "");
+        for (int i = 0; i < 100; i++) {
+            ClientZoneData.tick();
+        }
+
+        ClientZoneData.update(id, "Bedroom", "", "", "", "Bedroom", 60, "");
 
         assertTrue(ClientZoneData.shouldShowRoomHud());
     }

@@ -28,6 +28,8 @@ public final class ClientEvents {
         if (!event.getLevel().isClientSide()) return;
         ClientZoneCache.clear();
         ClientZoneData.clear();
+        ClientDiscoveryData.clear();
+        ClientRoomCatalogData.clear();
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -52,7 +54,8 @@ public final class ClientEvents {
                         snapshot.customName(),
                         snapshot.activeProfiles(),
                         snapshot.score(),
-                        snapshot.uniqueName()  // Quality breakdown is stored in uniqueName field
+                        snapshot.uniqueName(),  // Quality breakdown is stored in uniqueName field
+                        snapshot.lightLevel()
                 ),
                 () -> {
                     UUID lastId = ClientZoneData.getCurrentZoneId();
@@ -111,6 +114,11 @@ public final class ClientEvents {
                     ResourceLocation.withDefaultNamespace("experience_bar"),
                     ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "zen_meter"),
                     new ZenMeterOverlay()
+            );
+            event.registerAbove(
+                    ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "zen_meter"),
+                    ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "synthesis_cauldron"),
+                    new SynthesisCauldronOverlay()
             );
         }
     }

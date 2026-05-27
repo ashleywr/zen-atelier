@@ -7,6 +7,20 @@
   "use_resource_pack": true,
   "book_texture": "patchouli:textures/gui/book_green.png",
   "model": "zen_atelier:room_journal",
-  "index_icon": "minecraft:writable_book",
-  "show_progress": false
+  "index_icon": "zen_atelier:textures/gui/book_icons/field_notes.png",
+  "show_progress": false,
+  "text_overflow_mode": "resize",
+  "text_color": "2f261c",
+  "header_color": "365b3d",
+  "nameplate_color": "d8b46a",
+  "link_color": "416f8f",
+  "link_hover_color": "6f8f41",
+  "macros": {
+    "$(room)": "$(#365b3d)",
+    "$(signal)": "$(#7a5a31)",
+    "$(hint)": "$(#416f8f)",
+    "$(good)": "$(#3f7f5f)",
+    "$(warn)": "$(#9f3d35)",
+    "$(note)": "$(#5f5142)"
+  }
 }

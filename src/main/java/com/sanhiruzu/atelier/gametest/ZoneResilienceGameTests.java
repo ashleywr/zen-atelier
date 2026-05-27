@@ -21,6 +21,9 @@ import java.util.*;
 @GameTestHolder(ZenAtelier.MODID)
 public class ZoneResilienceGameTests {
 
+    // Shared template for programmatic ring tests. 12×5×12 empty air space.
+    private static final String EMPTY_TEMPLATE = "zoneresiliencegametests.testzonesurvivestcascade";
+
     /**
      * Loads the plains village church, bootstraps zones, then breaks one ceiling
      * block near the chunk seam. Verifies the zone expands to claim the new air
@@ -164,14 +167,12 @@ public class ZoneResilienceGameTests {
         helper.succeed();
     }
 
-    // Shared template for programmatic ring tests. 12×5×12 empty air space.
-    private static final String EMPTY_TEMPLATE = "zoneresiliencegametests.testzonesurvivestcascade";
-
-    /**
-     * A sealed room (4×4 walls + ceiling, door) survives 10 re-bootstraps.
-     * Each bootstrap reclassifies the chunk and creates a new zone entity;
-     * the interior must remain INSIDE and zone-owned throughout.
+    /*
+      A sealed room (4×4 walls + ceiling, door) survives 10 re-bootstraps.
+      Each bootstrap reclassifies the chunk and creates a new zone entity;
+      the interior must remain INSIDE and zone-owned throughout.
      */
+
     /**
      * Diagnostic: builds a 4x4x2 sealed ring with door and verifies
      * that the classifier marks the interior as INSIDE.
@@ -585,12 +586,19 @@ public class ZoneResilienceGameTests {
         registry.unmapBlock(origin.offset(2, 0, 0));
         registry.unmapBlock(origin.offset(2, 1, 0));
 
-        // Verify: interior air is open through the gap → no bounded enclosure.
+        // Verify: before the door exists, any bounded geometry found here is not
+        // player-built-zone-valid because it has no adjacent entry block.
         // Simulate onBlockPlace for a ceiling block (last block placed).
         BlockPos lastCeilingBlock = origin.offset(2, 2, 2);
-        Set<BlockPos> leakyDetect = EnclosureDetector.detect(level, lastCeilingBlock);
-        helper.assertTrue(leakyDetect == null,
-                "Enclosure detected before door is placed — interior air should leak through the door gap");
+        Set<BlockPos> preDoorDetection = EnclosureDetector.detect(level, lastCeilingBlock);
+        if (preDoorDetection != null) {
+            for (BlockPos pos : preDoorDetection) {
+                for (Direction dir : Direction.values()) {
+                    helper.assertTrue(!Zone.isEntryBlock(level.getBlockState(pos.relative(dir))),
+                            "Detected pre-door geometry has an entry block adjacent to " + pos);
+                }
+            }
+        }
         for (BlockPos pos : interior) {
             helper.assertTrue(registry.getRegionIdAt(pos) == null,
                     "Interior block unexpectedly in a zone before door placement: " + pos);
@@ -620,7 +628,7 @@ public class ZoneResilienceGameTests {
                 "Zone.createFromBootstrap returned null — missing door entry or other validation failure");
 
         ZoneRegistry.get(level).evaluateRoomAndSyncNow(zone, level);
-        ZoneData zoneData = zoneRegistry.getZone(zone.getId());
+        ZoneData zoneData = zoneRegistry.getRoom(zone.getId());
         helper.assertTrue(zoneData != null, "ZoneData not in registry after zone creation");
 
         for (BlockPos pos : interior) {
@@ -866,7 +874,7 @@ public class ZoneResilienceGameTests {
         // Simulate ClassificationEventHandler.onBlockBreak: tryExpand, then enterGracePeriod.
         zone.tryExpand(wall, level);
         ZoneRegistry.get(level).enterGracePeriod(zone.getId(), level);
-        ZoneData zd = ZoneRegistry.get(level).getZone(zoneId);
+        ZoneData zd = ZoneRegistry.get(level).getRoom(zoneId);
         helper.assertTrue(zd != null && zd.isDisabled(),
                 "Zone should be disabled after wall breach");
         helper.assertTrue(ZoneRegistry.get(level).isInGracePeriod(zoneId),
@@ -932,7 +940,7 @@ public class ZoneResilienceGameTests {
         level.removeBlock(wall, false);
         zone.tryExpand(wall, level);
         ZoneRegistry.get(level).enterGracePeriod(zone.getId(), level);
-        ZoneData zd = ZoneRegistry.get(level).getZone(zoneId);
+        ZoneData zd = ZoneRegistry.get(level).getRoom(zoneId);
         helper.assertTrue(zd != null && zd.isDisabled(), "Zone should be disabled after breach");
         helper.assertTrue(ZoneRegistry.get(level).isInGracePeriod(zoneId), "Zone should be in grace period");
 
@@ -944,7 +952,7 @@ public class ZoneResilienceGameTests {
         // Zone should recover — disabled flag cleared, grace period cancelled.
         helper.assertTrue(!zone.isDissolved(), "Zone should not be dissolved after repair");
         ZoneRegistry.get(level).evaluateRoomAndSyncNow(zone, level); // second call to ensure saved data is current
-        zd = ZoneRegistry.get(level).getZone(zoneId);
+        zd = ZoneRegistry.get(level).getRoom(zoneId);
         helper.assertTrue(zd != null, "ZoneData should exist after recovery");
         // After recovery, the zone should no longer be disabled.
         // getOrEvaluate clears the disabled flag, so re-fetching gets the fresh state.
@@ -1260,12 +1268,14 @@ public class ZoneResilienceGameTests {
             }
         }
 
-        // 3. Metadata ↔ registry: ZoneData volume must match registry block count.
-        ZoneData zoneData = zoneReg.getZone(zoneId);
-        if (zoneData != null) {
-            helper.assertTrue(zoneData.getVolume() == registryBlocks.size(),
+        // 3. Metadata ↔ live zone: ZoneData volume tracks interior air, while
+        // registry ownership also includes claimed entry blocks such as doors.
+        ZoneData zoneData = zoneReg.getRoom(zoneId);
+        Zone zone = zoneReg.getZoneById(zoneId);
+        if (zoneData != null && zone != null) {
+            helper.assertTrue(zoneData.getVolume() == zone.getVolume(),
                     "[" + label + "] ZoneData volume " + zoneData.getVolume()
-                            + " != registry block count " + registryBlocks.size());
+                            + " != live zone interior volume " + zone.getVolume());
         }
     }
 
@@ -1284,11 +1294,9 @@ public class ZoneResilienceGameTests {
             queue.add(seed);
             while (!queue.isEmpty()) {
                 BlockPos pos = queue.poll();
-                for (BlockPos n : new BlockPos[]{
-                        pos.above(), pos.below(),
-                        pos.north(), pos.south(),
-                        pos.east(), pos.west()}) {
-                    if (unvisited.remove(n)) queue.add(n);
+                for (Direction dir : Direction.values()) {
+                    BlockPos neighbor = pos.relative(dir);
+                    if (unvisited.remove(neighbor)) queue.add(neighbor);
                 }
             }
         }

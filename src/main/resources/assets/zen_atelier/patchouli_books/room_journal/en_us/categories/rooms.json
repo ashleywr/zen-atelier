@@ -1,6 +1,6 @@
 {
   "name": "patchouli.zen_atelier.room_journal.category.rooms.name",
   "description": "patchouli.zen_atelier.room_journal.category.rooms.description",
-  "icon": "minecraft:red_bed",
+  "icon": "zen_atelier:textures/gui/book_icons/room_index.png",
   "sortnum": 1
 }

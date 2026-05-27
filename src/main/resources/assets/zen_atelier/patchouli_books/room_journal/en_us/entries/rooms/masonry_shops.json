@@ -1,8 +1,9 @@
 {
   "name": "patchouli.zen_atelier.room_journal.entry.masonry_shops.name",
-  "icon": "minecraft:stonecutter",
+  "icon": "zen_atelier:textures/gui/room_icons/masonry.png",
   "category": "zen_atelier:rooms",
-  "flag": "zen_atelier.discovered.masonry",
+  "flag": "zen_atelier:room/masonry",
+  "sortnum": 11,
   "pages": [
     {
       "type": "patchouli:text",
@@ -11,6 +12,21 @@
     {
       "type": "patchouli:text",
       "text": "patchouli.zen_atelier.room_journal.entry.masonry_shops.page.2"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.masonry_shops.page.3"
+    },
+    {
+      "type": "patchouli:relations",
+      "entries": [
+        "zen_atelier:basics/rooms_remember_purpose",
+        "zen_atelier:basics/signals_and_materials",
+        "zen_atelier:basics/anchors_and_names",
+        "zen_atelier:basics/naming_rooms"
+      ],
+      "title": "patchouli.zen_atelier.room_journal.relations.title",
+      "text": "patchouli.zen_atelier.room_journal.relations.text"
     }
   ]
 }

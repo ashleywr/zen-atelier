@@ -28,9 +28,7 @@ public class BlockRarityCache {
         LOGGER.info("Initializing BlockRarityCache...");
         long startTime = System.currentTimeMillis();
 
-        BuiltInRegistries.BLOCK.forEach(block -> {
-            computeRarity(block, recipes);
-        });
+        BuiltInRegistries.BLOCK.forEach(block -> computeRarity(block, recipes));
 
         initialized = true;
         long elapsed = System.currentTimeMillis() - startTime;

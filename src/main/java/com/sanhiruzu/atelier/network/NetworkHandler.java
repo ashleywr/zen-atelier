@@ -6,6 +6,7 @@ import com.sanhiruzu.atelier.client.ZoneVfxManager;
 import com.sanhiruzu.atelier.space.zone.Zone;
 import com.sanhiruzu.atelier.space.zone.ZoneAttachment;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
+import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -21,6 +22,8 @@ public class NetworkHandler {
                         NetworkHandler::handleToggleDebug)
                 .playToClient(DiscoveryDataSyncPayload.TYPE, DiscoveryDataSyncPayload.CODEC,
                         NetworkHandler::handleDiscoveryDataSync)
+                .playToClient(RoomCatalogSyncPayload.TYPE, RoomCatalogSyncPayload.CODEC,
+                        NetworkHandler::handleRoomCatalogSync)
                 .playToClient(SyncZoneGridPayload.TYPE, SyncZoneGridPayload.CODEC,
                         NetworkHandler::handleZoneGridSync)
                 .playToClient(SyncPlayerZonePayload.TYPE, SyncPlayerZonePayload.CODEC,
@@ -69,10 +72,8 @@ public class NetworkHandler {
     private static void handlePlayerZoneSync(SyncPlayerZonePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
-            if (player != null) {
-                Zone zone = payload.zoneId() != null ? new Zone(payload.zoneId()) : null;
-                player.getData(ZoneAttachment.ZONE.get()).setCurrentZone(zone);
-            }
+            Zone zone = payload.zoneId() != null ? new Zone(payload.zoneId()) : null;
+            player.getData(ZoneAttachment.ZONE.get()).setCurrentZone(zone);
         });
     }
 
@@ -88,6 +89,10 @@ public class NetworkHandler {
 
     private static void handleDiscoveryDataSync(DiscoveryDataSyncPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> handleClientDiscoveryDataSync(payload));
+    }
+
+    private static void handleRoomCatalogSync(RoomCatalogSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleClientRoomCatalogSync(payload));
     }
 
     private static void handleRoomInspect(RoomInspectPayload payload, IPayloadContext context) {
@@ -113,6 +118,16 @@ public class NetworkHandler {
             try {
                 Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
                 handlers.getMethod("handleDiscoveryDataSync", DiscoveryDataSyncPayload.class).invoke(null, payload);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+    }
+
+    private static void handleClientRoomCatalogSync(RoomCatalogSyncPayload payload) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            try {
+                Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
+                handlers.getMethod("handleRoomCatalogSync", RoomCatalogSyncPayload.class).invoke(null, payload);
             } catch (ReflectiveOperationException ignored) {
             }
         }

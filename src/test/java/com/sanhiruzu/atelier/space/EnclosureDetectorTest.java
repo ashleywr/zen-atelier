@@ -81,6 +81,27 @@ class EnclosureDetectorTest {
         return out;
     }
 
+    private static Iterable<BlockPos> stepAwareNeighbors(BlockPos pos, Set<BlockPos> stairs) {
+        Set<BlockPos> neighbors = new HashSet<>();
+        for (Direction dir : Direction.values()) {
+            neighbors.add(pos.relative(dir));
+        }
+        for (Direction dir : Direction.Plane.HORIZONTAL) {
+            BlockPos horizontal = pos.relative(dir);
+            if (stairs.contains(horizontal)) {
+                neighbors.add(horizontal.above());
+            }
+            BlockPos down = horizontal.below();
+            if (stairs.contains(down)) {
+                neighbors.add(down.above());
+            }
+            if (stairs.contains(pos.below())) {
+                neighbors.add(down);
+            }
+        }
+        return neighbors;
+    }
+
     // -------------------------------------------------------------------------
     // 1. Perfectly sealed cube — baseline sanity check
     // -------------------------------------------------------------------------
@@ -193,6 +214,33 @@ class EnclosureDetectorTest {
         Set<BlockPos> result = bfsH(interior, new BlockPos(1, 1, 1));
         assertNotNull(result);
         assertEquals(interior, result, "must find all 6 blocks of the L-shape");
+    }
+
+    @Test
+    void stairStepConnectsUpperFloorAir() {
+        Set<BlockPos> air = Set.of(
+                new BlockPos(0, 1, 0),
+                new BlockPos(1, 2, 0)
+        );
+        Set<BlockPos> stairs = Set.of(new BlockPos(1, 1, 0));
+
+        Set<BlockPos> result = EnclosureDetector.bfs(
+                new BlockPos(0, 1, 0),
+                pos -> stepAwareNeighbors(pos, stairs),
+                air::contains,
+                EnclosureDetector.MAX_INTERIOR_BLOCKS);
+
+        assertNotNull(result);
+        assertEquals(air, result, "stair-supported diagonal step should connect both floor levels");
+
+        Set<BlockPos> reverse = EnclosureDetector.bfs(
+                new BlockPos(1, 2, 0),
+                pos -> stepAwareNeighbors(pos, stairs),
+                air::contains,
+                EnclosureDetector.MAX_INTERIOR_BLOCKS);
+
+        assertNotNull(reverse);
+        assertEquals(air, reverse, "stair-supported diagonal step should work from upper-floor seeds too");
     }
 
     // -------------------------------------------------------------------------

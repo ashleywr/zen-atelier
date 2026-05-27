@@ -32,6 +32,27 @@ public record RoomEpithet(
         maximumFeatures = Map.copyOf(maximumFeatures);
     }
 
+    private static int getFeatureCount(RoomData room, String key) {
+        // Map feature names to furniture counts in RoomData
+        return switch (key) {
+            case "beds" -> room.getFurnitureCounts().getOrDefault("bed", 0);
+            case "bookshelves" -> room.getFurnitureCounts().getOrDefault("bookshelf", 0);
+            case "storage" -> room.getFurnitureCounts().getOrDefault("storage", 0);
+            case "lighting" -> room.getFurnitureCounts().getOrDefault("light", 0);
+            case "cooking_block" -> room.getFurnitureCounts().getOrDefault("cooking_block", 0);
+            case "furnace", "heat_sources" -> room.getFurnitureCounts().getOrDefault("furnace", 0);
+            case "cauldrons" -> room.getFurnitureCounts().getOrDefault("cauldron", 0);
+            case "glass" -> room.getFurnitureCounts().getOrDefault("glass", 0);
+            case "plants" -> room.getFurnitureCounts().getOrDefault("plant", 0);
+            case "smithing_table", "smithing_tables" -> room.getFurnitureCounts().getOrDefault("smithing_table", 0);
+            case "enchanting_table", "enchanting_tables" ->
+                    room.getFurnitureCounts().getOrDefault("enchanting_table", 0);
+            case "crafting" -> room.getFurnitureCounts().getOrDefault("crafting", 0);
+            case "stone" -> room.getFurnitureCounts().getOrDefault("stone", 0);
+            default -> 0;
+        };
+    }
+
     public boolean matches(RoomData room, int score) {
         if (room.getZoneTypeId() == null) {
             return false;
@@ -60,26 +81,5 @@ public record RoomEpithet(
         }
 
         return true;
-    }
-
-    private static int getFeatureCount(RoomData room, String key) {
-        // Map feature names to furniture counts in RoomData
-        return switch (key) {
-            case "beds" -> room.getFurnitureCounts().getOrDefault("bed", 0);
-            case "bookshelves" -> room.getFurnitureCounts().getOrDefault("bookshelf", 0);
-            case "storage" -> room.getFurnitureCounts().getOrDefault("storage", 0);
-            case "lighting" -> room.getFurnitureCounts().getOrDefault("light", 0);
-            case "cooking_block" -> room.getFurnitureCounts().getOrDefault("cooking_block", 0);
-            case "furnace", "heat_sources" -> room.getFurnitureCounts().getOrDefault("furnace", 0);
-            case "cauldrons" -> room.getFurnitureCounts().getOrDefault("cauldron", 0);
-            case "glass" -> room.getFurnitureCounts().getOrDefault("glass", 0);
-            case "plants" -> room.getFurnitureCounts().getOrDefault("plant", 0);
-            case "smithing_table", "smithing_tables" -> room.getFurnitureCounts().getOrDefault("smithing_table", 0);
-            case "enchanting_table", "enchanting_tables" ->
-                    room.getFurnitureCounts().getOrDefault("enchanting_table", 0);
-            case "crafting" -> room.getFurnitureCounts().getOrDefault("crafting", 0);
-            case "stone" -> room.getFurnitureCounts().getOrDefault("stone", 0);
-            default -> 0;
-        };
     }
 }

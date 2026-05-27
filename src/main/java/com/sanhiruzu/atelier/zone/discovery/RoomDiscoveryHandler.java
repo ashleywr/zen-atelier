@@ -3,8 +3,8 @@ package com.sanhiruzu.atelier.zone.discovery;
 import com.sanhiruzu.atelier.advancement.AtelierCriteriaTriggers;
 import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
+import com.sanhiruzu.atelier.zone.RoomText;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -32,7 +32,7 @@ public final class RoomDiscoveryHandler {
             int xp = xpForDiscovery(quality);
             player.giveExperiencePoints(xp);
 
-            String roomTypeName = getRoomTypeName(room.getZoneTypeId());
+            String roomTypeName = RoomText.roomTypeName(room.getZoneTypeId());
             String message = Component.translatable("message.zen_atelier.room_discovered", roomTypeName).getString();
             player.displayClientMessage(Component.literal(message), false);
 
@@ -78,13 +78,5 @@ public final class RoomDiscoveryHandler {
         }
     }
 
-    private static String getRoomTypeName(ResourceLocation id) {
-        String key = "room_type." + id.getNamespace() + "." + id.getPath();
-        Component component = Component.translatable(key);
-        String localized = component.getString();
-        if (!localized.equals(key)) return localized;
 
-        String path = id.getPath().replace('_', ' ');
-        return path.isEmpty() ? id.toString() : Character.toUpperCase(path.charAt(0)) + path.substring(1);
-    }
 }

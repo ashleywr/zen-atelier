@@ -1,0 +1,15 @@
+{
+  "parent": "zen_atelier:room/root",
+  "display": {
+    "icon": {"item": "minecraft:cartography_table"},
+    "title": "Map Room",
+    "description": "Discover a map room",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "discover": {"trigger": "minecraft:impossible"}
+  }
+}

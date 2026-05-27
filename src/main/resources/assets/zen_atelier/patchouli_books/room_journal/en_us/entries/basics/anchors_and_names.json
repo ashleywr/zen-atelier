@@ -1,7 +1,8 @@
 {
   "name": "patchouli.zen_atelier.room_journal.entry.anchors_and_names.name",
-  "icon": "minecraft:oak_sign",
+  "icon": "zen_atelier:textures/gui/book_icons/anchors.png",
   "category": "zen_atelier:basics",
+  "sortnum": 3,
   "pages": [
     {
       "type": "patchouli:text",
@@ -10,6 +11,17 @@
     {
       "type": "patchouli:text",
       "text": "patchouli.zen_atelier.room_journal.entry.anchors_and_names.page.2"
+    },
+    {
+      "type": "patchouli:relations",
+      "entries": [
+        "zen_atelier:basics/rooms_remember_purpose",
+        "zen_atelier:basics/signals_and_materials",
+        "zen_atelier:basics/naming_rooms",
+        "zen_atelier:basics/nameplates_and_epithets"
+      ],
+      "title": "patchouli.zen_atelier.room_journal.relations.title",
+      "text": "patchouli.zen_atelier.room_journal.relations.text"
     }
   ]
 }

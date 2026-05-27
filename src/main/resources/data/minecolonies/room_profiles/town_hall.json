@@ -1,0 +1,28 @@
+{
+  "id": "minecolonies:town_hall",
+  "display_name": "room_type.minecolonies.town_hall",
+  "zone_definition": "minecolonies:civic_zone",
+  "icon": "minecolonies:blockhuttownhall",
+  "required_mods": [
+    "minecolonies"
+  ],
+  "anchors": [
+    "minecolonies:blockhuttownhall"
+  ],
+  "required_features": [
+    {
+      "signal": "minecolonies_town_hall",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "storage",
+    "lighting",
+    "clear_floor_space",
+    "urban_block"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "crowded_work_blocks"
+  ]
+}

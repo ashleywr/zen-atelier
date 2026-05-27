@@ -6,7 +6,10 @@
     "minecraft:anvil",
     "minecraft:smithing_table",
     "minecraft:grindstone",
-    "minecraft:blast_furnace"
+    "minecraft:blast_furnace",
+    "minecolonies:blockhutblacksmith",
+    "minecolonies:blockhutsmeltery",
+    "minecolonies:blockhutcrusher"
   ],
   "required_features": [
     {

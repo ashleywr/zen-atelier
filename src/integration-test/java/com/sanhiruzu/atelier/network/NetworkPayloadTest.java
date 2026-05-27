@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.network;
 import com.sanhiruzu.atelier.space.ChunkClassificationData;
 import com.sanhiruzu.atelier.space.ClassificationState;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
+import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,6 +25,7 @@ public class NetworkPayloadTest {
     private RegistryFriendlyByteBuf testBuffer;
 
     @BeforeEach
+    @SuppressWarnings("deprecation")
     void setUp() {
         testBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), null);
     }
@@ -159,6 +162,32 @@ public class NetworkPayloadTest {
     }
 
     @Test
+    void testRoomCatalogSyncPayloadSerializeDeserialize() {
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        RoomCatalogSyncPayload original = new RoomCatalogSyncPayload(List.of(
+                new RoomCatalogSyncPayload.Entry(
+                        "zen_atelier:bedroom",
+                        "room_type.zen_atelier.bedroom",
+                        "minecraft:red_bed",
+                        List.of("Look for a bed.")
+                ),
+                new RoomCatalogSyncPayload.Entry(
+                        "example_mod:frog_habitat",
+                        "room_type.example_mod.frog_habitat",
+                        "minecraft:lily_pad",
+                        List.of("Look for frog-friendly plants.", "Look for nearby source water.")
+                )
+        ));
+
+        RoomCatalogSyncPayload.CODEC.encode(buffer, original);
+
+        buffer.readerIndex(0);
+        RoomCatalogSyncPayload decoded = RoomCatalogSyncPayload.CODEC.decode(buffer);
+
+        assertEquals(original.entries(), decoded.entries(), "Room catalog entries should round-trip exactly");
+    }
+
+    @Test
     void testRoomInspectPayloadSerializeDeserialize() {
         BlockPos pos = new BlockPos(-12, 73, 2048);
 
@@ -174,10 +203,13 @@ public class NetworkPayloadTest {
     @Test
     void testUiPayloadTypeResourceLocations() {
         ResourceLocation discoveryId = DiscoveryDataSyncPayload.TYPE.id();
+        ResourceLocation roomCatalogId = RoomCatalogSyncPayload.TYPE.id();
         ResourceLocation roomInspectId = RoomInspectPayload.TYPE.id();
 
         assertEquals("zen_atelier", discoveryId.getNamespace());
         assertEquals("discovery_sync", discoveryId.getPath());
+        assertEquals("zen_atelier", roomCatalogId.getNamespace());
+        assertEquals("room_catalog_sync", roomCatalogId.getPath());
         assertEquals("zen_atelier", roomInspectId.getNamespace());
         assertEquals("room_inspect", roomInspectId.getPath());
     }
@@ -202,7 +234,7 @@ public class NetworkPayloadTest {
     @Test
     void testSyncZoneGridPayload_indoorNoType() {
         UUID regionId = UUID.fromString("12345678-1234-1234-1234-123456789abc");
-        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 85, 0.92f, 0.78f, null, false, null, null, -50, 0, -50, 50, 100, 50);
+        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 85, 0.92f, 0.78f, 7, null, false, null, null, -50, 0, -50, 50, 100, 50);
 
         SyncZoneGridPayload.CODEC.encode(testBuffer, original);
         testBuffer.readerIndex(0);
@@ -213,6 +245,7 @@ public class NetworkPayloadTest {
         assertEquals(85, decoded.volume(), "volume should round-trip");
         assertEquals(0.92f, decoded.enclosureScore(), 0.001f, "enclosureScore should round-trip");
         assertEquals(0.78f, decoded.quality(), 0.001f, "quality should round-trip");
+        assertEquals(7, decoded.lightLevel(), "lightLevel should round-trip");
         assertNull(decoded.zoneTypeId(), "null zoneTypeId should round-trip as null");
         assertFalse(decoded.degraded(), "degraded should round-trip as false");
     }
@@ -221,7 +254,7 @@ public class NetworkPayloadTest {
     void testSyncZoneGridPayload_indoorWithZoneType() {
         UUID regionId = UUID.randomUUID();
         ResourceLocation typeId = ResourceLocation.fromNamespaceAndPath("zen_atelier", "atelier");
-        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 120, 0.95f, 1.0f, typeId, true, null, null, -100, 0, -100, 100, 150, 100);
+        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 120, 0.95f, 1.0f, 15, typeId, true, null, null, -100, 0, -100, 100, 150, 100);
 
         SyncZoneGridPayload.CODEC.encode(testBuffer, original);
         testBuffer.readerIndex(0);
@@ -230,13 +263,14 @@ public class NetworkPayloadTest {
         assertEquals(regionId, decoded.zoneId(), "zoneId should round-trip");
         assertEquals(typeId, decoded.zoneTypeId(), "zoneTypeId should round-trip");
         assertEquals(1.0f, decoded.quality(), 0.001f, "quality=1.0 should round-trip");
+        assertEquals(15, decoded.lightLevel(), "lightLevel should round-trip");
         assertTrue(decoded.degraded(), "degraded=true should round-trip");
     }
 
     @Test
     void testSyncZoneGridPayload_outdoor() {
         UUID regionId = UUID.randomUUID();
-        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, true, 0, 0.0f, 0.0f, null, false, null, null, -50, 0, -50, 50, 100, 50);
+        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, true, 0, 0.0f, 0.0f, -1, null, false, null, null, -50, 0, -50, 50, 100, 50);
 
         SyncZoneGridPayload.CODEC.encode(testBuffer, original);
         testBuffer.readerIndex(0);
@@ -244,6 +278,7 @@ public class NetworkPayloadTest {
 
         assertEquals(regionId, decoded.zoneId(), "zoneId should round-trip");
         assertTrue(decoded.isOutdoor(), "isOutdoor=true should round-trip");
+        assertEquals(-1, decoded.lightLevel(), "outdoor lightLevel should round-trip");
         assertNull(decoded.zoneTypeId(), "outdoor zone has no zoneTypeId");
     }
 

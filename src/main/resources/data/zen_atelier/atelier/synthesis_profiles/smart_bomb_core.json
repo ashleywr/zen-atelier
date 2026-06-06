@@ -1,0 +1,176 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:smart_bomb_core",
+  "category": "bombs",
+  "recipe_tier_cap": 4,
+  "board": {
+    "size": 5,
+    "empty_cell_success_penalty": 3,
+    "empty_cell_perfect_penalty": 6,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 1,
+        "type": "element",
+        "required_element": "fire",
+        "required_element_value": 2,
+        "quality_bonus": 10
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "type": "element",
+        "required_element": "light",
+        "required_element_value": 2,
+        "perfect_bonus": 5
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "type": "morph",
+        "required_element": "wind",
+        "required_element_value": 1,
+        "morph_target": "zen_atelier:ore_safe_mining_bomb_core",
+        "quality_bonus": 8
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 55,
+      "query": {
+        "required_categories": [
+          "zen_atelier:volatile"
+        ],
+        "min_tier": 2,
+        "max_instability": 70,
+        "min_elements": {
+          "fire": 2
+        }
+      }
+    },
+    {
+      "amount": 40,
+      "query": {
+        "required_categories": [
+          "zen_atelier:luminous"
+        ],
+        "min_quality": 45,
+        "min_elements": {
+          "light": 2
+        }
+      }
+    },
+    {
+      "amount": 35,
+      "query": {
+        "required_categories": [
+          "zen_atelier:conductive"
+        ],
+        "min_purity": 50,
+        "min_elements": {
+          "wind": 1
+        }
+      }
+    },
+    {
+      "amount": 25,
+      "query": {
+        "required_categories": [
+          "zen_atelier:resonant"
+        ],
+        "required_traits": [
+          "zen_atelier:resonant"
+        ]
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 70,
+      "outputs": [
+        {
+          "output": "zen_atelier:smart_bomb_core",
+          "count": 1,
+          "tier": 4,
+          "quality": 84,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:explosive",
+            "zen_atelier:terrain_safe",
+            "zen_atelier:hostile_filter"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 4,
+      "outputs": [
+        {
+          "output": "zen_atelier:smart_bomb_core",
+          "count": 1,
+          "tier": 4,
+          "quality": 98,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:explosive",
+            "zen_atelier:terrain_safe",
+            "zen_atelier:hostile_filter",
+            "zen_atelier:ore_preserving",
+            "zen_atelier:drop_magnetism"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "messy_failure",
+      "weight": 26,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:alchemical_slag",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:volatile"
+          ],
+          "amount": 24,
+          "tier": 2,
+          "quality": 15,
+          "purity": 0,
+          "instability": 90,
+          "elements": {
+            "fire": 3,
+            "earth": 1
+          },
+          "shape": {
+            "id": "tee",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 2,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:volatile",
+            "zen_atelier:contaminated"
+          ]
+        }
+      ]
+    }
+  ]
+}

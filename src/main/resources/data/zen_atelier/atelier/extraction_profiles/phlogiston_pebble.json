@@ -1,0 +1,144 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:phlogiston_pebble",
+  "source": "zen_atelier:phlogiston_pebble",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 76,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:phlogiston_grit",
+          "categories": [
+            "zen_atelier:combustible",
+            "zen_atelier:volatile",
+            "zen_atelier:mineral"
+          ],
+          "amount": 30,
+          "amount_range": {
+            "min": 20,
+            "max": 40
+          },
+          "tier": 1,
+          "quality": 42,
+          "quality_range": {
+            "min": 25,
+            "max": 62
+          },
+          "purity": 42,
+          "purity_range": {
+            "min": 25,
+            "max": 65
+          },
+          "instability": 45,
+          "instability_range": {
+            "min": 25,
+            "max": 70
+          },
+          "elements": {
+            "fire": 3
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:hot",
+            "zen_atelier:volatile"
+          ],
+          "source_hints": [
+            "zen_atelier:phlogiston_pebble"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "unstable_success",
+      "weight": 10,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:emberstone_core",
+          "categories": [
+            "zen_atelier:combustible",
+            "zen_atelier:volatile",
+            "zen_atelier:mineral"
+          ],
+          "amount": 18,
+          "tier": 2,
+          "quality": 60,
+          "purity": 35,
+          "instability": 78,
+          "elements": {
+            "fire": 4
+          },
+          "shape": {
+            "id": "tee",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 2,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:smoldering",
+            "zen_atelier:volatile"
+          ],
+          "source_hints": [
+            "zen_atelier:phlogiston_pebble"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 14,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:ash_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:combustible"
+          ],
+          "amount": 8,
+          "tier": 1,
+          "quality": 10,
+          "purity": 12,
+          "instability": 55,
+          "elements": {
+            "fire": 1
+          },
+          "traits": [
+            "zen_atelier:inert"
+          ],
+          "source_hints": [
+            "zen_atelier:phlogiston_pebble"
+          ]
+        }
+      ]
+    }
+  ]
+}

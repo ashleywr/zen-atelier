@@ -14,7 +14,9 @@ public class ChunkClassificationAttachment {
     public static final Supplier<AttachmentType<ChunkClassificationData>> CHUNK_CLASSIFICATION =
             ATTACHMENT_TYPES.register("chunk_classification", () ->
                     AttachmentType.builder(ChunkClassificationData::new)
-                            .serialize(ChunkClassificationData.CODEC)
+                            // Runtime classification is a rebuildable cache. Read old saves so a
+                            // migration build can clean them, but do not write new chunk NBT.
+                            .serialize(ChunkClassificationData.CODEC, data -> false)
                             .build()
             );
 

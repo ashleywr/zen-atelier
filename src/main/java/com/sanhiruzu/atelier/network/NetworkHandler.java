@@ -5,7 +5,10 @@ import com.sanhiruzu.atelier.client.ClientZoneCache;
 import com.sanhiruzu.atelier.client.ZoneVfxManager;
 import com.sanhiruzu.atelier.space.zone.Zone;
 import com.sanhiruzu.atelier.space.zone.ZoneAttachment;
+import com.sanhiruzu.atelier.ui.network.SynthesisCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
+import com.sanhiruzu.atelier.ui.network.ExtractionKnowledgeSyncPayload;
+import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
 import net.neoforged.api.distmarker.Dist;
@@ -22,6 +25,12 @@ public class NetworkHandler {
                         NetworkHandler::handleToggleDebug)
                 .playToClient(DiscoveryDataSyncPayload.TYPE, DiscoveryDataSyncPayload.CODEC,
                         NetworkHandler::handleDiscoveryDataSync)
+                .playToClient(ExtractionKnowledgeSyncPayload.TYPE, ExtractionKnowledgeSyncPayload.CODEC,
+                        NetworkHandler::handleExtractionKnowledgeSync)
+                .playToClient(SynthesisCatalogSyncPayload.TYPE, SynthesisCatalogSyncPayload.CODEC,
+                        NetworkHandler::handleSynthesisCatalogSync)
+                .playToClient(ReagentVaultSyncPayload.TYPE, ReagentVaultSyncPayload.CODEC,
+                        NetworkHandler::handleReagentVaultSync)
                 .playToClient(RoomCatalogSyncPayload.TYPE, RoomCatalogSyncPayload.CODEC,
                         NetworkHandler::handleRoomCatalogSync)
                 .playToClient(SyncZoneGridPayload.TYPE, SyncZoneGridPayload.CODEC,
@@ -91,8 +100,20 @@ public class NetworkHandler {
         context.enqueueWork(() -> handleClientDiscoveryDataSync(payload));
     }
 
+    private static void handleExtractionKnowledgeSync(ExtractionKnowledgeSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleClientExtractionKnowledgeSync(payload));
+    }
+
     private static void handleRoomCatalogSync(RoomCatalogSyncPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> handleClientRoomCatalogSync(payload));
+    }
+
+    private static void handleSynthesisCatalogSync(SynthesisCatalogSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleClientSynthesisCatalogSync(payload));
+    }
+
+    private static void handleReagentVaultSync(ReagentVaultSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleClientReagentVaultSync(payload));
     }
 
     private static void handleRoomInspect(RoomInspectPayload payload, IPayloadContext context) {
@@ -123,11 +144,41 @@ public class NetworkHandler {
         }
     }
 
+    private static void handleClientExtractionKnowledgeSync(ExtractionKnowledgeSyncPayload payload) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            try {
+                Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
+                handlers.getMethod("handleExtractionKnowledgeSync", ExtractionKnowledgeSyncPayload.class).invoke(null, payload);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+    }
+
     private static void handleClientRoomCatalogSync(RoomCatalogSyncPayload payload) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
             try {
                 Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
                 handlers.getMethod("handleRoomCatalogSync", RoomCatalogSyncPayload.class).invoke(null, payload);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+    }
+
+    private static void handleClientSynthesisCatalogSync(SynthesisCatalogSyncPayload payload) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            try {
+                Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
+                handlers.getMethod("handleSynthesisCatalogSync", SynthesisCatalogSyncPayload.class).invoke(null, payload);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+    }
+
+    private static void handleClientReagentVaultSync(ReagentVaultSyncPayload payload) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            try {
+                Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
+                handlers.getMethod("handleReagentVaultSync", ReagentVaultSyncPayload.class).invoke(null, payload);
             } catch (ReflectiveOperationException ignored) {
             }
         }

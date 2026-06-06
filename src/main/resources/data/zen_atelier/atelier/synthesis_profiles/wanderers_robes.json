@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:wanderers_robes",
+  "category": "tools",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 1,
+        "type": "element",
+        "required_element": "wind",
+        "required_element_value": 1,
+        "perfect_bonus": 4
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "type": "element",
+        "required_element": "earth",
+        "required_element_value": 1,
+        "quality_bonus": 5
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 35,
+      "query": {
+        "required_categories": [
+          "zen_atelier:fibrous"
+        ],
+        "min_elements": {
+          "wind": 1
+        }
+      }
+    },
+    {
+      "amount": 25,
+      "query": {
+        "required_categories": [
+          "zen_atelier:organic"
+        ],
+        "min_elements": {
+          "earth": 1
+        }
+      }
+    },
+    {
+      "amount": 15,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_purity": 35
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 82,
+      "outputs": [
+        {
+          "output": "zen_atelier:wanderers_robes",
+          "count": 1,
+          "tier": 1,
+          "quality": 48,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:step_assist",
+            "zen_atelier:fall_cushion"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 5,
+      "outputs": [
+        {
+          "output": "zen_atelier:wanderers_robes",
+          "count": 1,
+          "tier": 2,
+          "quality": 70,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:step_assist",
+            "zen_atelier:fall_cushion",
+            "zen_atelier:lightweight"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 13,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:threadbare_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:fibrous"
+          ],
+          "amount": 10,
+          "tier": 1,
+          "elements": {
+            "earth": 1
+          }
+        }
+      ]
+    }
+  ]
+}

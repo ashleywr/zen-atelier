@@ -1,0 +1,153 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:honey_bottle",
+  "source": "minecraft:honey_bottle",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 88,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:binding_reagent",
+          "amount": 45,
+          "amount_range": {
+            "min": 36,
+            "max": 54
+          },
+          "tier": 1,
+          "quality": 35,
+          "quality_range": {
+            "min": 25,
+            "max": 55
+          },
+          "purity": 60,
+          "purity_range": {
+            "min": 45,
+            "max": 80
+          },
+          "instability": 5,
+          "instability_range": {
+            "min": 0,
+            "max": 15
+          },
+          "categories": [
+            "zen_atelier:binding",
+            "zen_atelier:organic",
+            "zen_atelier:medicinal"
+          ],
+          "elements": {
+            "water": 1,
+            "earth": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:binding",
+            "zen_atelier:soothing"
+          ],
+          "source_hints": [
+            "minecraft:honey_bottle"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 2,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:preserving_reagent",
+          "amount": 20,
+          "amount_range": {
+            "min": 14,
+            "max": 26
+          },
+          "tier": 2,
+          "quality": 55,
+          "quality_range": {
+            "min": 45,
+            "max": 75
+          },
+          "purity": 75,
+          "purity_range": {
+            "min": 65,
+            "max": 90
+          },
+          "instability": 5,
+          "instability_range": {
+            "min": 0,
+            "max": 15
+          },
+          "categories": [
+            "zen_atelier:binding",
+            "zen_atelier:preserving",
+            "zen_atelier:medicinal"
+          ],
+          "elements": {
+            "water": 2,
+            "earth": 1
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:preserving"
+          ],
+          "source_hints": [
+            "minecraft:honey_bottle"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 10,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:sticky_residue",
+          "amount": 12,
+          "amount_range": {
+            "min": 8,
+            "max": 16
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:binding"
+          ],
+          "elements": {
+            "water": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 package com.sanhiruzu.atelier.integration.minecolonies;
 
 import com.sanhiruzu.atelier.ZenAtelier;
+import com.sanhiruzu.atelier.Config;
 import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
@@ -60,9 +61,13 @@ public final class MineColoniesIntegration {
             subscribe.setAccessible(true);
             subscribe.invoke(eventBus, eventClass, handler);
             initialized = true;
-            ColonistRoomBonuses.initialize();
-            NeoForge.EVENT_BUS.addListener(MineColoniesIntegration::onServerTick);
-            ZenAtelier.LOGGER.info("MineColonies integration enabled: residence comfort can recover builder materials, colonist room bonuses active");
+            if (Config.ENABLE_MINECOLONIES_COLONIST_EFFECTS.getAsBoolean()) {
+                ColonistRoomBonuses.initialize();
+                NeoForge.EVENT_BUS.addListener(MineColoniesIntegration::onServerTick);
+                ZenAtelier.LOGGER.info("MineColonies integration enabled: residence comfort can recover builder materials, colonist room bonuses active");
+            } else {
+                ZenAtelier.LOGGER.info("MineColonies integration enabled: residence comfort can recover builder materials; colonist room bonuses disabled by config");
+            }
         } catch (ReflectiveOperationException | LinkageError ex) {
             ZenAtelier.LOGGER.warn("MineColonies integration could not be initialized", ex);
         }

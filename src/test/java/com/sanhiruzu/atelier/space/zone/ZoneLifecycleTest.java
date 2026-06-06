@@ -6,6 +6,7 @@ import com.sanhiruzu.atelier.space.SpaceRegionRegistry;
 import net.minecraft.core.BlockPos;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -22,6 +23,19 @@ import static org.junit.jupiter.api.Assertions.*;
  * confusing "Closing in Xs" UI for rooms that never appeared on the HUD.</p>
  */
 class ZoneLifecycleTest {
+
+    @Test
+    void invalidateAll_allowsSavedZonesToRestoreOnNextLevelLoad() throws Exception {
+        ZoneRegistry zoneRegistry = ZoneRegistry.createForTest("restore_guard");
+        Field restored = ZoneRegistry.class.getDeclaredField("restored");
+        restored.setAccessible(true);
+        restored.setBoolean(zoneRegistry, true);
+
+        zoneRegistry.invalidateAll();
+
+        assertFalse(restored.getBoolean(zoneRegistry),
+                "Level unload must reset the saved-data restore guard so the next join rehydrates rooms");
+    }
 
     // =========================================================================
     // The bug fix: zone without cached ZoneData dissolves immediately

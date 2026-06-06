@@ -12,5 +12,6 @@ public class CommandEventHandler {
         DeleteZoneCommand.register(event.getDispatcher());
         InspectZoneCommand.register(event.getDispatcher());
         RoomFixtureCommand.register(event.getDispatcher());
+        SynthesisDebugCommand.register(event.getDispatcher());
     }
 }

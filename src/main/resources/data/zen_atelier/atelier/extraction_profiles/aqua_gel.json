@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:aqua_gel",
+  "source": "zen_atelier:aqua_gel",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 84,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:aqua_gel_reagent",
+          "categories": [
+            "zen_atelier:binding",
+            "zen_atelier:elastic",
+            "zen_atelier:organic"
+          ],
+          "amount": 36,
+          "amount_range": {
+            "min": 26,
+            "max": 48
+          },
+          "tier": 1,
+          "quality": 45,
+          "quality_range": {
+            "min": 28,
+            "max": 62
+          },
+          "purity": 52,
+          "purity_range": {
+            "min": 35,
+            "max": 72
+          },
+          "instability": 16,
+          "instability_range": {
+            "min": 5,
+            "max": 35
+          },
+          "elements": {
+            "water": 2
+          },
+          "shape": {
+            "id": "square_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:sticky",
+            "zen_atelier:bouncy"
+          ],
+          "source_hints": [
+            "zen_atelier:aqua_gel"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 16,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:sticky_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:binding"
+          ],
+          "amount": 10,
+          "tier": 1,
+          "quality": 16,
+          "purity": 25,
+          "instability": 30,
+          "elements": {
+            "water": 1
+          },
+          "traits": [
+            "zen_atelier:sticky"
+          ],
+          "source_hints": [
+            "zen_atelier:aqua_gel"
+          ]
+        }
+      ]
+    }
+  ]
+}

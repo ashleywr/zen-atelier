@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:kelp",
+  "source": "minecraft:kelp",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 84,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:organic_reagent",
+          "amount": 32,
+          "amount_range": {
+            "min": 24,
+            "max": 42
+          },
+          "tier": 1,
+          "quality": 30,
+          "quality_range": {
+            "min": 20,
+            "max": 50
+          },
+          "purity": 48,
+          "purity_range": {
+            "min": 34,
+            "max": 70
+          },
+          "instability": 12,
+          "instability_range": {
+            "min": 4,
+            "max": 26
+          },
+          "categories": [
+            "zen_atelier:organic",
+            "zen_atelier:medicinal"
+          ],
+          "elements": {
+            "earth": 1,
+            "water": 2
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:organic",
+            "zen_atelier:briny"
+          ],
+          "source_hints": [
+            "minecraft:kelp"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 4,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:preserving_reagent",
+          "amount": 18,
+          "amount_range": {
+            "min": 12,
+            "max": 26
+          },
+          "tier": 2,
+          "quality": 48,
+          "quality_range": {
+            "min": 36,
+            "max": 70
+          },
+          "purity": 60,
+          "purity_range": {
+            "min": 45,
+            "max": 82
+          },
+          "instability": 10,
+          "instability_range": {
+            "min": 2,
+            "max": 24
+          },
+          "categories": [
+            "zen_atelier:preserving",
+            "zen_atelier:organic"
+          ],
+          "elements": {
+            "water": 1,
+            "earth": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:preserving"
+          ],
+          "source_hints": [
+            "minecraft:kelp"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 12,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:briny_residue",
+          "amount": 8,
+          "amount_range": {
+            "min": 4,
+            "max": 13
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:organic"
+          ],
+          "elements": {
+            "water": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

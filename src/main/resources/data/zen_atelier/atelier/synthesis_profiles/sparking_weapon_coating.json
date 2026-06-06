@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:sparking_weapon_coating",
+  "category": "tools",
+  "recipe_tier_cap": 4,
+  "board": {
+    "size": 5,
+    "empty_cell_success_penalty": 2,
+    "empty_cell_perfect_penalty": 5,
+    "nodes": [
+      {
+        "x": 2,
+        "y": 1,
+        "type": "element",
+        "required_element": "fire",
+        "required_element_value": 2,
+        "quality_bonus": 8
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "type": "morph",
+        "required_element": "wind",
+        "required_element_value": 1,
+        "morph_target": "zen_atelier:aero_lace_coating",
+        "perfect_bonus": 5
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 40,
+      "query": {
+        "required_categories": [
+          "zen_atelier:volatile"
+        ],
+        "min_tier": 2,
+        "min_quality": 40,
+        "max_instability": 75,
+        "min_elements": {
+          "fire": 2
+        }
+      }
+    },
+    {
+      "amount": 30,
+      "query": {
+        "required_categories": [
+          "zen_atelier:abrasive"
+        ],
+        "min_quality": 35,
+        "min_elements": {
+          "earth": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:conductive"
+        ],
+        "min_elements": {
+          "wind": 1
+        }
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 78,
+      "outputs": [
+        {
+          "output": "zen_atelier:sparking_weapon_coating",
+          "count": 1,
+          "tier": 3,
+          "quality": 70,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:keen",
+            "zen_atelier:sparking"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 5,
+      "outputs": [
+        {
+          "output": "zen_atelier:sparking_weapon_coating",
+          "count": 2,
+          "tier": 4,
+          "quality": 84,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:keen",
+            "zen_atelier:sparking",
+            "zen_atelier:conductive"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 17,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:charged_dust",
+          "amount": 12,
+          "tier": 1
+        }
+      ]
+    }
+  ]
+}

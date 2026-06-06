@@ -7,6 +7,40 @@ book entries in your own namespace.
 
 This guide targets Minecraft 1.21.1 and NeoForge.
 
+## Java Room Lookup API
+
+Java integrations should use `com.sanhiruzu.atelier.api.ZoneAPI` instead of
+querying the internal zone registry directly.
+
+Use `ZoneAPI.getZoneContaining(level, pos)` when `pos` may be a player position,
+machine block, furniture block, storage block, bed, or other solid object inside
+a room. Atelier resolves solid block positions through adjacent room air, so the
+object itself can be treated as being in the room it occupies.
+
+Use `ZoneAPI.getIndoorZoneContaining(level, pos)` or
+`ZoneAPI.isInsideRoom(level, pos)` when outdoor zones should not count.
+
+`ZoneAPI.getZoneAt(level, pos)` remains available for compatibility and delegates
+to the same containing-room lookup.
+
+## Tested Optional Integrations
+
+Keep this table current whenever an optional integration is added, upgraded, or
+debugged. Optional integrations should stay optional at runtime, but any Java API
+usage should be covered by `compileOnly` dependencies so API drift fails during
+`compileJava` instead of in a player world.
+
+| Mod | Tested version / file | Curse Maven coordinate | Dependency scope | Coverage last verified |
+|---|---|---|---|---|
+| Patchouli | `Patchouli-1.21.1-93-NEOFORGE.jar` | `curse.maven:patchouli-306770:7730942` | `compileOnly`, `localRuntime` | `compileJava`, `test` on 2026-05-27 |
+| MineColonies | `minecolonies-1.1.1307-1.21.1-snapshot.jar` | `curse.maven:minecolonies-245506:8027059` | `compileOnly` | `compileJava`, `test` on 2026-05-27 |
+| Curios API | `curios-neoforge-9.5.1+1.21.1.jar` | `curse.maven:curios-309927:6529130` | `compileOnly`, `localRuntime` | `compileJava` on 2026-06-01 |
+
+When updating this table, also update the matching version properties in
+`gradle.properties`. For runtime behavior that touches registries, world state,
+commands, resource reloads, or generated data, add a smoke test or GameTest in
+addition to compilation.
+
 ## Add A Room Profile
 
 Room profiles live under:
@@ -181,9 +215,11 @@ start at 60% average comfort and reach a 20% representative-material return at
 90% comfort, capped so the bonus feels useful without replacing the builder
 request system.
 
-Atelier also applies passive mob effects to living colonist entities every 10
-seconds based on the Atelier room quality at their assigned buildings. Two
-categories of bonus are checked independently for each colonist.
+Atelier can also apply passive mob effects to living colonist entities every 10
+seconds based on the Atelier room quality at their assigned buildings. This is
+disabled by default with `enableMineColoniesColonistEffects = false`, because
+some MineColonies AI versions react poorly to external effect refreshes. Two
+categories of bonus are checked independently for each colonist when enabled.
 
 **Work building effects** fire when the room at the colonist's work building
 position reaches at least 40% quality and its profile id matches a known work

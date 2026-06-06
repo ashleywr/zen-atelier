@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:ember_gel",
+  "source": "zen_atelier:ember_gel",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 80,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:ember_gel_reagent",
+          "categories": [
+            "zen_atelier:binding",
+            "zen_atelier:elastic",
+            "zen_atelier:organic",
+            "zen_atelier:volatile"
+          ],
+          "amount": 32,
+          "amount_range": {
+            "min": 22,
+            "max": 44
+          },
+          "tier": 1,
+          "quality": 45,
+          "quality_range": {
+            "min": 28,
+            "max": 62
+          },
+          "purity": 42,
+          "purity_range": {
+            "min": 25,
+            "max": 64
+          },
+          "instability": 38,
+          "instability_range": {
+            "min": 18,
+            "max": 62
+          },
+          "elements": {
+            "fire": 2,
+            "water": 1
+          },
+          "shape": {
+            "id": "elbow",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:sticky",
+            "zen_atelier:smoldering"
+          ],
+          "source_hints": [
+            "zen_atelier:ember_gel"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 20,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:scorched_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:volatile"
+          ],
+          "amount": 9,
+          "tier": 1,
+          "quality": 15,
+          "purity": 16,
+          "instability": 55,
+          "elements": {
+            "fire": 1
+          },
+          "traits": [
+            "zen_atelier:volatile"
+          ],
+          "source_hints": [
+            "zen_atelier:ember_gel"
+          ]
+        }
+      ]
+    }
+  ]
+}

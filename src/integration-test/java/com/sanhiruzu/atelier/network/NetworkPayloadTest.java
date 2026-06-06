@@ -3,8 +3,10 @@ package com.sanhiruzu.atelier.network;
 import com.sanhiruzu.atelier.space.ChunkClassificationData;
 import com.sanhiruzu.atelier.space.ClassificationState;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
+import com.sanhiruzu.atelier.ui.network.ExtractionKnowledgeSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
+import com.sanhiruzu.atelier.ui.network.SynthesisCatalogSyncPayload;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -162,6 +164,41 @@ public class NetworkPayloadTest {
     }
 
     @Test
+    void testExtractionKnowledgeSyncPayloadSerializeDeserialize() {
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        Map<String, List<String>> known = new LinkedHashMap<>();
+        known.put("minecraft:flint", List.of("zen_atelier:abrasive_reagent", "zen_atelier:spark_reagent"));
+        known.put("minecraft:honey_bottle", List.of("zen_atelier:binding_reagent"));
+
+        ExtractionKnowledgeSyncPayload original = new ExtractionKnowledgeSyncPayload(
+                known,
+                java.util.Set.of("minecraft:cobblestone", "minecraft:dirt"),
+                Map.of(
+                        "minecraft:flint", new ExtractionKnowledgeSyncPayload.SourceKnowledge(
+                                2,
+                                List.of("zen_atelier:abrasive_reagent", "zen_atelier:spark_reagent"),
+                                List.of("zen_atelier:abrasive", "zen_atelier:sparking"),
+                                Map.of("sharp", 2, "earth", 1)
+                        ),
+                        "minecraft:honey_bottle", new ExtractionKnowledgeSyncPayload.SourceKnowledge(
+                                1,
+                                List.of("zen_atelier:binding_reagent"),
+                                List.of("zen_atelier:binding"),
+                                Map.of("binding", 2)
+                        )
+                )
+        );
+        ExtractionKnowledgeSyncPayload.CODEC.encode(buffer, original);
+
+        buffer.readerIndex(0);
+        ExtractionKnowledgeSyncPayload decoded = ExtractionKnowledgeSyncPayload.CODEC.decode(buffer);
+
+        assertEquals(original.knownSourceReagents(), decoded.knownSourceReagents(), "Known extraction sources should round-trip");
+        assertEquals(original.testedEmptySources(), decoded.testedEmptySources(), "Tested-empty sources should round-trip");
+        assertEquals(original.knownSourceDetails(), decoded.knownSourceDetails(), "Detailed extraction source knowledge should round-trip");
+    }
+
+    @Test
     void testRoomCatalogSyncPayloadSerializeDeserialize() {
         FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
         RoomCatalogSyncPayload original = new RoomCatalogSyncPayload(List.of(
@@ -188,6 +225,23 @@ public class NetworkPayloadTest {
     }
 
     @Test
+    void testSynthesisCatalogSyncPayloadSerializeDeserialize() {
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        SynthesisCatalogSyncPayload original = new SynthesisCatalogSyncPayload(
+                List.of(new SynthesisCatalogSyncPayload.Entry("zen_atelier:flint", "{\"id\":\"zen_atelier:flint\"}")),
+                List.of(new SynthesisCatalogSyncPayload.Entry("zen_atelier:coating", "{\"id\":\"zen_atelier:coating\"}"))
+        );
+
+        SynthesisCatalogSyncPayload.CODEC.encode(buffer, original);
+
+        buffer.readerIndex(0);
+        SynthesisCatalogSyncPayload decoded = SynthesisCatalogSyncPayload.CODEC.decode(buffer);
+
+        assertEquals(original.extractionProfiles(), decoded.extractionProfiles(), "Extraction catalog entries should round-trip");
+        assertEquals(original.synthesisProfiles(), decoded.synthesisProfiles(), "Synthesis catalog entries should round-trip");
+    }
+
+    @Test
     void testRoomInspectPayloadSerializeDeserialize() {
         BlockPos pos = new BlockPos(-12, 73, 2048);
 
@@ -203,13 +257,19 @@ public class NetworkPayloadTest {
     @Test
     void testUiPayloadTypeResourceLocations() {
         ResourceLocation discoveryId = DiscoveryDataSyncPayload.TYPE.id();
+        ResourceLocation extractionKnowledgeId = ExtractionKnowledgeSyncPayload.TYPE.id();
         ResourceLocation roomCatalogId = RoomCatalogSyncPayload.TYPE.id();
+        ResourceLocation synthesisCatalogId = SynthesisCatalogSyncPayload.TYPE.id();
         ResourceLocation roomInspectId = RoomInspectPayload.TYPE.id();
 
         assertEquals("zen_atelier", discoveryId.getNamespace());
         assertEquals("discovery_sync", discoveryId.getPath());
+        assertEquals("zen_atelier", extractionKnowledgeId.getNamespace());
+        assertEquals("extraction_knowledge_sync", extractionKnowledgeId.getPath());
         assertEquals("zen_atelier", roomCatalogId.getNamespace());
         assertEquals("room_catalog_sync", roomCatalogId.getPath());
+        assertEquals("zen_atelier", synthesisCatalogId.getNamespace());
+        assertEquals("synthesis_catalog_sync", synthesisCatalogId.getPath());
         assertEquals("zen_atelier", roomInspectId.getNamespace());
         assertEquals("room_inspect", roomInspectId.getPath());
     }
@@ -234,7 +294,7 @@ public class NetworkPayloadTest {
     @Test
     void testSyncZoneGridPayload_indoorNoType() {
         UUID regionId = UUID.fromString("12345678-1234-1234-1234-123456789abc");
-        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 85, 0.92f, 0.78f, 7, null, false, null, null, -50, 0, -50, 50, 100, 50);
+        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 85, 0.92f, 0.78f, 7, null, false, null, null, -50, 0, -50, 50, 100, 50, 1.0f, null);
 
         SyncZoneGridPayload.CODEC.encode(testBuffer, original);
         testBuffer.readerIndex(0);
@@ -254,7 +314,7 @@ public class NetworkPayloadTest {
     void testSyncZoneGridPayload_indoorWithZoneType() {
         UUID regionId = UUID.randomUUID();
         ResourceLocation typeId = ResourceLocation.fromNamespaceAndPath("zen_atelier", "atelier");
-        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 120, 0.95f, 1.0f, 15, typeId, true, null, null, -100, 0, -100, 100, 150, 100);
+        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, false, 120, 0.95f, 1.0f, 15, typeId, true, null, null, -100, 0, -100, 100, 150, 100, 0.85f, "MineColonies");
 
         SyncZoneGridPayload.CODEC.encode(testBuffer, original);
         testBuffer.readerIndex(0);
@@ -270,7 +330,7 @@ public class NetworkPayloadTest {
     @Test
     void testSyncZoneGridPayload_outdoor() {
         UUID regionId = UUID.randomUUID();
-        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, true, 0, 0.0f, 0.0f, -1, null, false, null, null, -50, 0, -50, 50, 100, 50);
+        SyncZoneGridPayload original = new SyncZoneGridPayload(regionId, true, 0, 0.0f, 0.0f, -1, null, false, null, null, -50, 0, -50, 50, 100, 50, 1.0f, null);
 
         SyncZoneGridPayload.CODEC.encode(testBuffer, original);
         testBuffer.readerIndex(0);

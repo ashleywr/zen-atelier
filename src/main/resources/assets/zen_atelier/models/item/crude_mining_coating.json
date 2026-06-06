@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "zen_atelier:item/reagent_vial",
+    "layer1": "zen_atelier:item/reagent_vial_contents",
+    "layer2": "zen_atelier:item/reagent_vial_border"
+  }
+}

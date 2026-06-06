@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:crude_mining_coating",
+  "category": "tools",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 1,
+        "type": "element",
+        "required_element": "earth",
+        "required_element_value": 1,
+        "quality_bonus": 5
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 30,
+      "query": {
+        "required_categories": [
+          "zen_atelier:abrasive"
+        ],
+        "min_elements": {
+          "earth": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_elements": {
+          "water": 1
+        }
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 80,
+      "outputs": [
+        {
+          "output": "zen_atelier:crude_mining_coating",
+          "count": 1,
+          "tier": 1,
+          "quality": 45,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:sharp"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "unstable_success",
+      "weight": 8,
+      "outputs": [
+        {
+          "output": "zen_atelier:sparking_mining_coating",
+          "count": 1,
+          "tier": 2,
+          "quality": 45,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:sharp",
+            "zen_atelier:sparking"
+          ]
+        }
+      ],
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:stone_dust",
+          "amount": 5,
+          "tier": 1
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 12,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:sticky_residue",
+          "amount": 10,
+          "tier": 1
+        }
+      ]
+    }
+  ]
+}

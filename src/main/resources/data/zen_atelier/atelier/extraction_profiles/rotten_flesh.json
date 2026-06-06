@@ -1,0 +1,191 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:rotten_flesh",
+  "source": "minecraft:rotten_flesh",
+  "source_tier_cap": 1,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 75,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:organic_reagent",
+          "amount": 28,
+          "amount_range": {
+            "min": 20,
+            "max": 36
+          },
+          "tier": 1,
+          "quality": 20,
+          "quality_range": {
+            "min": 5,
+            "max": 35
+          },
+          "purity": 35,
+          "purity_range": {
+            "min": 15,
+            "max": 50
+          },
+          "instability": 35,
+          "instability_range": {
+            "min": 20,
+            "max": 60
+          },
+          "categories": [
+            "zen_atelier:organic",
+            "zen_atelier:decaying"
+          ],
+          "elements": {
+            "life": 1,
+            "decay": 1
+          },
+          "shape": {
+            "id": "elbow",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:organic",
+            "zen_atelier:fermenting"
+          ],
+          "source_hints": [
+            "minecraft:rotten_flesh"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "unstable_success",
+      "weight": 10,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:vital_reagent",
+          "amount": 16,
+          "amount_range": {
+            "min": 10,
+            "max": 22
+          },
+          "tier": 1,
+          "quality": 35,
+          "quality_range": {
+            "min": 20,
+            "max": 55
+          },
+          "purity": 30,
+          "purity_range": {
+            "min": 15,
+            "max": 45
+          },
+          "instability": 55,
+          "instability_range": {
+            "min": 40,
+            "max": 85
+          },
+          "categories": [
+            "zen_atelier:organic",
+            "zen_atelier:medicinal",
+            "zen_atelier:decaying"
+          ],
+          "elements": {
+            "life": 2,
+            "decay": 1
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:vital",
+            "zen_atelier:unstable"
+          ],
+          "source_hints": [
+            "minecraft:rotten_flesh"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 15,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:spoiled_residue",
+          "amount": 10,
+          "amount_range": {
+            "min": 6,
+            "max": 16
+          },
+          "tier": 1,
+          "quality_range": {
+            "min": 0,
+            "max": 20
+          },
+          "purity_range": {
+            "min": 0,
+            "max": 30
+          },
+          "instability_range": {
+            "min": 35,
+            "max": 75
+          },
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:decaying"
+          ],
+          "elements": {
+            "decay": 2
+          },
+          "shape": {
+            "id": "square_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:spoiled"
+          ],
+          "source_hints": [
+            "minecraft:rotten_flesh"
+          ]
+        }
+      ]
+    }
+  ]
+}

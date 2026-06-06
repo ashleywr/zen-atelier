@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:conductive_stabilizer",
+  "category": "materials",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 1,
+        "type": "element",
+        "required_element": "wind",
+        "required_element_value": 1,
+        "perfect_bonus": 3
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 40,
+      "query": {
+        "required_categories": [
+          "zen_atelier:conductive"
+        ],
+        "min_elements": {
+          "wind": 1
+        }
+      }
+    },
+    {
+      "amount": 15,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_elements": {
+          "water": 1
+        }
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 82,
+      "outputs": [
+        {
+          "output": "zen_atelier:conductive_stabilizer",
+          "count": 1,
+          "tier": 1,
+          "quality": 50,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:stable"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 4,
+      "outputs": [
+        {
+          "output": "zen_atelier:resonant_stabilizer",
+          "count": 1,
+          "tier": 2,
+          "quality": 70,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:stable",
+            "zen_atelier:conductive"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 14,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:metallic_residue",
+          "amount": 10,
+          "tier": 1
+        }
+      ]
+    }
+  ]
+}

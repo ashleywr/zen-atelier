@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:sugar",
+  "source": "minecraft:sugar",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 84,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:quickening_reagent",
+          "amount": 36,
+          "amount_range": {
+            "min": 28,
+            "max": 46
+          },
+          "tier": 1,
+          "quality": 34,
+          "quality_range": {
+            "min": 24,
+            "max": 54
+          },
+          "purity": 50,
+          "purity_range": {
+            "min": 36,
+            "max": 70
+          },
+          "instability": 20,
+          "instability_range": {
+            "min": 10,
+            "max": 40
+          },
+          "categories": [
+            "zen_atelier:quickening",
+            "zen_atelier:organic"
+          ],
+          "elements": {
+            "wind": 2,
+            "water": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:quickening",
+            "zen_atelier:sweet"
+          ],
+          "source_hints": [
+            "minecraft:sugar"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 16,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:sweet_residue",
+          "amount": 8,
+          "amount_range": {
+            "min": 4,
+            "max": 13
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:quickening"
+          ],
+          "elements": {
+            "wind": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

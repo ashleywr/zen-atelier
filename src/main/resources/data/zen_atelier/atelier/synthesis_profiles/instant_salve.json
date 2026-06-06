@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:instant_salve",
+  "category": "healing",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 1,
+        "type": "element",
+        "required_element": "water",
+        "required_element_value": 1,
+        "quality_bonus": 6
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 30,
+      "query": {
+        "required_categories": [
+          "zen_atelier:medicinal"
+        ],
+        "min_elements": {
+          "water": 1
+        }
+      }
+    },
+    {
+      "amount": 15,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_purity": 40
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 84,
+      "outputs": [
+        {
+          "output": "zen_atelier:instant_salve",
+          "count": 2,
+          "tier": 1,
+          "quality": 45,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:instant_use",
+            "zen_atelier:regeneration"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 4,
+      "outputs": [
+        {
+          "output": "zen_atelier:instant_salve",
+          "count": 3,
+          "tier": 2,
+          "quality": 65,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:instant_use",
+            "zen_atelier:regeneration",
+            "zen_atelier:soothing"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 12,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:sticky_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:binding"
+          ],
+          "amount": 8,
+          "tier": 1,
+          "elements": {
+            "water": 1
+          }
+        }
+      ]
+    }
+  ]
+}

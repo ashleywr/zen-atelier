@@ -23,6 +23,7 @@ public class ClassificationScheduler {
 
     private final ServerLevel level;
     private final PriorityQueue<ChunkWork> workQueue;
+    private final Set<Long> queuedChunks = new HashSet<>();
     private final Set<Long> deferredChunks = new HashSet<>();
     private int deferredTickCounter = 0;
 
@@ -47,15 +48,21 @@ public class ClassificationScheduler {
         int processed = 0;
         while (!workQueue.isEmpty() && processed < CHUNKS_PER_TICK) {
             ChunkWork work = workQueue.poll();
+            queuedChunks.remove(ChunkPos.asLong(work.chunkX, work.chunkZ));
             if (work.isExpired()) continue;
 
             ChunkAccess chunk = level.getChunk(work.chunkX, work.chunkZ);
             zoneRegistry.bootstrapChunk(chunk, level);
+            scheduleLoadedDirtyNeighbors(work.chunkX, work.chunkZ);
             processed++;
         }
     }
 
     public void scheduleChunk(int chunkX, int chunkZ) {
+        long key = ChunkPos.asLong(chunkX, chunkZ);
+        if (!queuedChunks.add(key)) {
+            return;
+        }
         double priority = getPlayerDistance(chunkX, chunkZ);
         workQueue.offer(new ChunkWork(chunkX, chunkZ, priority));
     }
@@ -66,6 +73,24 @@ public class ClassificationScheduler {
 
     public boolean isNearAnyPlayer(int chunkX, int chunkZ) {
         return getPlayerDistance(chunkX, chunkZ) <= NEARBY_CHUNK_RADIUS;
+    }
+
+    private void scheduleLoadedDirtyNeighbors(int chunkX, int chunkZ) {
+        scheduleLoadedDirtyChunk(chunkX - 1, chunkZ);
+        scheduleLoadedDirtyChunk(chunkX + 1, chunkZ);
+        scheduleLoadedDirtyChunk(chunkX, chunkZ - 1);
+        scheduleLoadedDirtyChunk(chunkX, chunkZ + 1);
+    }
+
+    private void scheduleLoadedDirtyChunk(int chunkX, int chunkZ) {
+        ChunkAccess neighbor = level.getChunkSource().getChunkNow(chunkX, chunkZ);
+        if (neighbor == null) {
+            return;
+        }
+        ChunkClassificationData data = ChunkClassificationAttachment.get(neighbor);
+        if (data.isDirty()) {
+            scheduleChunk(chunkX, chunkZ);
+        }
     }
 
     private void promoteDeferredChunks() {

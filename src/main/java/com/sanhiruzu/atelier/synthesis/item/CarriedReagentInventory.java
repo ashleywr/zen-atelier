@@ -1,0 +1,113 @@
+package com.sanhiruzu.atelier.synthesis.item;
+
+import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
+import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+public final class CarriedReagentInventory {
+    private CarriedReagentInventory() {
+    }
+
+    public static ReagentContainer snapshot(Container inventory) {
+        ReagentContainer container = new ReagentContainer();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ReagentStack reagent = ReagentItem.getReagent(inventory.getItem(slot));
+            if (reagent != null) {
+                container.insert(reagent);
+            }
+        }
+        return container;
+    }
+
+    public static boolean consume(Container inventory, List<ReagentStack> consumed) {
+        List<Integer> slots = new ArrayList<>();
+        List<ReagentStack> carried = new ArrayList<>();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ReagentStack reagent = ReagentItem.getReagent(inventory.getItem(slot));
+            if (reagent != null) {
+                slots.add(slot);
+                carried.add(reagent);
+            }
+        }
+
+        Optional<List<ReagentStack>> remaining = remainingAfterConsume(carried, consumed);
+        if (remaining.isEmpty()) {
+            return false;
+        }
+
+        List<ReagentStack> remainingStacks = remaining.get();
+        for (int i = 0; i < slots.size(); i++) {
+            ReagentStack reagent = remainingStacks.get(i);
+            if (reagent == null) {
+                inventory.setItem(slots.get(i), ItemStack.EMPTY);
+            } else {
+                inventory.setItem(slots.get(i), ReagentItem.createStack(reagent));
+            }
+        }
+        inventory.setChanged();
+        return true;
+    }
+
+    static Optional<List<ReagentStack>> remainingAfterConsume(List<ReagentStack> carried, List<ReagentStack> consumed) {
+        List<ReagentStack> remaining = new ArrayList<>(carried);
+        for (ReagentStack stack : consumed) {
+            if (!hasAmount(remaining, stack)) {
+                return Optional.empty();
+            }
+        }
+
+        for (ReagentStack stack : consumed) {
+            consumeMatching(remaining, stack);
+        }
+        return Optional.of(remaining);
+    }
+
+    private static boolean hasAmount(List<ReagentStack> carried, ReagentStack target) {
+        int available = 0;
+        for (ReagentStack reagent : carried) {
+            if (sameProfile(reagent, target)) {
+                available += reagent.amount();
+            }
+        }
+        return available >= target.amount();
+    }
+
+    private static void consumeMatching(List<ReagentStack> carried, ReagentStack target) {
+        int remaining = target.amount();
+        for (int slot = 0; slot < carried.size() && remaining > 0; slot++) {
+            ReagentStack reagent = carried.get(slot);
+            if (!sameProfile(reagent, target)) {
+                continue;
+            }
+
+            int taken = Math.min(reagent.amount(), remaining);
+            remaining -= taken;
+            int left = reagent.amount() - taken;
+            if (left <= 0) {
+                carried.set(slot, null);
+            } else {
+                carried.set(slot, reagent.withAmount(left));
+            }
+        }
+    }
+
+    private static boolean sameProfile(ReagentStack left, ReagentStack right) {
+        return left != null
+                  && right != null
+                  && left.reagentId().equals(right.reagentId())
+                  && left.categories().equals(right.categories())
+                  && left.tier() == right.tier()
+                && left.quality() == right.quality()
+                && left.purity() == right.purity()
+                && left.instability() == right.instability()
+                  && left.elements().equals(right.elements())
+                  && left.traits().equals(right.traits())
+                  && left.shape().equals(right.shape())
+                  && left.sourceHints().equals(right.sourceHints());
+    }
+}

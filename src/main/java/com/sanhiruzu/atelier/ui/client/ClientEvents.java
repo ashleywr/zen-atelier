@@ -4,18 +4,29 @@ import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.client.AtelierKeys;
 import com.sanhiruzu.atelier.client.ClientZoneCache;
 import com.sanhiruzu.atelier.client.ZoneVfxManager;
+import com.sanhiruzu.atelier.synthesis.data.SynthesisCatalog;
+import com.sanhiruzu.atelier.synthesis.engine.ExtractionProfile;
+import com.sanhiruzu.atelier.synthesis.world.ItemSourceSnapshot;
 import com.sanhiruzu.atelier.ui.adapter.ZoneHudAdapter;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public final class ClientEvents {
@@ -29,7 +40,70 @@ public final class ClientEvents {
         ClientZoneCache.clear();
         ClientZoneData.clear();
         ClientDiscoveryData.clear();
+        ClientExtractionKnowledgeData.clear();
         ClientRoomCatalogData.clear();
+    }
+
+    public static void onItemTooltip(ItemTooltipEvent event) {
+        Player player = event.getEntity();
+        ItemStack stack = event.getItemStack();
+        if (player == null || stack.isEmpty() || isDiscoveryTool(stack) || !hasDiscoveryTool(player)) {
+            return;
+        }
+
+        ItemSourceSnapshot source = ItemSourceSnapshot.fromStack(stack);
+        if (ClientExtractionKnowledgeData.hasKnownSource(source.itemId())) {
+            List<String> matchingPinned = matchingPinnedReagents(ClientExtractionKnowledgeData.knownReagents(source.itemId()));
+            if (!matchingPinned.isEmpty()) {
+                event.getToolTip().add(Component.translatable(
+                        "tooltip.zen_atelier.extraction.pinned_known",
+                        formatIds(matchingPinned)
+                ).withStyle(ChatFormatting.GOLD));
+            }
+            event.getToolTip().add(Component.translatable(
+                    "tooltip.zen_atelier.extraction.known",
+                    formatIds(ClientExtractionKnowledgeData.knownReagents(source.itemId()))
+            ).withStyle(ChatFormatting.DARK_AQUA));
+            return;
+        }
+
+        if (ClientExtractionKnowledgeData.isTestedEmpty(source.itemId())) {
+            event.getToolTip().add(Component.translatable("tooltip.zen_atelier.extraction.empty")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            return;
+        }
+
+        List<ExtractionProfile> profiles = SynthesisCatalog.findExtractionProfiles(source.itemId(), source.tags());
+        if (profiles.isEmpty()) {
+            event.getToolTip().add(Component.translatable("tooltip.zen_atelier.extraction.no_response")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            return;
+        }
+
+        List<String> suspectedReagents = profiles.stream()
+                .flatMap(profile -> profile.outcomes().stream())
+                .flatMap(outcome -> java.util.stream.Stream.concat(outcome.reagents().stream(), outcome.byproducts().stream()))
+                .map(reagent -> reagent.reagentId())
+                .distinct()
+                .sorted()
+                .limit(4)
+                .toList();
+        if (suspectedReagents.isEmpty()) {
+            event.getToolTip().add(Component.translatable("tooltip.zen_atelier.extraction.reactive")
+                    .withStyle(ChatFormatting.DARK_GREEN));
+            return;
+        }
+        List<String> matchingPinned = matchingPinnedReagents(suspectedReagents);
+        if (!matchingPinned.isEmpty()) {
+            event.getToolTip().add(Component.translatable(
+                    "tooltip.zen_atelier.extraction.pinned_suspected",
+                    formatIds(matchingPinned)
+            ).withStyle(ChatFormatting.GOLD));
+        }
+        event.getToolTip().add(Component.translatable(
+                "tooltip.zen_atelier.extraction.suspected",
+                formatIds(suspectedReagents)
+        ).withStyle(ChatFormatting.DARK_GREEN));
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -105,20 +179,50 @@ public final class ClientEvents {
         return itemClassName.contains("ItemModBook");
     }
 
+    private static boolean hasDiscoveryTool(Player player) {
+        return isDiscoveryTool(player.getMainHandItem()) || isDiscoveryTool(player.getOffhandItem());
+    }
+
+    private static boolean isDiscoveryTool(ItemStack stack) {
+        return stack.is(ZenAtelier.ALCHEMIST_LENS.get()) || stack.is(ZenAtelier.ALCHEMIST_CODEX.get());
+    }
+
+    private static String formatIds(List<String> ids) {
+        return ids.stream()
+                .map(ClientEvents::readableId)
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    private static List<String> matchingPinnedReagents(List<String> reagentIds) {
+        if (!ClientExtractionKnowledgeData.hasPinnedReagentGoal()) {
+            return List.of();
+        }
+        return reagentIds.stream()
+                .filter(ClientExtractionKnowledgeData.pinnedReagentGoal()::contains)
+                .sorted()
+                .toList();
+    }
+
+    private static String readableId(String id) {
+        String path = id.contains(":") ? id.substring(id.indexOf(':') + 1) : id;
+        String[] parts = path.replace('_', ' ').split(" ");
+        for (int i = 0; i < parts.length; i++) {
+            if (!parts[i].isBlank()) {
+                parts[i] = parts[i].substring(0, 1).toUpperCase(Locale.ROOT) + parts[i].substring(1);
+            }
+        }
+        return String.join(" ", parts);
+    }
+
     public static final class ModBusEvents {
         private ModBusEvents() {
         }
 
         public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
             event.registerAbove(
-                    ResourceLocation.withDefaultNamespace("experience_bar"),
+                    VanillaGuiLayers.AIR_LEVEL,
                     ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "zen_meter"),
                     new ZenMeterOverlay()
-            );
-            event.registerAbove(
-                    ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "zen_meter"),
-                    ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "synthesis_cauldron"),
-                    new SynthesisCauldronOverlay()
             );
         }
     }

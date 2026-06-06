@@ -15,13 +15,13 @@ public class ZenMeterOverlay implements LayeredDraw.Layer {
     private static final int PAD = 8;
     private static final int BADGE_SIZE = 22;
     private static final int GAP = 6;
+    private static final int VANILLA_HUD_GAP = 6;
     private float fadeAmount = 0.0f;
 
     private static void renderZoneHud(GuiGraphics graphics, Minecraft mc, int alpha) {
         int width = mc.getWindow().getGuiScaledWidth();
-        int height = mc.getWindow().getGuiScaledHeight();
         int x = width / 2 - PANEL_WIDTH / 2;
-        int y = height - 57;
+        int y = hudY(mc);
 
         String activeProfiles = ClientZoneData.getCurrentActiveProfiles();
         boolean degraded = activeProfiles != null
@@ -86,9 +86,8 @@ public class ZenMeterOverlay implements LayeredDraw.Layer {
 
     private static void renderGracePeriodHud(GuiGraphics graphics, Minecraft mc, int alpha) {
         int width = mc.getWindow().getGuiScaledWidth();
-        int height = mc.getWindow().getGuiScaledHeight();
         int x = width / 2 - PANEL_WIDTH / 2;
-        int y = height - 57;
+        int y = hudY(mc);
 
         renderPanel(graphics, x, y, PANEL_WIDTH, PANEL_HEIGHT, alpha, 0x3A2612);
         graphics.fill(x, y, x + PANEL_WIDTH, y + 2, withAlpha(0xFFAA33, alpha));
@@ -112,9 +111,8 @@ public class ZenMeterOverlay implements LayeredDraw.Layer {
 
     private static void renderZoneLostFlash(GuiGraphics graphics, Minecraft mc, int alpha) {
         int width = mc.getWindow().getGuiScaledWidth();
-        int height = mc.getWindow().getGuiScaledHeight();
         int x = width / 2 - PANEL_WIDTH / 2;
-        int y = height - 57;
+        int y = hudY(mc);
 
         renderPanel(graphics, x, y, PANEL_WIDTH, PANEL_HEIGHT, alpha, 0x2C1215);
         graphics.fill(x, y, x + PANEL_WIDTH, y + 2, withAlpha(0xFF4444, alpha));
@@ -171,10 +169,24 @@ public class ZenMeterOverlay implements LayeredDraw.Layer {
         return end <= 0 ? ellipsis : text.substring(0, end) + ellipsis;
     }
 
+    private static int hudY(Minecraft mc) {
+        int height = mc.getWindow().getGuiScaledHeight();
+        int vanillaHudHeight = Math.max(mc.gui.leftHeight, mc.gui.rightHeight);
+        return Math.max(VANILLA_HUD_GAP, height - vanillaHudHeight - PANEL_HEIGHT - VANILLA_HUD_GAP);
+    }
+
+    private static void reserveHudSpace(Minecraft mc) {
+        int reservedHeight = PANEL_HEIGHT + VANILLA_HUD_GAP;
+        mc.gui.leftHeight += reservedHeight;
+        mc.gui.rightHeight += reservedHeight;
+    }
+
     @Override
     public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        Minecraft mc = Minecraft.getInstance();
         boolean inZone = ClientZoneData.isInZone();
         boolean showRoomHud = ClientZoneData.shouldShowRoomHud();
+        boolean renderedHud = false;
 
         // Normal zone HUD
         if (showRoomHud) {
@@ -184,13 +196,15 @@ public class ZenMeterOverlay implements LayeredDraw.Layer {
         }
 
         if (fadeAmount > 0.0f && (inZone || showRoomHud)) {
-            renderZoneHud(graphics, Minecraft.getInstance(), (int) (fadeAmount * 255));
+            renderZoneHud(graphics, mc, (int) (fadeAmount * 255));
+            renderedHud = true;
         }
 
         // Grace period countdown — shown when the zone lost its entry but hasn't expired yet.
         // Takes priority over the "room lost" flash (they are mutually exclusive).
         if (!inZone && ClientZoneData.isShowingGracePeriod()) {
-            renderGracePeriodHud(graphics, Minecraft.getInstance(), 220);
+            renderGracePeriodHud(graphics, mc, 220);
+            renderedHud = true;
         } else if (ClientZoneData.isShowingZoneLost()) {
             // "Room lost" flash — shown briefly when the zone disappears while the player
             // was inside it. Fades independently of the normal HUD so both can coexist
@@ -198,7 +212,12 @@ public class ZenMeterOverlay implements LayeredDraw.Layer {
             float lostFade = ClientZoneData.zoneLostFade();
             // Ease-in: opaque for first 60 %, then fade out
             float displayFade = lostFade > 0.4f ? 1.0f : lostFade / 0.4f;
-            renderZoneLostFlash(graphics, Minecraft.getInstance(), (int) (displayFade * 200));
+            renderZoneLostFlash(graphics, mc, (int) (displayFade * 200));
+            renderedHud = true;
+        }
+
+        if (renderedHud) {
+            reserveHudSpace(mc);
         }
     }
 }

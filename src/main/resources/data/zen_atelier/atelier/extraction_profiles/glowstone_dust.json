@@ -1,0 +1,166 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:glowstone_dust",
+  "source": "minecraft:glowstone_dust",
+  "source_tier_cap": 3,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 82,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:luminous_reagent",
+          "amount": 40,
+          "amount_range": {
+            "min": 32,
+            "max": 50
+          },
+          "tier": 1,
+          "quality": 38,
+          "quality_range": {
+            "min": 28,
+            "max": 58
+          },
+          "purity": 52,
+          "purity_range": {
+            "min": 38,
+            "max": 76
+          },
+          "instability": 18,
+          "instability_range": {
+            "min": 8,
+            "max": 36
+          },
+          "categories": [
+            "zen_atelier:luminous",
+            "zen_atelier:amplifying"
+          ],
+          "elements": {
+            "light": 2,
+            "fire": 1
+          },
+          "shape": {
+            "id": "tee",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 2,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:luminous"
+          ],
+          "source_hints": [
+            "minecraft:glowstone_dust"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "unstable_success",
+      "weight": 6,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:spark_reagent",
+          "amount": 20,
+          "amount_range": {
+            "min": 14,
+            "max": 28
+          },
+          "tier": 2,
+          "quality": 45,
+          "quality_range": {
+            "min": 34,
+            "max": 66
+          },
+          "purity": 44,
+          "purity_range": {
+            "min": 30,
+            "max": 62
+          },
+          "instability": 42,
+          "instability_range": {
+            "min": 28,
+            "max": 70
+          },
+          "categories": [
+            "zen_atelier:volatile",
+            "zen_atelier:luminous"
+          ],
+          "elements": {
+            "light": 1,
+            "fire": 2
+          },
+          "shape": {
+            "id": "elbow",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:sparking"
+          ],
+          "source_hints": [
+            "minecraft:glowstone_dust"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 12,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:glimmer_residue",
+          "amount": 9,
+          "amount_range": {
+            "min": 5,
+            "max": 14
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:luminous"
+          ],
+          "elements": {
+            "light": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:goddess_cup",
+  "category": "healing",
+  "recipe_tier_cap": 4,
+  "board": {
+    "size": 5,
+    "empty_cell_success_penalty": 2,
+    "empty_cell_perfect_penalty": 5,
+    "nodes": [
+      {
+        "x": 2,
+        "y": 1,
+        "type": "element",
+        "required_element": "water",
+        "required_element_value": 2,
+        "quality_bonus": 10
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "type": "element",
+        "required_element": "light",
+        "required_element_value": 1,
+        "perfect_bonus": 5
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "type": "morph",
+        "required_element": "earth",
+        "required_element_value": 1,
+        "morph_target": "zen_atelier:auto_elixir",
+        "quality_bonus": 8
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 50,
+      "query": {
+        "required_categories": [
+          "zen_atelier:medicinal"
+        ],
+        "min_quality": 45,
+        "min_purity": 60,
+        "min_elements": {
+          "water": 1
+        }
+      }
+    },
+    {
+      "amount": 35,
+      "query": {
+        "required_categories": [
+          "zen_atelier:preserving"
+        ],
+        "min_purity": 65,
+        "min_elements": {
+          "water": 2
+        }
+      }
+    },
+    {
+      "amount": 25,
+      "query": {
+        "required_categories": [
+          "zen_atelier:crystalline"
+        ],
+        "required_traits": [
+          "zen_atelier:resonant"
+        ],
+        "min_elements": {
+          "light": 1
+        }
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 72,
+      "outputs": [
+        {
+          "output": "zen_atelier:goddess_cup",
+          "count": 1,
+          "tier": 4,
+          "quality": 82,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:auto_revive",
+            "zen_atelier:regeneration"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 5,
+      "outputs": [
+        {
+          "output": "zen_atelier:goddess_cup",
+          "count": 1,
+          "tier": 4,
+          "quality": 96,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:auto_revive",
+            "zen_atelier:regeneration",
+            "zen_atelier:debuff_cleanse",
+            "zen_atelier:refill_efficiency"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 23,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:alchemical_slag",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:medicinal"
+          ],
+          "amount": 18,
+          "tier": 2,
+          "quality": 20,
+          "purity": 5,
+          "instability": 75,
+          "elements": {
+            "water": 2,
+            "earth": 1
+          },
+          "shape": {
+            "id": "square_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:contaminated"
+          ]
+        }
+      ]
+    }
+  ]
+}

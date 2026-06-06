@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:amethyst_shard",
+  "source": "minecraft:amethyst_shard",
+  "source_tier_cap": 3,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 82,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:harmonic_reagent",
+          "amount": 38,
+          "amount_range": {
+            "min": 30,
+            "max": 48
+          },
+          "tier": 1,
+          "quality": 42,
+          "quality_range": {
+            "min": 30,
+            "max": 62
+          },
+          "purity": 54,
+          "purity_range": {
+            "min": 40,
+            "max": 76
+          },
+          "instability": 14,
+          "instability_range": {
+            "min": 6,
+            "max": 30
+          },
+          "categories": [
+            "zen_atelier:crystalline",
+            "zen_atelier:resonant"
+          ],
+          "elements": {
+            "earth": 1,
+            "light": 1
+          },
+          "shape": {
+            "id": "tee",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 2,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:harmonic",
+            "zen_atelier:resonant"
+          ],
+          "source_hints": [
+            "minecraft:amethyst_shard"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 18,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:crystal_dust",
+          "amount": 9,
+          "amount_range": {
+            "min": 5,
+            "max": 14
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:crystalline"
+          ],
+          "elements": {
+            "earth": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

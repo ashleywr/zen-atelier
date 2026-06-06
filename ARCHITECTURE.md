@@ -60,7 +60,7 @@ ZenMeterOverlay  renders the HUD
 | Class | Role |
 |---|---|
 | `ChunkClassifier` | Full flood-fill per chunk. Marks OUTSIDE from y=319 down, then flood-fills remaining air as INSIDE regions. Captures `lastRegionBlocks` (UUID → Set\<BlockPos\>) for the caller. |
-| `ChunkClassificationData` | Per-chunk attachment. Bitfield (2 bits/block) for states + list of `ClassifiedRegion`. Also holds `ownedRegionIds` — the UUIDs born from this chunk's own flood fill (not stitched-in IDs). |
+| `ChunkClassificationData` | Rebuildable per-chunk attachment. Bitfield (2 bits/block) for states + list of `ClassifiedRegion`. It is not written to chunk NBT; persistent room identity lives in `ZoneSavedData`. |
 | `ClassifiedRegion` | Lightweight record: UUID, volume, openingArea. Lives in `ChunkClassificationData.regions`. |
 | `SpaceRegion` | Server-side region with mutable volume/openingArea. Computes `enclosureScore = 1 - openingArea/(volume*6)`. Lives in `SpaceRegionRegistry`. |
 | `SpaceRegionRegistry` | Per-dimension singleton. Three maps: `regions` (UUID→SpaceRegion), `blockToRegion` (BlockPos→UUID), `regionToBlocks` (UUID→Set\<BlockPos\>). All three must stay consistent. |

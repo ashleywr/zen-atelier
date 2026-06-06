@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:slime_ball",
+  "source": "minecraft:slime_ball",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 84,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:elastic_reagent",
+          "amount": 42,
+          "amount_range": {
+            "min": 34,
+            "max": 52
+          },
+          "tier": 1,
+          "quality": 35,
+          "quality_range": {
+            "min": 25,
+            "max": 55
+          },
+          "purity": 50,
+          "purity_range": {
+            "min": 35,
+            "max": 70
+          },
+          "instability": 12,
+          "instability_range": {
+            "min": 4,
+            "max": 28
+          },
+          "categories": [
+            "zen_atelier:binding",
+            "zen_atelier:elastic",
+            "zen_atelier:organic"
+          ],
+          "elements": {
+            "water": 1,
+            "wind": 1
+          },
+          "shape": {
+            "id": "square_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:elastic",
+            "zen_atelier:sticky"
+          ],
+          "source_hints": [
+            "minecraft:slime_ball"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 16,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:sticky_residue",
+          "amount": 12,
+          "amount_range": {
+            "min": 8,
+            "max": 18
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:binding"
+          ],
+          "elements": {
+            "water": 1
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

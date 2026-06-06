@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:frost_globe",
+  "category": "bombs",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 1,
+        "type": "element",
+        "required_element": "water",
+        "required_element_value": 2,
+        "quality_bonus": 8
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 35,
+      "query": {
+        "required_categories": [
+          "zen_atelier:organic"
+        ],
+        "min_elements": {
+          "water": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_elements": {
+          "water": 1
+        }
+      }
+    },
+    {
+      "amount": 15,
+      "query": {
+        "required_categories": [
+          "zen_atelier:earthy"
+        ],
+        "min_elements": {
+          "earth": 1
+        }
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 82,
+      "outputs": [
+        {
+          "output": "zen_atelier:frost_globe",
+          "count": 2,
+          "tier": 1,
+          "quality": 45,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:freezing",
+            "zen_atelier:low_damage"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 5,
+      "outputs": [
+        {
+          "output": "zen_atelier:frost_globe",
+          "count": 3,
+          "tier": 2,
+          "quality": 66,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:freezing",
+            "zen_atelier:low_damage",
+            "zen_atelier:wide_chill"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 13,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:briny_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:organic"
+          ],
+          "amount": 10,
+          "tier": 1,
+          "elements": {
+            "water": 1
+          }
+        }
+      ]
+    }
+  ]
+}

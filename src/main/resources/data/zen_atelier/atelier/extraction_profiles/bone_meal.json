@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:bone_meal",
+  "source": "minecraft:bone_meal",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 86,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:organic_reagent",
+          "amount": 34,
+          "amount_range": {
+            "min": 26,
+            "max": 44
+          },
+          "tier": 1,
+          "quality": 32,
+          "quality_range": {
+            "min": 22,
+            "max": 52
+          },
+          "purity": 48,
+          "purity_range": {
+            "min": 34,
+            "max": 68
+          },
+          "instability": 10,
+          "instability_range": {
+            "min": 2,
+            "max": 24
+          },
+          "categories": [
+            "zen_atelier:organic",
+            "zen_atelier:medicinal",
+            "zen_atelier:earthy"
+          ],
+          "elements": {
+            "water": 1,
+            "earth": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:organic",
+            "zen_atelier:growing"
+          ],
+          "source_hints": [
+            "minecraft:bone_meal"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 14,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:calcified_residue",
+          "amount": 10,
+          "amount_range": {
+            "min": 6,
+            "max": 15
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:earthy"
+          ],
+          "elements": {
+            "earth": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

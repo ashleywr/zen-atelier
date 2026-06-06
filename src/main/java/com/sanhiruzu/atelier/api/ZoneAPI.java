@@ -22,11 +22,47 @@ public class ZoneAPI {
     /**
      * Get zone data at a block position.
      * Returns null if the position is not in a zone.
+     * <p>
+     * This also works for solid blocks placed in a room, such as machines, furniture, beds,
+     * workstations, or storage blocks. Solid block positions are resolved through their adjacent
+     * room air.
      */
     @Nullable
     public static ZoneData getZoneAt(Level level, BlockPos pos) {
+        return getZoneContaining(level, pos);
+    }
+
+    /**
+     * Get zone data containing a position.
+     * <p>
+     * Use this for machines, furniture, storage blocks, dropped block positions, or player
+     * positions. For solid blocks, Atelier checks adjacent room air so the block itself can still
+     * be considered inside the room it occupies.
+     */
+    @Nullable
+    public static ZoneData getZoneContaining(Level level, BlockPos pos) {
         if (level.isClientSide()) return null;
-        return SpaceQuery.getRoomAt(level, pos);
+        return SpaceQuery.getRoomContaining(level, pos);
+    }
+
+    /**
+     * Get the indoor room containing a position.
+     * <p>
+     * Returns null for outdoor zones, positions with no room extent, client levels, and positions
+     * that are not inside a room. Solid room objects are handled the same way as
+     * {@link #getZoneContaining(Level, BlockPos)}.
+     */
+    @Nullable
+    public static ZoneData getIndoorZoneContaining(Level level, BlockPos pos) {
+        if (level.isClientSide()) return null;
+        return SpaceQuery.getIndoorRoomContaining(level, pos);
+    }
+
+    /**
+     * Returns true when a position or solid object position is inside an indoor room.
+     */
+    public static boolean isInsideRoom(Level level, BlockPos pos) {
+        return getIndoorZoneContaining(level, pos) != null;
     }
 
     /**
@@ -162,7 +198,7 @@ public class ZoneAPI {
          * Check if a location meets this requirement.
          */
         public boolean isMet(Level level, BlockPos pos) {
-            ZoneData zone = getZoneAt(level, pos);
+            ZoneData zone = getIndoorZoneContaining(level, pos);
             if (zone == null) return false;
 
             if (minVolume > 0 && zone.getVolume() < minVolume) return false;

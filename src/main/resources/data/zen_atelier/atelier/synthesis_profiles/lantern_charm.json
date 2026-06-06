@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:lantern_charm",
+  "category": "tools",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 0,
+        "type": "element",
+        "required_element": "light",
+        "required_element_value": 1,
+        "quality_bonus": 6
+      },
+      {
+        "x": 1,
+        "y": 2,
+        "type": "element",
+        "required_element": "water",
+        "required_element_value": 1,
+        "perfect_bonus": 3
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 30,
+      "query": {
+        "required_categories": [
+          "zen_atelier:luminous"
+        ],
+        "min_elements": {
+          "light": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:preserving"
+        ],
+        "min_elements": {
+          "water": 1
+        }
+      }
+    },
+    {
+      "amount": 15,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_purity": 35
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 80,
+      "outputs": [
+        {
+          "output": "zen_atelier:lantern_charm",
+          "count": 1,
+          "tier": 1,
+          "quality": 46,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:safe_bubble",
+            "zen_atelier:soft_light"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 5,
+      "outputs": [
+        {
+          "output": "zen_atelier:lantern_charm",
+          "count": 1,
+          "tier": 2,
+          "quality": 68,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:safe_bubble",
+            "zen_atelier:soft_light",
+            "zen_atelier:low_fuel_drain"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 15,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:glimmer_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:luminous"
+          ],
+          "amount": 8,
+          "tier": 1,
+          "elements": {
+            "light": 1
+          }
+        }
+      ]
+    }
+  ]
+}

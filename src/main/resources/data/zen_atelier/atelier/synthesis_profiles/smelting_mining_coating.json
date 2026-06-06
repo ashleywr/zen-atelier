@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:smelting_mining_coating",
+  "category": "tools",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 1,
+        "type": "element",
+        "required_element": "fire",
+        "required_element_value": 1,
+        "quality_bonus": 6
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 30,
+      "query": {
+        "required_categories": [
+          "zen_atelier:abrasive"
+        ],
+        "min_elements": {
+          "earth": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:volatile"
+        ],
+        "min_elements": {
+          "fire": 1
+        }
+      }
+    },
+    {
+      "amount": 15,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_purity": 35
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 82,
+      "outputs": [
+        {
+          "output": "zen_atelier:smelting_mining_coating",
+          "count": 1,
+          "tier": 1,
+          "quality": 48,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:auto_smelt",
+            "zen_atelier:temporary_uses"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 5,
+      "outputs": [
+        {
+          "output": "zen_atelier:smelting_mining_coating",
+          "count": 1,
+          "tier": 2,
+          "quality": 72,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:auto_smelt",
+            "zen_atelier:temporary_uses",
+            "zen_atelier:extra_uses"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 13,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:stone_dust",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:earthy"
+          ],
+          "amount": 10,
+          "tier": 1,
+          "elements": {
+            "earth": 1
+          }
+        }
+      ]
+    }
+  ]
+}

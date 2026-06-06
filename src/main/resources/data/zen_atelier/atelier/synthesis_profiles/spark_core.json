@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:spark_core",
+  "category": "bombs",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 1,
+        "type": "element",
+        "required_element": "fire",
+        "required_element_value": 1,
+        "quality_bonus": 5
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "type": "element",
+        "required_element": "light",
+        "required_element_value": 1,
+        "perfect_bonus": 4
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 30,
+      "query": {
+        "required_categories": [
+          "zen_atelier:volatile"
+        ],
+        "min_elements": {
+          "fire": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:luminous"
+        ],
+        "min_elements": {
+          "light": 1
+        }
+      }
+    },
+    {
+      "amount": 15,
+      "query": {
+        "required_categories": [
+          "zen_atelier:conductive"
+        ],
+        "min_elements": {
+          "wind": 1
+        }
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 80,
+      "outputs": [
+        {
+          "output": "zen_atelier:spark_core",
+          "count": 2,
+          "tier": 1,
+          "quality": 48,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:flash",
+            "zen_atelier:weakening"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 5,
+      "outputs": [
+        {
+          "output": "zen_atelier:spark_core",
+          "count": 3,
+          "tier": 2,
+          "quality": 70,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:flash",
+            "zen_atelier:weakening",
+            "zen_atelier:aggro_break"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 15,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:alchemical_slag",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:volatile"
+          ],
+          "amount": 8,
+          "tier": 1,
+          "quality": 18,
+          "purity": 8,
+          "instability": 70,
+          "elements": {
+            "fire": 1,
+            "light": 1
+          },
+          "traits": [
+            "zen_atelier:volatile"
+          ]
+        }
+      ]
+    }
+  ]
+}

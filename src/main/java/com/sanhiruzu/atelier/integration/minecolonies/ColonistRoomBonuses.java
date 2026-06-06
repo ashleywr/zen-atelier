@@ -1,10 +1,12 @@
 package com.sanhiruzu.atelier.integration.minecolonies;
 
+import com.minecolonies.api.colony.ICitizenData;
+import com.minecolonies.api.colony.buildings.IBuilding;
+import com.minecolonies.api.entity.citizen.AbstractEntityCitizen;
 import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.space.SpaceQuery;
 import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
@@ -13,10 +15,8 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Applies mob effects to living colonist entities every 200 ticks (10 s) based on the
@@ -31,7 +31,7 @@ import java.util.Optional;
  */
 final class ColonistRoomBonuses {
 
-    private static Class<?> citizenEntityClass;
+    private static boolean initialized;
 
     // Profile id -> effect config for the colonist's work building room.
     private static final Map<String, EffectConfig> WORK_EFFECTS = new HashMap<>();
@@ -62,51 +62,41 @@ final class ColonistRoomBonuses {
     }
 
     static void initialize() {
-        try {
-            citizenEntityClass = Class.forName("com.minecolonies.api.entity.citizen.AbstractEntityCitizen");
-        } catch (ClassNotFoundException ex) {
-            ZenAtelier.LOGGER.warn("MineColonies citizen class not found; colonist room bonuses disabled");
-        }
+        initialized = true;
     }
 
     static void tick(ServerLevel level, int tickCount) {
-        if (citizenEntityClass == null || tickCount % 200 != 0) {
+        if (!initialized || tickCount % 200 != 0) {
             return;
         }
         try {
             applyAll(level);
-        } catch (ReflectiveOperationException | LinkageError ex) {
+        } catch (LinkageError ex) {
             ZenAtelier.LOGGER.debug("ColonistRoomBonuses tick error", ex);
         }
     }
 
-    private static void applyAll(ServerLevel level) throws ReflectiveOperationException {
+    private static void applyAll(ServerLevel level) {
         for (Entity entity : level.getAllEntities()) {
-            if (!citizenEntityClass.isInstance(entity) || !(entity instanceof LivingEntity living)) {
+            if (!(entity instanceof AbstractEntityCitizen citizenEntity) || !(entity instanceof LivingEntity living)) {
                 continue;
             }
 
-            @SuppressWarnings("unchecked")
-            Optional<Object> dataOpt = (Optional<Object>) call(entity, "getCitizenData");
-            if (dataOpt == null || dataOpt.isEmpty()) {
+            ICitizenData citizen = citizenEntity.getCitizenData();
+            if (citizen == null) {
                 continue;
             }
-            Object citizen = dataOpt.get();
 
             applyWorkEffect(level, citizen, living);
             applyHomeEffect(level, citizen, living);
         }
     }
 
-    private static void applyWorkEffect(ServerLevel level, Object citizen, LivingEntity entity)
-            throws ReflectiveOperationException {
-        Object workBuilding = call(citizen, "getWorkBuilding");
+    private static void applyWorkEffect(ServerLevel level, ICitizenData citizen, LivingEntity entity) {
+        IBuilding workBuilding = citizen.getWorkBuilding();
         if (workBuilding == null) return;
 
-        BlockPos pos = posOf(workBuilding);
-        if (pos == null) return;
-
-        ZoneData zone = SpaceQuery.getRoomAt(level, pos);
+        ZoneData zone = SpaceQuery.getRoomAt(level, workBuilding.getPosition());
         if (!(zone instanceof RoomData room) || room.getZoneTypeId() == null) return;
 
         int quality = Math.round(room.getQuality() * 100);
@@ -118,15 +108,11 @@ final class ColonistRoomBonuses {
         entity.addEffect(new MobEffectInstance(cfg.effect, cfg.duration, effectLevel(quality, cfg), false, false));
     }
 
-    private static void applyHomeEffect(ServerLevel level, Object citizen, LivingEntity entity)
-            throws ReflectiveOperationException {
-        Object homeBuilding = call(citizen, "getHomeBuilding");
+    private static void applyHomeEffect(ServerLevel level, ICitizenData citizen, LivingEntity entity) {
+        IBuilding homeBuilding = citizen.getHomeBuilding();
         if (homeBuilding == null) return;
 
-        BlockPos pos = posOf(homeBuilding);
-        if (pos == null) return;
-
-        ZoneData zone = SpaceQuery.getRoomAt(level, pos);
+        ZoneData zone = SpaceQuery.getRoomAt(level, homeBuilding.getPosition());
         if (!(zone instanceof RoomData room) || room.getZoneTypeId() == null) return;
 
         int quality = Math.round(room.getQuality() * 100);
@@ -140,18 +126,6 @@ final class ColonistRoomBonuses {
 
     private static int effectLevel(int quality, EffectConfig cfg) {
         return (quality >= 75 && cfg.maxLevel > 1) ? cfg.maxLevel - 1 : 0;
-    }
-
-    private static BlockPos posOf(Object building) throws ReflectiveOperationException {
-        Object result = call(building, "getPosition");
-        return result instanceof BlockPos pos ? pos : null;
-    }
-
-    private static Object call(Object target, String method) throws ReflectiveOperationException {
-        if (target == null) return null;
-        Method m = target.getClass().getMethod(method);
-        m.setAccessible(true);
-        return m.invoke(target);
     }
 
     private record EffectConfig(Holder<MobEffect> effect, int duration, int maxLevel) {

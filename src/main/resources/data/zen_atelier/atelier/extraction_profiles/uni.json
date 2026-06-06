@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:uni",
+  "source": "zen_atelier:uni",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 78,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:spiky_reagent",
+          "categories": [
+            "zen_atelier:abrasive",
+            "zen_atelier:piercing",
+            "zen_atelier:organic"
+          ],
+          "amount": 32,
+          "amount_range": {
+            "min": 24,
+            "max": 42
+          },
+          "tier": 1,
+          "quality": 40,
+          "quality_range": {
+            "min": 25,
+            "max": 55
+          },
+          "purity": 45,
+          "purity_range": {
+            "min": 30,
+            "max": 65
+          },
+          "instability": 25,
+          "instability_range": {
+            "min": 10,
+            "max": 45
+          },
+          "elements": {
+            "earth": 2,
+            "wind": 1
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:spiky",
+            "zen_atelier:piercing"
+          ],
+          "source_hints": [
+            "zen_atelier:uni"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "unstable_success",
+      "weight": 8,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:barbed_core",
+          "categories": [
+            "zen_atelier:abrasive",
+            "zen_atelier:piercing",
+            "zen_atelier:volatile"
+          ],
+          "amount": 18,
+          "tier": 2,
+          "quality": 52,
+          "purity": 35,
+          "instability": 55,
+          "elements": {
+            "earth": 2,
+            "fire": 1
+          },
+          "shape": {
+            "id": "elbow",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:spiky",
+            "zen_atelier:brittle"
+          ],
+          "source_hints": [
+            "zen_atelier:uni"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 14,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:thorny_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:abrasive"
+          ],
+          "amount": 9,
+          "tier": 1,
+          "quality": 15,
+          "purity": 20,
+          "instability": 35,
+          "elements": {
+            "earth": 1
+          },
+          "traits": [
+            "zen_atelier:brittle"
+          ],
+          "source_hints": [
+            "zen_atelier:uni"
+          ]
+        }
+      ]
+    }
+  ]
+}

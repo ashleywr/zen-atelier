@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:string",
+  "source": "minecraft:string",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 88,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:fibrous_reagent",
+          "amount": 36,
+          "amount_range": {
+            "min": 28,
+            "max": 46
+          },
+          "tier": 1,
+          "quality": 30,
+          "quality_range": {
+            "min": 20,
+            "max": 48
+          },
+          "purity": 56,
+          "purity_range": {
+            "min": 42,
+            "max": 75
+          },
+          "instability": 8,
+          "instability_range": {
+            "min": 0,
+            "max": 20
+          },
+          "categories": [
+            "zen_atelier:fibrous",
+            "zen_atelier:binding"
+          ],
+          "elements": {
+            "earth": 1,
+            "wind": 1
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:fibrous"
+          ],
+          "source_hints": [
+            "minecraft:string"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 12,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:threadbare_residue",
+          "amount": 8,
+          "amount_range": {
+            "min": 4,
+            "max": 12
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:fibrous"
+          ],
+          "elements": {
+            "earth": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

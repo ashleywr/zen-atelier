@@ -1,0 +1,157 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:flint",
+  "source": "minecraft:flint",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 85,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:abrasive_reagent",
+          "amount": 35,
+          "amount_range": {
+            "min": 28,
+            "max": 42
+          },
+          "tier": 1,
+          "quality": 30,
+          "quality_range": {
+            "min": 20,
+            "max": 45
+          },
+          "purity": 50,
+          "purity_range": {
+            "min": 35,
+            "max": 65
+          },
+          "instability": 15,
+          "instability_range": {
+            "min": 5,
+            "max": 30
+          },
+          "categories": [
+            "zen_atelier:abrasive",
+            "zen_atelier:earthy"
+          ],
+          "elements": {
+            "earth": 2
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:abrasive"
+          ],
+          "source_hints": [
+            "minecraft:flint"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "unstable_success",
+      "weight": 5,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:spark_reagent",
+          "amount": 20,
+          "amount_range": {
+            "min": 14,
+            "max": 26
+          },
+          "tier": 2,
+          "quality": 35,
+          "quality_range": {
+            "min": 25,
+            "max": 55
+          },
+          "purity": 40,
+          "purity_range": {
+            "min": 25,
+            "max": 55
+          },
+          "instability": 45,
+          "instability_range": {
+            "min": 35,
+            "max": 75
+          },
+          "categories": [
+            "zen_atelier:abrasive",
+            "zen_atelier:volatile"
+          ],
+          "elements": {
+            "fire": 1,
+            "earth": 1
+          },
+          "shape": {
+            "id": "elbow",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:sparking"
+          ],
+          "source_hints": [
+            "minecraft:flint"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 10,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:stone_dust",
+          "amount": 10,
+          "amount_range": {
+            "min": 6,
+            "max": 14
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:earthy"
+          ],
+          "elements": {
+            "earth": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

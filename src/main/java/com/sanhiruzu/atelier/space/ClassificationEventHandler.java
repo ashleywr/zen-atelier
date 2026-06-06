@@ -26,8 +26,12 @@ public class ClassificationEventHandler {
     @SubscribeEvent
     public static void onChunkLoad(ChunkEvent.Load event) {
         if (event.getLevel().isClientSide()) return;
+        boolean hadSavedClassification = event.getChunk().hasData(ChunkClassificationAttachment.CHUNK_CLASSIFICATION.get());
         ChunkClassificationData data = ChunkClassificationAttachment.get(event.getChunk());
         data.setDirty(true);
+        if (hadSavedClassification) {
+            event.getChunk().setUnsaved(true);
+        }
 
         if (event.getLevel() instanceof ServerLevel serverLevel) {
             ClassificationScheduler scheduler = ClassificationTickHandler.getScheduler(serverLevel);

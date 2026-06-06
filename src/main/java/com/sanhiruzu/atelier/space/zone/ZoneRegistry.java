@@ -565,49 +565,6 @@ public class ZoneRegistry {
      * merges touching zones at chunk boundaries, and syncs to players.
      */
     public void bootstrapChunk(ChunkAccess chunk, ServerLevel level) {
-        bootstrapChunk(chunk, level, 0);
-    }
-
-    /**
-     * Removes pre-cached restored-zone data for the given chunk so it won't be re-marked INSIDE.
-     */
-    public void clearRestoredDataForChunk(int chunkX, int chunkZ) {
-        restoredByChunk.remove(ChunkPos.asLong(chunkX, chunkZ));
-    }
-
-    /**
-     * Ensures saved zones regain player-facing RoomData after world load.
-     * Runs from the scheduler, never from chunk load callbacks. Evaluation is
-     * skipped until players exist and every chunk the evaluator may touch is
-     * already loaded, avoiding load-time chunk recursion.
-     */
-    public void processRestoredZones(ServerLevel level) {
-        if (restoredZoneIds.isEmpty() || level.players().isEmpty()) return;
-
-        List<UUID> finished = new ArrayList<>();
-        for (UUID zoneId : new ArrayList<>(restoredZoneIds)) {
-            Zone zone = getZoneById(zoneId);
-            if (zone == null || zone.isDissolved()) {
-                finished.add(zoneId);
-                continue;
-            }
-            if (getRoom(zoneId) != null) {
-                finished.add(zoneId);
-                continue;
-            }
-            if (!isRestoredZoneLoadedForEvaluation(zone, level)) continue;
-            if (!savedInteriorStillAir(zone, level)) continue;
-
-            premarkRestoredInterior(zone, level);
-            evaluateRoomAndSyncNow(zone, level);
-            if (getRoom(zoneId) != null) {
-                finished.add(zoneId);
-            }
-        }
-        finished.forEach(restoredZoneIds::remove);
-    }
-
-    private void bootstrapChunk(ChunkAccess chunk, ServerLevel level, int depth) {
         ChunkClassificationData data = ChunkClassificationAttachment.get(chunk);
         if (!data.isDirty()) return;
 
@@ -699,15 +656,45 @@ public class ZoneRegistry {
         recheckZonesTouchingChunk(chunk, level);
         syncToPlayers(chunk, data, level);
         checkAllPlayerZones(level);
+    }
 
-        // ---- 5. Bootstrap loaded neighbors so cross-chunk rooms are complete ----
-        if (depth < 4) {
-            int cx = chunk.getPos().x, cz = chunk.getPos().z;
-            bootstrapNeighborIfLoaded(cx - 1, cz, depth + 1, level);
-            bootstrapNeighborIfLoaded(cx + 1, cz, depth + 1, level);
-            bootstrapNeighborIfLoaded(cx, cz - 1, depth + 1, level);
-            bootstrapNeighborIfLoaded(cx, cz + 1, depth + 1, level);
+    /**
+     * Removes pre-cached restored-zone data for the given chunk so it won't be re-marked INSIDE.
+     */
+    public void clearRestoredDataForChunk(int chunkX, int chunkZ) {
+        restoredByChunk.remove(ChunkPos.asLong(chunkX, chunkZ));
+    }
+
+    /**
+     * Ensures saved zones regain player-facing RoomData after world load.
+     * Runs from the scheduler, never from chunk load callbacks. Evaluation is
+     * skipped until players exist and every chunk the evaluator may touch is
+     * already loaded, avoiding load-time chunk recursion.
+     */
+    public void processRestoredZones(ServerLevel level) {
+        if (restoredZoneIds.isEmpty() || level.players().isEmpty()) return;
+
+        List<UUID> finished = new ArrayList<>();
+        for (UUID zoneId : new ArrayList<>(restoredZoneIds)) {
+            Zone zone = getZoneById(zoneId);
+            if (zone == null || zone.isDissolved()) {
+                finished.add(zoneId);
+                continue;
+            }
+            if (getRoom(zoneId) != null) {
+                finished.add(zoneId);
+                continue;
+            }
+            if (!isRestoredZoneLoadedForEvaluation(zone, level)) continue;
+            if (!savedInteriorStillAir(zone, level)) continue;
+
+            premarkRestoredInterior(zone, level);
+            evaluateRoomAndSyncNow(zone, level);
+            if (getRoom(zoneId) != null) {
+                finished.add(zoneId);
+            }
         }
+        finished.forEach(restoredZoneIds::remove);
     }
 
     /**
@@ -748,16 +735,6 @@ public class ZoneRegistry {
             }
         }
         return false;
-    }
-
-    private void bootstrapNeighborIfLoaded(int chunkX, int chunkZ, int depth, ServerLevel level) {
-        net.minecraft.world.level.chunk.LevelChunk neighbor =
-                level.getChunkSource().getChunkNow(chunkX, chunkZ);
-        if (neighbor == null) return;
-        ChunkClassificationData neighborData = ChunkClassificationAttachment.get(neighbor);
-        if (neighborData.isDirty()) {
-            bootstrapChunk(neighbor, level, depth);
-        }
     }
 
     private void mergeAdjacentZonesAtBoundaries(ChunkAccess chunk, ServerLevel level) {
@@ -950,10 +927,14 @@ public class ZoneRegistry {
     public void invalidateAll() {
         cache.clear();
         zoneEntities.clear();
+        customNames.clear();
+        gracePeriodExpiry.clear();
         savedData = null;
+        restored = false;
         roomChangeScheduler.clear();
         restoredZoneIds.clear();
         restoredByChunk.clear();
+        deferredExpansions.clear();
         dirtyZoneRecheckChunks.clear();
     }
 

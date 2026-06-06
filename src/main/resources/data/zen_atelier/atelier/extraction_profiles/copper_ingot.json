@@ -1,0 +1,194 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:copper_ingot",
+  "source": "minecraft:copper_ingot",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 80,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:conductive_reagent",
+          "amount": 40,
+          "amount_range": {
+            "min": 32,
+            "max": 48
+          },
+          "tier": 1,
+          "quality": 35,
+          "quality_range": {
+            "min": 25,
+            "max": 50
+          },
+          "purity": 55,
+          "purity_range": {
+            "min": 40,
+            "max": 70
+          },
+          "instability": 10,
+          "instability_range": {
+            "min": 0,
+            "max": 25
+          },
+          "categories": [
+            "zen_atelier:conductive",
+            "zen_atelier:metallic"
+          ],
+          "elements": {
+            "earth": 1,
+            "wind": 1
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:conductive"
+          ],
+          "source_hints": [
+            "minecraft:copper_ingot"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "mutated_success",
+      "weight": 8,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:verdigris_reagent",
+          "amount": 30,
+          "amount_range": {
+            "min": 22,
+            "max": 36
+          },
+          "tier": 2,
+          "quality": 45,
+          "quality_range": {
+            "min": 35,
+            "max": 65
+          },
+          "purity": 45,
+          "purity_range": {
+            "min": 30,
+            "max": 60
+          },
+          "instability": 25,
+          "instability_range": {
+            "min": 15,
+            "max": 45
+          },
+          "categories": [
+            "zen_atelier:metallic",
+            "zen_atelier:transformative"
+          ],
+          "elements": {
+            "earth": 1,
+            "water": 1
+          },
+          "shape": {
+            "id": "square_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:verdigris"
+          ],
+          "source_hints": [
+            "minecraft:copper_ingot"
+          ]
+        }
+      ],
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:metallic_residue",
+          "amount": 5,
+          "amount_range": {
+            "min": 3,
+            "max": 8
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:metallic"
+          ],
+          "elements": {
+            "earth": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 12,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:metallic_residue",
+          "amount": 12,
+          "amount_range": {
+            "min": 8,
+            "max": 16
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:metallic"
+          ],
+          "elements": {
+            "earth": 1
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

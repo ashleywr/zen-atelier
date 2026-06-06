@@ -4,12 +4,22 @@ import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
-import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class SpaceQuery {
+    private static final Direction[] ROOM_PROBE_DIRECTIONS = {
+            Direction.UP,
+            Direction.NORTH,
+            Direction.SOUTH,
+            Direction.EAST,
+            Direction.WEST,
+            Direction.DOWN
+    };
 
     /**
      * Returns the classification for any position, including solid blocks like furniture or beds.
@@ -29,19 +39,18 @@ public class SpaceQuery {
 
         if (state != ClassificationState.SOLID) return state;
 
-        // Probe neighbors: above is checked first since it's the most natural "which room is this in"
-        // for floor-placed objects like beds, chests, and crafting tables.
-        for (BlockPos neighbor : List.of(
-                pos.above(), pos.north(), pos.south(), pos.east(), pos.west(), pos.below())) {
-            if (neighbor.getY() < -64 || neighbor.getY() >= 320) continue;
-            if (!level.getBlockState(neighbor).isAir()) continue;
-            ChunkClassificationData neighborData = ChunkClassificationAttachment.get(level.getChunk(neighbor));
-            ClassificationState neighborState = neighborData.getBlockState(
-                    neighbor.getX() & 15, neighbor.getY(), neighbor.getZ() & 15);
-            if (neighborState != ClassificationState.SOLID) return neighborState;
-        }
+        ClassificationState neighborState = firstContainingRoomNeighbor(
+                pos,
+                neighbor -> level.getBlockState(neighbor).isAir(),
+                neighbor -> {
+                    ChunkClassificationData neighborData = ChunkClassificationAttachment.get(level.getChunk(neighbor));
+                    ClassificationState stateAtNeighbor = neighborData.getBlockState(
+                            neighbor.getX() & 15, neighbor.getY(), neighbor.getZ() & 15);
+                    return stateAtNeighbor == ClassificationState.SOLID ? null : stateAtNeighbor;
+                }
+        );
 
-        return ClassificationState.SOLID;
+        return neighborState == null ? ClassificationState.SOLID : neighborState;
     }
 
     public static boolean isInside(Level level, BlockPos pos) {
@@ -53,8 +62,42 @@ public class SpaceQuery {
     }
 
     public static SpaceRegion getRegionAt(Level level, BlockPos pos) {
+        return getRegionContaining(level, pos);
+    }
+
+    @Nullable
+    public static SpaceRegion getRegionContaining(Level level, BlockPos pos) {
         SpaceRegionRegistry registry = SpaceRegionRegistry.get(level);
-        return registry.getRegionAt(level, pos);
+        SpaceRegion region = registry.getRegionAt(level, pos);
+        if (region != null) return region;
+
+        net.minecraft.world.level.chunk.ChunkAccess chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+        if (chunk == null) return null;
+        ChunkClassificationData data = ChunkClassificationAttachment.get(chunk);
+        ClassificationState state = data.getBlockState(pos.getX() & 15, pos.getY(), pos.getZ() & 15);
+        if (state != ClassificationState.SOLID) return null;
+
+        return firstContainingRoomNeighbor(
+                pos,
+                neighbor -> level.getBlockState(neighbor).isAir(),
+                neighbor -> registry.getRegionAt(level, neighbor)
+        );
+    }
+
+    @Nullable
+    static <T> T firstContainingRoomNeighbor(
+            BlockPos pos,
+            Predicate<BlockPos> canUseNeighbor,
+            Function<BlockPos, T> lookup
+    ) {
+        for (Direction direction : ROOM_PROBE_DIRECTIONS) {
+            BlockPos neighbor = pos.relative(direction);
+            if (neighbor.getY() < -64 || neighbor.getY() >= 320) continue;
+            if (!canUseNeighbor.test(neighbor)) continue;
+            T value = lookup.apply(neighbor);
+            if (value != null) return value;
+        }
+        return null;
     }
 
     public static ClassificationState getTypeAt(Level level, BlockPos pos) {
@@ -79,10 +122,33 @@ public class SpaceQuery {
 
     @Nullable
     public static ZoneData getRoomAt(Level level, BlockPos pos) {
+        return getRoomContaining(level, pos);
+    }
+
+    /**
+     * Returns the room containing {@code pos}, including when {@code pos} is a solid block placed in
+     * the room. This is the right lookup for furniture, workstations, storage, beds, and item/block
+     * positions that occupy room space instead of being air cells.
+     */
+    @Nullable
+    public static ZoneData getRoomContaining(Level level, BlockPos pos) {
         if (level.isClientSide()) return null;
-        SpaceRegion region = getRegionAt(level, pos);
+        SpaceRegion region = getRegionContaining(level, pos);
         if (region == null) return null;
         return ZoneRegistry.get(level).getOrEvaluateRoom(region.getId(), level);
+    }
+
+    @Nullable
+    public static ZoneData getIndoorRoomContaining(Level level, BlockPos pos) {
+        ZoneData room = getRoomContaining(level, pos);
+        if (room == null || room.isOutdoor() || !room.hasSpatialExtent()) {
+            return null;
+        }
+        return getClassificationAt(level, pos) == ClassificationState.INSIDE ? room : null;
+    }
+
+    public static boolean isInsideRoom(Level level, BlockPos pos) {
+        return getIndoorRoomContaining(level, pos) != null;
     }
 
     /**

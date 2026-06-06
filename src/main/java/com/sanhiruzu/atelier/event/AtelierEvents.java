@@ -4,9 +4,12 @@ import com.sanhiruzu.atelier.network.ToggleDebugPayload;
 import com.sanhiruzu.atelier.space.SpaceQuery;
 import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
-import com.sanhiruzu.atelier.synthesis.SynthesisCauldronInteractions;
+import com.sanhiruzu.atelier.synthesis.world.CauldronExtractionService;
+import com.sanhiruzu.atelier.synthesis.world.PlayerExtractionKnowledge;
+import com.sanhiruzu.atelier.synthesis.world.PlayerSynthesisKnowledge;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
+import com.sanhiruzu.atelier.ui.network.SynthesisCatalogSyncPayload;
 import com.sanhiruzu.atelier.zone.bonus.RoomPresenceEffects;
 import com.sanhiruzu.atelier.zone.discovery.PlayerRoomDiscovery;
 import com.sanhiruzu.atelier.zone.discovery.RoomDiscoveryHandler;
@@ -22,7 +25,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerWakeUpEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = "zen_atelier")
@@ -37,8 +40,13 @@ public class AtelierEvents {
             );
             PacketDistributor.sendToPlayer(
                     serverPlayer,
+                    SynthesisCatalogSyncPayload.current()
+            );
+            PacketDistributor.sendToPlayer(
+                    serverPlayer,
                     new DiscoveryDataSyncPayload(PlayerRoomDiscovery.getAllBestScores(serverPlayer))
             );
+            PlayerExtractionKnowledge.sync(serverPlayer);
             PacketDistributor.sendToPlayer(
                     serverPlayer,
                     new ToggleDebugPayload(serverPlayer.getPersistentData().getBoolean("spaceregion_debug"))
@@ -47,14 +55,29 @@ public class AtelierEvents {
     }
 
     @SubscribeEvent
-    public static void onDatapackSync(OnDatapackSyncEvent event) {
-        RoomCatalogSyncPayload payload = RoomCatalogSyncPayload.current();
-        event.getRelevantPlayers().forEach(player -> PacketDistributor.sendToPlayer(player, payload));
+    public static void onPlayerClone(PlayerEvent.Clone event) {
+        PlayerExtractionKnowledge.copy(event.getOriginal(), event.getEntity());
+        PlayerSynthesisKnowledge.copy(event.getOriginal(), event.getEntity());
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            PlayerExtractionKnowledge.sync(serverPlayer);
+        }
     }
 
     @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        SynthesisCauldronInteractions.onRightClickBlock(event);
+    public static void onDatapackSync(OnDatapackSyncEvent event) {
+        RoomCatalogSyncPayload payload = RoomCatalogSyncPayload.current();
+        SynthesisCatalogSyncPayload synthesisPayload = SynthesisCatalogSyncPayload.current();
+        event.getRelevantPlayers().forEach(player -> {
+            PacketDistributor.sendToPlayer(player, payload);
+            PacketDistributor.sendToPlayer(player, synthesisPayload);
+        });
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        for (ServerLevel level : event.getServer().getAllLevels()) {
+            CauldronExtractionService.tick(level);
+        }
     }
 
     @SubscribeEvent

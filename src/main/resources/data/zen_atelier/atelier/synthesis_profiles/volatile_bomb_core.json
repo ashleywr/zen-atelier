@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:volatile_bomb_core",
+  "category": "bombs",
+  "recipe_tier_cap": 3,
+  "board": {
+    "size": 5,
+    "empty_cell_success_penalty": 2,
+    "empty_cell_perfect_penalty": 4,
+    "nodes": [
+      {
+        "x": 2,
+        "y": 1,
+        "type": "element",
+        "required_element": "fire",
+        "required_element_value": 2,
+        "quality_bonus": 8
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "type": "element",
+        "required_element": "earth",
+        "required_element_value": 1,
+        "perfect_bonus": 3
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 45,
+      "query": {
+        "required_categories": [
+          "zen_atelier:volatile"
+        ],
+        "max_instability": 80,
+        "min_elements": {
+          "fire": 2
+        }
+      }
+    },
+    {
+      "amount": 25,
+      "query": {
+        "required_categories": [
+          "zen_atelier:abrasive"
+        ],
+        "min_elements": {
+          "earth": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_elements": {
+          "water": 1
+        }
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 74,
+      "outputs": [
+        {
+          "output": "zen_atelier:volatile_bomb_core",
+          "count": 1,
+          "tier": 2,
+          "quality": 58,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:volatile",
+            "zen_atelier:explosive"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "unstable_success",
+      "weight": 10,
+      "outputs": [
+        {
+          "output": "zen_atelier:volatile_bomb_core",
+          "count": 2,
+          "tier": 2,
+          "quality": 48,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:volatile"
+          ]
+        }
+      ],
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:charged_dust",
+          "amount": 8,
+          "tier": 1
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 16,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:sticky_residue",
+          "amount": 10,
+          "tier": 1
+        }
+      ]
+    }
+  ]
+}

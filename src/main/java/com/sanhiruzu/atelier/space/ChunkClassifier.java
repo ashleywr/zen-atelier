@@ -82,8 +82,8 @@ public class ChunkClassifier {
         int minX = chunk.getPos().getMinBlockX();
         int minZ = chunk.getPos().getMinBlockZ();
         RoomConnectivity.BlockLookup lookup = RoomConnectivity.forChunk(chunk);
-        Queue<BlockPos> queue = new LinkedList<>();
-        Set<BlockPos> visited = new HashSet<>();
+        Queue<BlockPos> queue = new ArrayDeque<>();
+        boolean[] visited = new boolean[CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_WIDTH];
 
         for (int x = 0; x < CHUNK_WIDTH; x++) {
             for (int z = 0; z < CHUNK_WIDTH; z++) {
@@ -91,7 +91,7 @@ public class ChunkClassifier {
                 if (RoomConnectivity.isRoomAir(lookup, pos)) {
                     data.setBlockState(x, 319, z, ClassificationState.OUTSIDE);
                     queue.add(pos);
-                    visited.add(pos);
+                    visited[indexOf(x, 319, z)] = true;
                 }
             }
         }
@@ -105,13 +105,14 @@ public class ChunkClassifier {
                 int nZ = neighbor.getZ() - minZ;
 
                 if (nY < -64 || nY >= 320 || nX < 0 || nX >= CHUNK_WIDTH || nZ < 0 || nZ >= CHUNK_WIDTH) continue;
-                if (visited.contains(neighbor)) continue;
+                int index = indexOf(nX, nY, nZ);
+                if (visited[index]) continue;
 
                 if (data.getBlockState(nX, nY, nZ) == ClassificationState.SOLID
                         && RoomConnectivity.isRoomAir(lookup, neighbor)) {
                     data.setBlockState(nX, nY, nZ, ClassificationState.OUTSIDE);
                     queue.add(neighbor);
-                    visited.add(neighbor);
+                    visited[index] = true;
                 }
             }
         }
@@ -121,7 +122,7 @@ public class ChunkClassifier {
         int minX = chunk.getPos().getMinBlockX();
         int minZ = chunk.getPos().getMinBlockZ();
         RoomConnectivity.BlockLookup lookup = RoomConnectivity.forChunk(chunk);
-        Set<BlockPos> globalVisited = new HashSet<>();
+        boolean[] globalVisited = new boolean[CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_WIDTH];
 
         for (int x = 0; x < CHUNK_WIDTH; x++) {
             for (int z = 0; z < CHUNK_WIDTH; z++) {
@@ -129,7 +130,7 @@ public class ChunkClassifier {
                     ClassificationState seedState = data.getBlockState(x, y, z);
                     if (seedState == ClassificationState.SOLID) {
                         BlockPos pos = new BlockPos(minX + x, y, minZ + z);
-                        if (globalVisited.contains(pos)) continue;
+                        if (globalVisited[indexOf(x, y, z)]) continue;
 
                         Set<BlockPos> region = new HashSet<>();
                         FloodFillResult result = floodFillInside(chunk, lookup, data, x, y, z, region, globalVisited);
@@ -157,7 +158,7 @@ public class ChunkClassifier {
 
     private FloodFillResult floodFillInside(ChunkAccess chunk, RoomConnectivity.BlockLookup lookup,
                                             ChunkClassificationData data, int startX, int startY, int startZ,
-                                            Set<BlockPos> region, Set<BlockPos> globalVisited) {
+                                            Set<BlockPos> region, boolean[] globalVisited) {
         int minX = chunk.getPos().getMinBlockX();
         int minZ = chunk.getPos().getMinBlockZ();
         BlockPos start = new BlockPos(minX + startX, startY, minZ + startZ);
@@ -167,10 +168,10 @@ public class ChunkClassifier {
             return new FloodFillResult(0, false);
         }
 
-        Queue<BlockPos> queue = new LinkedList<>();
+        Queue<BlockPos> queue = new ArrayDeque<>();
         queue.add(start);
         region.add(start);
-        globalVisited.add(start);
+        globalVisited[indexOf(startX, startY, startZ)] = true;
         int openingArea = 0;
         boolean hasPlayerBlock = false;
 
@@ -184,7 +185,8 @@ public class ChunkClassifier {
 
                 if (nY < -64 || nY >= 320 || nX < 0 || nX >= CHUNK_WIDTH || nZ < 0 || nZ >= CHUNK_WIDTH) continue;
 
-                if (region.contains(neighbor) || globalVisited.contains(neighbor)) continue;
+                int index = indexOf(nX, nY, nZ);
+                if (globalVisited[index]) continue;
 
                 ClassificationState state = data.getBlockState(nX, nY, nZ);
                 if (state == ClassificationState.OUTSIDE) {
@@ -195,7 +197,7 @@ public class ChunkClassifier {
                 if (RoomConnectivity.isRoomAir(lookup, neighbor)
                         && (state == ClassificationState.SOLID || state == ClassificationState.PARTIAL)) {
                     region.add(neighbor);
-                    globalVisited.add(neighbor);
+                    globalVisited[index] = true;
                     queue.add(neighbor);
                 } else if (!RoomConnectivity.isRoomAir(lookup, neighbor)) {
                     if (!hasPlayerBlock && !isNaturalBlock(chunk, neighbor)) hasPlayerBlock = true;
@@ -203,6 +205,10 @@ public class ChunkClassifier {
             }
         }
         return new FloodFillResult(openingArea, hasPlayerBlock);
+    }
+
+    private static int indexOf(int x, int y, int z) {
+        return x + CHUNK_WIDTH * (z + CHUNK_WIDTH * (y + 64));
     }
 
     private record FloodFillResult(int openingArea, boolean hasPlayerBlock) {

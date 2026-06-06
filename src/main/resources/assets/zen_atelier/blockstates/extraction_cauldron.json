@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "level=1,phase=ready": {
+      "model": "zen_atelier:block/extraction_cauldron_level1"
+    },
+    "level=1,phase=extracting": {
+      "model": "zen_atelier:block/extraction_cauldron_level1"
+    },
+    "level=2,phase=ready": {
+      "model": "zen_atelier:block/extraction_cauldron_level2"
+    },
+    "level=2,phase=extracting": {
+      "model": "zen_atelier:block/extraction_cauldron_level2"
+    },
+    "level=3,phase=ready": {
+      "model": "zen_atelier:block/extraction_cauldron_full"
+    },
+    "level=3,phase=extracting": {
+      "model": "zen_atelier:block/extraction_cauldron_full"
+    }
+  }
+}

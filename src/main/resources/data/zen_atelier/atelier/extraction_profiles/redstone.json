@@ -1,0 +1,159 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:redstone",
+  "source": "minecraft:redstone",
+  "source_tier_cap": 3,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 78,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:spark_reagent",
+          "amount": 38,
+          "amount_range": {
+            "min": 30,
+            "max": 48
+          },
+          "tier": 1,
+          "quality": 34,
+          "quality_range": {
+            "min": 24,
+            "max": 54
+          },
+          "purity": 45,
+          "purity_range": {
+            "min": 30,
+            "max": 65
+          },
+          "instability": 28,
+          "instability_range": {
+            "min": 18,
+            "max": 48
+          },
+          "categories": [
+            "zen_atelier:conductive",
+            "zen_atelier:abrasive"
+          ],
+          "elements": {
+            "fire": 1,
+            "wind": 1
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:sparking",
+            "zen_atelier:redstone_resonance"
+          ],
+          "source_hints": [
+            "minecraft:redstone"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "mutated_success",
+      "weight": 10,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:conductive_reagent",
+          "amount": 26,
+          "amount_range": {
+            "min": 18,
+            "max": 34
+          },
+          "tier": 2,
+          "quality": 42,
+          "quality_range": {
+            "min": 30,
+            "max": 62
+          },
+          "purity": 42,
+          "purity_range": {
+            "min": 28,
+            "max": 62
+          },
+          "instability": 32,
+          "instability_range": {
+            "min": 20,
+            "max": 55
+          },
+          "categories": [
+            "zen_atelier:conductive",
+            "zen_atelier:crystalline"
+          ],
+          "elements": {
+            "fire": 2,
+            "wind": 1
+          },
+          "shape": {
+            "id": "elbow",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:redstone_resonance"
+          ],
+          "source_hints": [
+            "minecraft:redstone"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 12,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:charged_dust",
+          "amount": 10,
+          "amount_range": {
+            "min": 6,
+            "max": 16
+          },
+          "tier": 1,
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:conductive"
+          ],
+          "elements": {
+            "fire": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

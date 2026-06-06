@@ -20,7 +20,7 @@ public class RoomJournalItem extends Item {
         if (!level.isClientSide) {
             RoomJournalActions.openOrDescribe(player, hand);
         }
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        return InteractionResultHolder.consume(stack);
     }
 
     @Override
@@ -33,6 +33,6 @@ public class RoomJournalItem extends Item {
         if (!context.getLevel().isClientSide) {
             RoomJournalActions.inspectRoom(player, context.getClickedPos());
         }
-        return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
+        return InteractionResult.CONSUME;
     }
 }

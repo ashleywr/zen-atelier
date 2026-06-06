@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:keen_weapon_coating",
+  "category": "tools",
+  "recipe_tier_cap": 3,
+  "board": {
+    "size": 5,
+    "empty_cell_success_penalty": 2,
+    "empty_cell_perfect_penalty": 4,
+    "nodes": [
+      {
+        "x": 2,
+        "y": 1,
+        "type": "element",
+        "required_element": "earth",
+        "required_element_value": 1,
+        "quality_bonus": 6
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "type": "element",
+        "required_element": "wind",
+        "required_element_value": 1,
+        "perfect_bonus": 3
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 35,
+      "query": {
+        "required_categories": [
+          "zen_atelier:abrasive"
+        ],
+        "min_quality": 30,
+        "min_elements": {
+          "earth": 1
+        }
+      }
+    },
+    {
+      "amount": 25,
+      "query": {
+        "reagents": [
+          "zen_atelier:quickening_reagent"
+        ],
+        "min_elements": {
+          "life": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_elements": {
+          "water": 1
+        }
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 76,
+      "outputs": [
+        {
+          "output": "zen_atelier:keen_weapon_coating",
+          "count": 1,
+          "tier": 2,
+          "quality": 55,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:keen",
+            "zen_atelier:quickening"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 6,
+      "outputs": [
+        {
+          "output": "zen_atelier:sparking_weapon_coating",
+          "count": 1,
+          "tier": 3,
+          "quality": 68,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:keen",
+            "zen_atelier:quickening",
+            "zen_atelier:sparking"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 18,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:stone_dust",
+          "amount": 8,
+          "tier": 1
+        },
+        {
+          "reagent": "zen_atelier:sweet_residue",
+          "amount": 6,
+          "tier": 1
+        }
+      ]
+    }
+  ]
+}

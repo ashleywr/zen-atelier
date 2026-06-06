@@ -28,6 +28,10 @@ public class Config {
             .comment("A list of items to log on common setup.")
             .defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), () -> "", Config::validateItemName);
 
+    public static final ModConfigSpec.BooleanValue ENABLE_MINECOLONIES_COLONIST_EFFECTS = BUILDER
+            .comment("Whether Atelier should apply room-quality mob effects directly to MineColonies colonists. Disabled by default because some MineColonies AI versions react poorly to external effect refreshes.")
+            .define("enableMineColoniesColonistEffects", false);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     private static boolean validateItemName(final Object obj) {

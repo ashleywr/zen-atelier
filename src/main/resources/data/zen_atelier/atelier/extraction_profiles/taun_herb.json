@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:taun_herb",
+  "source": "zen_atelier:taun_herb",
+  "source_tier_cap": 2,
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 82,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:taun_extract",
+          "categories": [
+            "zen_atelier:medicinal",
+            "zen_atelier:organic"
+          ],
+          "amount": 34,
+          "amount_range": {
+            "min": 24,
+            "max": 44
+          },
+          "tier": 1,
+          "quality": 42,
+          "quality_range": {
+            "min": 25,
+            "max": 60
+          },
+          "purity": 58,
+          "purity_range": {
+            "min": 42,
+            "max": 78
+          },
+          "instability": 8,
+          "instability_range": {
+            "min": 0,
+            "max": 22
+          },
+          "elements": {
+            "water": 2,
+            "life": 1
+          },
+          "shape": {
+            "id": "single",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:soothing",
+            "zen_atelier:fresh"
+          ],
+          "source_hints": [
+            "zen_atelier:taun_herb"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 4,
+      "reagents": [
+        {
+          "reagent": "zen_atelier:taun_dew",
+          "categories": [
+            "zen_atelier:medicinal",
+            "zen_atelier:preserving",
+            "zen_atelier:organic"
+          ],
+          "amount": 24,
+          "tier": 2,
+          "quality": 68,
+          "purity": 82,
+          "instability": 4,
+          "elements": {
+            "water": 3,
+            "life": 1
+          },
+          "shape": {
+            "id": "line_2",
+            "cells": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          },
+          "traits": [
+            "zen_atelier:soothing",
+            "zen_atelier:preserving"
+          ],
+          "source_hints": [
+            "zen_atelier:taun_herb"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 14,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:wilted_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:organic"
+          ],
+          "amount": 8,
+          "tier": 1,
+          "quality": 12,
+          "purity": 18,
+          "instability": 35,
+          "elements": {
+            "water": 1
+          },
+          "traits": [
+            "zen_atelier:fragile"
+          ],
+          "source_hints": [
+            "zen_atelier:taun_herb"
+          ]
+        }
+      ]
+    }
+  ]
+}

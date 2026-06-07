@@ -6,6 +6,7 @@ import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
 import com.sanhiruzu.atelier.ui.network.ExtractionKnowledgeSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
+import com.sanhiruzu.atelier.ui.network.SynthesisBoardFusionPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisCatalogSyncPayload;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
@@ -252,6 +253,25 @@ public class NetworkPayloadTest {
         RoomInspectPayload decoded = RoomInspectPayload.CODEC.decode(testBuffer);
 
         assertEquals(pos, decoded.pos(), "Inspect block position should be preserved");
+    }
+
+    @Test
+    void testSynthesisBoardFusionPayloadSerializeDeserialize() {
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        SynthesisBoardFusionPayload original = new SynthesisBoardFusionPayload(
+                17,
+                List.of("zen_atelier:ab_rule", "zen_atelier:ab_rule", "zen_atelier:bc_rule"),
+                99
+        );
+
+        SynthesisBoardFusionPayload.CODEC.encode(buffer, original);
+
+        buffer.readerIndex(0);
+        SynthesisBoardFusionPayload decoded = SynthesisBoardFusionPayload.CODEC.decode(buffer);
+
+        assertEquals(17, decoded.containerId(), "Container id should round-trip");
+        assertEquals(List.of("zen_atelier:ab_rule", "zen_atelier:bc_rule"), decoded.activeRuleIds(), "Rule ids should deduplicate and preserve order");
+        assertEquals(49, decoded.resonanceCount(), "Resonance count should be clamped to board limits");
     }
 
     @Test

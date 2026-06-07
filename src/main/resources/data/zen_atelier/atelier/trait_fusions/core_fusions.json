@@ -1,0 +1,172 @@
+{
+  "rules": [
+    {
+      "inputs": ["zen_atelier:smoldering", "zen_atelier:volatile"],
+      "output_affix": "zen_atelier:incendiary",
+      "glow_color": "#FF6A00"
+    },
+    {
+      "inputs": ["zen_atelier:smoldering", "zen_atelier:explosive"],
+      "output_affix": "zen_atelier:burning_fuse",
+      "success_weight_bonus": 5,
+      "glow_color": "#FF4500"
+    },
+    {
+      "inputs": ["zen_atelier:smoldering", "zen_atelier:hot"],
+      "output_affix": "zen_atelier:scalding",
+      "quality_bonus": 5,
+      "glow_color": "#FF8C00"
+    },
+    {
+      "inputs": ["zen_atelier:keen", "zen_atelier:piercing"],
+      "output_affix": "zen_atelier:razor",
+      "quality_bonus": 5,
+      "glow_color": "#C8C8D4"
+    },
+    {
+      "inputs": ["zen_atelier:sharp", "zen_atelier:keen"],
+      "output_affix": "zen_atelier:honed",
+      "success_weight_bonus": 10,
+      "glow_color": "#A0B8FF"
+    },
+    {
+      "inputs": ["zen_atelier:stable", "zen_atelier:resonant"],
+      "output_affix": "zen_atelier:crystalline",
+      "quality_bonus": 10,
+      "success_weight_bonus": 10,
+      "glow_color": "#B07FFF"
+    },
+    {
+      "inputs": ["zen_atelier:stable", "zen_atelier:soothing"],
+      "output_affix": "zen_atelier:calming",
+      "quality_bonus": 8,
+      "success_weight_bonus": 5,
+      "glow_color": "#7FFFB0"
+    },
+    {
+      "inputs": ["zen_atelier:sticky", "zen_atelier:explosive"],
+      "output_affix": "zen_atelier:adhesive_burst",
+      "glow_color": "#FF9F40"
+    },
+    {
+      "inputs": ["zen_atelier:sticky", "zen_atelier:volatile"],
+      "output_affix": "zen_atelier:clinging_fume",
+      "success_weight_bonus": 5,
+      "glow_color": "#D4FF40"
+    },
+    {
+      "inputs": ["zen_atelier:conductive", "zen_atelier:sparking"],
+      "output_affix": "zen_atelier:charged",
+      "glow_color": "#40CFFF"
+    },
+    {
+      "inputs": ["zen_atelier:conductive", "zen_atelier:resonant"],
+      "output_affix": "zen_atelier:harmonic_current",
+      "quality_bonus": 8,
+      "glow_color": "#8080FF"
+    },
+    {
+      "inputs": ["zen_atelier:vital", "zen_atelier:soothing"],
+      "output_affix": "zen_atelier:restorative",
+      "quality_bonus": 10,
+      "glow_color": "#40FF80"
+    },
+    {
+      "inputs": ["zen_atelier:vital", "zen_atelier:fresh"],
+      "output_affix": "zen_atelier:revitalizing",
+      "quality_bonus": 5,
+      "success_weight_bonus": 5,
+      "glow_color": "#80FF40"
+    },
+    {
+      "inputs": ["zen_atelier:luminous", "zen_atelier:sparking"],
+      "output_affix": "zen_atelier:radiant",
+      "quality_bonus": 10,
+      "glow_color": "#FFFFA0"
+    },
+    {
+      "inputs": ["zen_atelier:luminous", "zen_atelier:resonant"],
+      "output_affix": "zen_atelier:spectral",
+      "success_weight_bonus": 15,
+      "glow_color": "#A0AFFF"
+    },
+    {
+      "inputs": ["zen_atelier:spiky", "zen_atelier:piercing"],
+      "output_affix": "zen_atelier:serrated",
+      "glow_color": "#808080"
+    },
+    {
+      "inputs": ["zen_atelier:bouncy", "zen_atelier:lightweight"],
+      "output_affix": "zen_atelier:floating",
+      "quality_bonus": 8,
+      "glow_color": "#80D4FF"
+    },
+    {
+      "inputs": ["zen_atelier:sweet", "zen_atelier:fresh"],
+      "output_affix": "zen_atelier:refreshing",
+      "quality_bonus": 10,
+      "glow_color": "#FFD4A0"
+    },
+    {
+      "inputs": ["zen_atelier:sweet", "zen_atelier:vital"],
+      "output_affix": "zen_atelier:nourishing",
+      "quality_bonus": 8,
+      "success_weight_bonus": 5,
+      "glow_color": "#FF9FD4"
+    },
+    {
+      "inputs": ["zen_atelier:fermenting", "zen_atelier:sweet"],
+      "output_affix": "zen_atelier:fermented",
+      "success_weight_bonus": 10,
+      "glow_color": "#D4A040"
+    },
+    {
+      "inputs": ["zen_atelier:fermenting", "zen_atelier:vital"],
+      "output_affix": "zen_atelier:elixir_base",
+      "quality_bonus": 10,
+      "success_weight_bonus": 15,
+      "glow_color": "#80FF80"
+    },
+    {
+      "inputs": ["zen_atelier:inert", "zen_atelier:stable"],
+      "output_affix": "zen_atelier:dormant",
+      "quality_bonus": 10,
+      "success_weight_bonus": 20,
+      "glow_color": "#A0A0A0"
+    },
+    {
+      "inputs": ["zen_atelier:verdigris", "zen_atelier:conductive"],
+      "output_affix": "zen_atelier:oxidized_charge",
+      "glow_color": "#40C080"
+    },
+    {
+      "inputs": ["zen_atelier:growing", "zen_atelier:vital"],
+      "output_affix": "zen_atelier:flourishing",
+      "quality_bonus": 10,
+      "glow_color": "#40FF40"
+    },
+    {
+      "inputs": ["zen_atelier:growing", "zen_atelier:fresh"],
+      "output_affix": "zen_atelier:verdant",
+      "quality_bonus": 8,
+      "success_weight_bonus": 8,
+      "glow_color": "#80FF40"
+    },
+    {
+      "inputs": ["zen_atelier:quickening", "zen_atelier:lightweight"],
+      "output_affix": "zen_atelier:swift",
+      "quality_bonus": 5,
+      "glow_color": "#80FFFF"
+    },
+    {
+      "inputs": ["zen_atelier:quickening", "zen_atelier:piercing"],
+      "output_affix": "zen_atelier:dart",
+      "glow_color": "#FF8040"
+    },
+    {
+      "inputs": ["zen_atelier:hot", "zen_atelier:explosive"],
+      "output_affix": "zen_atelier:detonating",
+      "glow_color": "#FF4000"
+    }
+  ]
+}

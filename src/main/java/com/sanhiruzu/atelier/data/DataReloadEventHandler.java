@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.data;
 import com.sanhiruzu.atelier.space.zone.ZoneTypeRegistry;
 import com.sanhiruzu.atelier.synthesis.data.ExtractionProfileReloadListener;
 import com.sanhiruzu.atelier.synthesis.data.SynthesisProfileReloadListener;
+import com.sanhiruzu.atelier.synthesis.data.TraitFusionReloadListener;
 import com.sanhiruzu.atelier.zone.naming.RoomEpithetReloadListener;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
@@ -26,5 +27,6 @@ public class DataReloadEventHandler {
             }
         });
         event.addListener(new RoomEpithetReloadListener());
+        event.addListener(new TraitFusionReloadListener());
     }
 }

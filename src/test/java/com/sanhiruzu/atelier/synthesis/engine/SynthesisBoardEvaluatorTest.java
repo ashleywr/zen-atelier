@@ -2,6 +2,9 @@ package com.sanhiruzu.atelier.synthesis.engine;
 
 import com.sanhiruzu.atelier.synthesis.core.ReagentShape;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
+import com.sanhiruzu.atelier.synthesis.data.TraitFusionRegistry;
+import com.sanhiruzu.atelier.synthesis.data.TraitFusionRule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,6 +16,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SynthesisBoardEvaluatorTest {
     private final SynthesisBoardEvaluator evaluator = new SynthesisBoardEvaluator();
+
+    @AfterEach
+    void clearFusionRegistry() {
+        TraitFusionRegistry.replaceAll(List.of());
+    }
 
     @Test
     void evaluatesOccupiedEmptyAndActivatedNodes() {
@@ -84,7 +92,31 @@ class SynthesisBoardEvaluatorTest {
         assertThat(evaluation.activatedNodes()).isEmpty();
     }
 
+    @Test
+    void detectsFusionsAndMarksResonantPlacements() {
+        TraitFusionRegistry.replaceAll(List.of(
+                new TraitFusionRule("zen_atelier:test_ab", "zen_atelier:trait_b", "zen_atelier:trait_a", Optional.of("zen_atelier:ab"), 5, 2, 0xFF8040),
+                new TraitFusionRule("zen_atelier:test_bc", "zen_atelier:trait_b", "zen_atelier:trait_c", Optional.empty(), 0, 4, 0x4080FF)
+        ));
+
+        SynthesisBoardEvaluation evaluation = evaluator.evaluate(SynthesisBoard.CRUDE_3X3, List.of(
+                new SynthesisBoardPlacement("left", reagent("zen_atelier:left", ReagentShape.SINGLE, Map.of(), List.of("zen_atelier:trait_a")), 0, 0, 0),
+                new SynthesisBoardPlacement("middle", reagent("zen_atelier:middle", ReagentShape.SINGLE, Map.of(), List.of("zen_atelier:trait_b")), 1, 0, 0),
+                new SynthesisBoardPlacement("right", reagent("zen_atelier:right", ReagentShape.SINGLE, Map.of(), List.of("zen_atelier:trait_c")), 2, 0, 0)
+        ));
+
+        assertThat(evaluation.valid()).isTrue();
+        assertThat(evaluation.activeFusions())
+                .extracting(fusion -> fusion.rule().id())
+                .containsExactlyInAnyOrder("zen_atelier:test_ab", "zen_atelier:test_bc");
+        assertThat(evaluation.resonantPlacementIds()).containsExactly("middle");
+    }
+
     private static ReagentStack reagent(String id, ReagentShape shape, Map<String, Integer> elements) {
+        return reagent(id, shape, elements, List.of());
+    }
+
+    private static ReagentStack reagent(String id, ReagentShape shape, Map<String, Integer> elements, List<String> traits) {
         return new ReagentStack(
                 id,
                 Set.of("zen_atelier:test"),
@@ -94,7 +126,7 @@ class SynthesisBoardEvaluatorTest {
                 50,
                 0,
                 elements,
-                List.of(),
+                traits,
                 shape,
                 Set.of()
         );

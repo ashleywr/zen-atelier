@@ -24,4 +24,24 @@ public record SynthesisOutput(
     public SynthesisOutput cappedAtTier(int tierCap) {
         return new SynthesisOutput(outputId, count, Math.min(tier, tierCap), quality, affixes);
     }
+
+    public SynthesisOutput withAddedAffixes(List<String> extra) {
+        if (extra.isEmpty()) {
+            return this;
+        }
+        List<String> merged = new java.util.ArrayList<>(affixes);
+        for (String a : extra) {
+            if (!merged.contains(a)) {
+                merged.add(a);
+            }
+        }
+        return new SynthesisOutput(outputId, count, tier, quality, merged);
+    }
+
+    public SynthesisOutput withBoostedQuality(int delta) {
+        if (delta == 0) {
+            return this;
+        }
+        return new SynthesisOutput(outputId, count, tier, Math.clamp(quality + delta, 0, 100), affixes);
+    }
 }

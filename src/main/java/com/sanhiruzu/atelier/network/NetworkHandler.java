@@ -11,6 +11,7 @@ import com.sanhiruzu.atelier.ui.network.ExtractionKnowledgeSyncPayload;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
+import com.sanhiruzu.atelier.ui.network.SynthesisBoardFusionPayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -44,7 +45,9 @@ public class NetworkHandler {
                 .playToClient(ZoneGracePeriodPayload.TYPE, ZoneGracePeriodPayload.CODEC,
                         NetworkHandler::handleZoneGracePeriod)
                 .playToServer(RoomInspectPayload.TYPE, RoomInspectPayload.CODEC,
-                        NetworkHandler::handleRoomInspect);
+                        NetworkHandler::handleRoomInspect)
+                .playToServer(SynthesisBoardFusionPayload.TYPE, SynthesisBoardFusionPayload.CODEC,
+                        NetworkHandler::handleBoardFusion);
     }
 
     private static void handleZoneGridSync(SyncZoneGridPayload payload, IPayloadContext context) {
@@ -120,6 +123,16 @@ public class NetworkHandler {
         context.enqueueWork(() -> {
             if (context.player() instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                 payload.handle(serverPlayer);
+            }
+        });
+    }
+
+    private static void handleBoardFusion(SynthesisBoardFusionPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            var player = context.player();
+            if (player.containerMenu instanceof com.sanhiruzu.atelier.synthesis.menu.SynthesisStationMenu menu
+                    && menu.containerId == payload.containerId()) {
+                menu.setPendingFusionData(payload);
             }
         });
     }

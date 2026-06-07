@@ -17,7 +17,17 @@ public final class SynthesisExecutor {
             AttemptContext context,
             long seed
     ) {
-        SynthesisPlan plan = planner.plan(profile, container, context.risk());
+        return execute(profile, container, context, context.risk(), seed);
+    }
+
+    public SynthesisExecutionResult execute(
+            SynthesisProfile profile,
+            ReagentContainer container,
+            AttemptContext context,
+            int riskOverride,
+            long seed
+    ) {
+        SynthesisPlan plan = planner.plan(profile, container, riskOverride);
         if (!plan.canSynthesize()) {
             throw new IllegalArgumentException("missing required reagents for " + profile.id());
         }
@@ -27,7 +37,10 @@ public final class SynthesisExecutor {
             consumed.addAll(container.extract(requirement.query(), requirement.amount()));
         }
 
-        SynthesisResult result = engine.roll(new SynthesisAttempt(profile, consumed, context, seed));
+        SynthesisResult result = engine.roll(new SynthesisAttempt(
+                profile, consumed,
+                context.apparatusTierCap(), context.roomTierCap(), context.configTierCap(),
+                riskOverride, seed));
         return new SynthesisExecutionResult(result, consumed);
     }
 }

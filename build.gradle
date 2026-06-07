@@ -142,11 +142,11 @@ dependencies {
     // For all intends and purposes: You can treat this dependency as if it is a normal library you would use.
     implementation "net.neoforged:neoforge:${neo_version}"
     neoforgeReferenceSources("net.neoforged:neoforge:${neo_version}:sources")
-    compileOnly "curse.maven:patchouli-306770:${patchouli_curse_file}"
-    localRuntime "curse.maven:patchouli-306770:${patchouli_curse_file}"
+    compileOnly "maven.modrinth:patchouli:${patchouli_version}"
+    localRuntime "maven.modrinth:patchouli:${patchouli_version}"
     compileOnly "curse.maven:minecolonies-245506:${minecolonies_curse_file}"
-    compileOnly "curse.maven:curios-309927:${curios_curse_file}"
-    localRuntime "curse.maven:curios-309927:${curios_curse_file}"
+    compileOnly "maven.modrinth:curios:${curios_version}"
+    localRuntime "maven.modrinth:curios:${curios_version}"
 
     // Spark profiler for performance testing (development only)
     // Download from: https://modrinth.com/mod/spark/versions (NeoForge 1.21.1)

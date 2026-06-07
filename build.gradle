@@ -213,6 +213,8 @@ test {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
     }
+    // Pass project root so tests that read resource files work regardless of CWD.
+    systemProperty 'project.dir', projectDir.absolutePath
     finalizedBy testReport
 }
 

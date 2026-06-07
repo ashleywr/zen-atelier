@@ -11,11 +11,12 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PatchouliTextResourceTest {
-    private static final Path BOOK_ROOT = Path.of("src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us");
+    private static final Path PROJECT_ROOT = Path.of(System.getProperty("project.dir", "."));
+    private static final Path BOOK_ROOT = PROJECT_ROOT.resolve("src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us");
     private static final Path ENTRY_ROOT = BOOK_ROOT.resolve("entries");
     private static final Path TEMPLATE_ROOT = BOOK_ROOT.resolve("templates");
-    private static final Path BOOK_JSON = Path.of("src/main/resources/data/zen_atelier/patchouli_books/room_journal/book.json");
-    private static final Path ASSET_ROOT = Path.of("src/main/resources/assets/zen_atelier");
+    private static final Path BOOK_JSON = PROJECT_ROOT.resolve("src/main/resources/data/zen_atelier/patchouli_books/room_journal/book.json");
+    private static final Path ASSET_ROOT = PROJECT_ROOT.resolve("src/main/resources/assets/zen_atelier");
     private static final Pattern TEXTURE_REFERENCE = Pattern.compile("\"zen_atelier:(textures/[^\"]+\\.png)\"");
     private static final Pattern ENTRY_REFERENCE = Pattern.compile("\"(zen_atelier:(?:basics|rooms)/[^\"]+)\"");
     private static final Pattern CUSTOM_PAGE_TYPE = Pattern.compile("\"type\"\\s*:\\s*\"zen_atelier:([^\"]+)\"");

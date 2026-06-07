@@ -42,25 +42,6 @@ repo/
 ### Development ###
 internal/
 
-### AI / Agent Workspaces ###
-AGENTS.md
-CLAUDE.md
-GEMINI.md
-.codex
-.codex/
-.claude
-.claude/
-.cursor
-.cursor/
-.windsurf
-.windsurf/
-.continue
-.continue/
-.aider*
-aider.chat.history.md
-*.prompt.md
-prompts/
-
 ### Environment & Secrets ###
 *.env
 .env.local

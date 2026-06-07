@@ -6,6 +6,7 @@ import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisProfile;
 import com.sanhiruzu.atelier.synthesis.menu.SynthesisStationMenu;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -66,9 +67,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.recipePanel));
         SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.detailPanel));
         SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.reagentPanel));
-        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.recipePanel).inset(4));
-        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.detailPanel).inset(4));
-        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.reagentPanel).inset(4));
+        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.recipePanel).inset(UiMetrics.INSET_MEDIUM));
+        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.detailPanel).inset(UiMetrics.INSET_MEDIUM));
+        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.reagentPanel).inset(UiMetrics.INSET_MEDIUM));
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.recipeSearch));
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentSearch));
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentFilter));
@@ -90,7 +91,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
                 new ScreenRect(40, 7, imageWidth - 80, 12),
                 menu.hasValidSynthesisRoom() ? SynthesisScreenTheme.TEXT : SynthesisScreenTheme.BAD
         );
-        SynthesisStationText.drawFit(graphics, font, Component.literal("[Reagent Vault]"), layout.reagentSearch.inset(4), vaultLabelColor());
+        SynthesisStationText.drawFit(graphics, font, Component.literal("[Reagent Vault]"), layout.reagentSearch.inset(UiMetrics.INSET_MEDIUM), vaultLabelColor());
         SynthesisStationText.drawFit(graphics, font, roomStorageSummary(), new ScreenRect(380, 235, 84, 9), SynthesisScreenTheme.GOOD);
         renderCategoryTabLabels(graphics);
 
@@ -166,7 +167,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
 
     private void clickMenuButton(int button) {
         if (minecraft != null && minecraft.gameMode != null) {
-            if (button == SynthesisStationMenu.BUTTON_PREVIOUS) {
+            if (button == SynthesisStationMenu.BUTTON_SYNTHESIZE) {
+                PacketDistributor.sendToServer(spatialPrototype.buildFusionPayload(menu.containerId));
+            } else if (button == SynthesisStationMenu.BUTTON_PREVIOUS) {
                 menu.moveSelection(-1);
             } else if (button == SynthesisStationMenu.BUTTON_NEXT) {
                 menu.moveSelection(1);

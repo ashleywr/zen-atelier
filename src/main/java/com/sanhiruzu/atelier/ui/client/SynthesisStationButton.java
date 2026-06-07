@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 
 final class SynthesisStationButton extends Button {
+    private static final UiSkin SKIN = UiSkins.active();
     private final int accent;
 
     private SynthesisStationButton(Button.Builder builder, int accent) {
@@ -20,18 +21,13 @@ final class SynthesisStationButton extends Button {
     @Override
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         ScreenRect rect = new ScreenRect(getX(), getY(), getWidth(), getHeight());
-        int frame = active ? (isHoveredOrFocused() ? accent : SynthesisScreenTheme.PANEL_LIGHT) : SynthesisScreenTheme.PANEL;
-        int fill = active ? (isHoveredOrFocused() ? SynthesisScreenTheme.PANEL_LIGHT : SynthesisScreenTheme.PANEL_DARK) : 0xFF1A1715;
-
-        graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), fill);
-        SynthesisStationDrawing.frame(graphics, rect, frame);
-        SynthesisStationDrawing.innerHighlight(graphics, rect, active ? 0x554A4036 : 0x33332D28);
+        UiChrome.buttonFace(graphics, rect, SKIN, accent, active, isHoveredOrFocused());
 
         Font font = Minecraft.getInstance().font;
-        String text = SynthesisStationText.fitWidth(font, getMessage().getString(), rect.width() - 8);
+        String text = SynthesisStationText.fitWidth(font, getMessage().getString(), rect.width() - UiMetrics.BUTTON_TEXT_PAD_X);
         int color = active ? SynthesisScreenTheme.TEXT : SynthesisScreenTheme.MUTED;
         int textX = rect.x() + (rect.width() - font.width(text)) / 2;
-        int textY = rect.y() + (rect.height() - 8) / 2;
+        int textY = rect.y() + (rect.height() - UiMetrics.TEXT_HEIGHT) / 2;
         graphics.drawString(font, text, textX, textY, color, false);
     }
 }

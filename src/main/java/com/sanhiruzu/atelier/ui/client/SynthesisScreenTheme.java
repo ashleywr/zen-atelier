@@ -12,6 +12,19 @@ final class SynthesisScreenTheme {
     static final int BAD = 0xFFD37A6A;
     static final int TEXT = 0xFFEFE6D5;
     static final int MUTED = 0xFFBDAF9D;
+    static final UiTheme UI = new UiTheme(
+            BACKGROUND,
+            PANEL,
+            PANEL_DARK,
+            PANEL_DARKEST,
+            PANEL_LIGHT,
+            ACCENT,
+            ACCENT_DIM,
+            GOOD,
+            BAD,
+            TEXT,
+            MUTED
+    );
 
     private SynthesisScreenTheme() {
     }

@@ -6,12 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
 final class SynthesisStationDrawing {
-    private static final ResourceLocation WINDOW_SPRITE = sprite("window");
-    private static final ResourceLocation PANEL_SPRITE = sprite("panel");
-    private static final ResourceLocation RECESSED_PANEL_SPRITE = sprite("panel_recessed");
-    private static final ResourceLocation SLOT_SPRITE = sprite("slot");
-    private static final ResourceLocation RECIPE_CELL_SPRITE = sprite("recipe_cell");
-    private static final ResourceLocation SELECTED_RECIPE_CELL_SPRITE = sprite("recipe_cell_selected");
+    private static final UiSkin SKIN = UiSkins.active();
     private static final ResourceLocation DARK_OAK_PLANKS =
             ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/dark_oak_planks.png");
 
@@ -19,23 +14,23 @@ final class SynthesisStationDrawing {
     }
 
     static void window(GuiGraphics graphics, ScreenRect rect) {
-        blit(graphics, WINDOW_SPRITE, rect);
+        SKIN.drawWindow(graphics, rect);
     }
 
     static void panel(GuiGraphics graphics, ScreenRect rect) {
-        blit(graphics, PANEL_SPRITE, rect);
+        SKIN.drawPanel(graphics, rect);
     }
 
     static void recessedPanel(GuiGraphics graphics, ScreenRect rect) {
-        blit(graphics, RECESSED_PANEL_SPRITE, rect);
+        SKIN.drawRecessedPanel(graphics, rect);
     }
 
     static void slotFrame(GuiGraphics graphics, ScreenRect rect) {
-        blit(graphics, SLOT_SPRITE, rect);
+        SKIN.drawSlotFrame(graphics, rect);
     }
 
     static void recipeCell(GuiGraphics graphics, ScreenRect rect, boolean selected) {
-        blit(graphics, selected ? SELECTED_RECIPE_CELL_SPRITE : RECIPE_CELL_SPRITE, rect);
+        SKIN.drawRecipeCell(graphics, rect, selected);
     }
 
     static void tiledWood(GuiGraphics graphics, ScreenRect rect) {
@@ -51,15 +46,11 @@ final class SynthesisStationDrawing {
     }
 
     static void frame(GuiGraphics graphics, ScreenRect rect, int color) {
-        graphics.fill(rect.x(), rect.y(), rect.right(), rect.y() + 1, color);
-        graphics.fill(rect.x(), rect.bottom() - 1, rect.right(), rect.bottom(), color);
-        graphics.fill(rect.x(), rect.y(), rect.x() + 1, rect.bottom(), color);
-        graphics.fill(rect.right() - 1, rect.y(), rect.right(), rect.bottom(), color);
+        UiChrome.frame(graphics, rect, color);
     }
 
     static void innerHighlight(GuiGraphics graphics, ScreenRect rect, int color) {
-        graphics.fill(rect.x() + 1, rect.y() + 1, rect.right() - 1, rect.y() + 2, color);
-        graphics.fill(rect.x() + 1, rect.y() + 2, rect.x() + 2, rect.bottom() - 1, color);
+        UiChrome.innerHighlight(graphics, rect, color);
     }
 
     static void unknownRecipeOutline(GuiGraphics graphics, int x, int y, int accent) {
@@ -69,26 +60,15 @@ final class SynthesisStationDrawing {
     }
 
     static void searchBox(GuiGraphics graphics, ScreenRect rect) {
-        graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), SynthesisScreenTheme.PANEL_DARKEST);
-        frame(graphics, rect, 0xFF4E443A);
-        innerHighlight(graphics, rect, 0x33342D27);
+        UiChrome.searchBox(graphics, rect, SKIN.theme());
     }
 
     static void tab(GuiGraphics graphics, ScreenRect rect, int accent, boolean selected, boolean active) {
-        int fill = selected ? 0xFF5B4D39 : active ? 0xFF302A25 : 0xFF1C1815;
-        int frame = selected ? accent : active ? 0xFF5E5145 : 0xFF322B25;
-        graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), fill);
-        frame(graphics, rect, frame);
-        innerHighlight(graphics, rect, selected ? 0x55FFFFFF : 0x224A4037);
+        UiChrome.tab(graphics, rect, SKIN, accent, selected, active);
     }
 
     static void recipeRow(GuiGraphics graphics, ScreenRect rect, int accent, boolean selected, boolean crafted) {
-        int fill = selected ? 0xFF5B4D38 : crafted ? 0xFF312A24 : 0xFF251F1B;
-        graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), fill);
-        frame(graphics, rect, selected ? accent : 0xFF4C4138);
-        if (selected) {
-            graphics.fill(rect.x() + 1, rect.y() + 1, rect.x() + 4, rect.bottom() - 1, accent);
-        }
+        UiChrome.recipeRow(graphics, rect, SKIN, accent, selected, crafted);
     }
 
     static void synthBoard(GuiGraphics graphics, SynthesisStationLayout layout, int offsetX, int offsetY, int accent) {
@@ -128,10 +108,7 @@ final class SynthesisStationDrawing {
     }
 
     static void meter(GuiGraphics graphics, ScreenRect rect, int fillColor, double amount) {
-        graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), 0xFF171411);
-        frame(graphics, rect, 0xFF6A5B4B);
-        int width = Math.max(0, Math.min(rect.width() - 2, (int) Math.round((rect.width() - 2) * amount)));
-        graphics.fill(rect.x() + 1, rect.y() + 1, rect.x() + 1 + width, rect.bottom() - 1, fillColor);
+        UiChrome.meter(graphics, rect, SKIN, fillColor, amount);
     }
 
     static void smallIcon(GuiGraphics graphics, int x, int y, int color) {
@@ -176,13 +153,5 @@ final class SynthesisStationDrawing {
     private static void sparkle(GuiGraphics graphics, int x, int y, int color) {
         graphics.fill(x + 1, y, x + 2, y + 3, color);
         graphics.fill(x, y + 1, x + 3, y + 2, color);
-    }
-
-    private static void blit(GuiGraphics graphics, ResourceLocation sprite, ScreenRect rect) {
-        graphics.blitSprite(sprite, rect.x(), rect.y(), rect.width(), rect.height());
-    }
-
-    private static ResourceLocation sprite(String path) {
-        return ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "synthesis/" + path);
     }
 }

@@ -1,16 +1,12 @@
 package com.sanhiruzu.atelier.ui.client;
 
 final class SynthesisStationLayout {
-    static final int WIDTH = 480;
-    static final int HEIGHT = 326;
-    static final int RECIPE_ROWS = 6;
-    private static final int CATEGORY_TAB_WIDTH = 50;
-    private static final int CATEGORY_TAB_HEIGHT = 18;
-    private static final int CATEGORY_TAB_STEP = 53;
-    private static final int RECIPE_CELL_HEIGHT = 21;
-    private static final int SLOT_SIZE = 18;
+    static final int WIDTH = SynthesisStationMetrics.DEFAULT.width();
+    static final int HEIGHT = SynthesisStationMetrics.DEFAULT.height();
+    static final int RECIPE_ROWS = SynthesisStationMetrics.DEFAULT.recipeRows();
 
-    final ScreenRect root = new ScreenRect(0, 0, WIDTH, HEIGHT);
+    private final SynthesisStationMetrics metrics;
+    final ScreenRect root;
     final ScreenRect titleBar = new ScreenRect(6, 5, 468, 16);
     final ScreenRect mainPanel = new ScreenRect(8, 43, 464, 178);
     final ScreenRect recipePanel = new ScreenRect(14, 49, 134, 166);
@@ -33,8 +29,17 @@ final class SynthesisStationLayout {
     final ScreenRect outcomeList = new ScreenRect(150, 169, 112, 18);
     final ScreenRect emptyRecipeCategoryLabel = new ScreenRect(19, 112, 124, 9);
 
+    SynthesisStationLayout() {
+        this(SynthesisStationMetrics.DEFAULT);
+    }
+
+    SynthesisStationLayout(SynthesisStationMetrics metrics) {
+        this.metrics = metrics;
+        this.root = new ScreenRect(0, 0, metrics.width(), metrics.height());
+    }
+
     ScreenRect categoryTab(int index) {
-        return new ScreenRect(21 + index * CATEGORY_TAB_STEP, 25, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT);
+        return new ScreenRect(21 + index * metrics.categoryTabStep(), 25, metrics.categoryTabWidth(), metrics.categoryTabHeight());
     }
 
     ScreenRect categoryUnderline(int index) {
@@ -43,7 +48,7 @@ final class SynthesisStationLayout {
     }
 
     ScreenRect recipeCell(int index) {
-        return new ScreenRect(19, 76 + index * RECIPE_CELL_HEIGHT, 124, 20);
+        return new ScreenRect(19, 76 + index * metrics.recipeCellHeight(), 124, 20);
     }
 
     ScreenRect core() {
@@ -64,14 +69,14 @@ final class SynthesisStationLayout {
 
     ScreenRect inventorySlot(int row, int column) {
         int slot = row * 9 + column;
-        return new ScreenRect(16 + (slot % 18) * SLOT_SIZE, 220 + (slot / 18) * SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        return new ScreenRect(16 + (slot % 18) * metrics.slotSize(), 220 + (slot / 18) * metrics.slotSize(), metrics.slotSize(), metrics.slotSize());
     }
 
     ScreenRect hotbarSlot(int column) {
-        return new ScreenRect(16 + column * SLOT_SIZE, 256, SLOT_SIZE, SLOT_SIZE);
+        return new ScreenRect(16 + column * metrics.slotSize(), 256, metrics.slotSize(), metrics.slotSize());
     }
 
     ScreenRect roomVaultSlot(int column) {
-        return new ScreenRect(178 + column * SLOT_SIZE, 238, SLOT_SIZE, SLOT_SIZE);
+        return new ScreenRect(178 + column * metrics.slotSize(), 238, metrics.slotSize(), metrics.slotSize());
     }
 }

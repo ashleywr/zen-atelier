@@ -26,9 +26,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public final class AlchemistCodexScreen extends Screen {
-    private static final int CELL = 24;
-    private static final int GAP = 5;
-    private static final int BUTTON_SIZE = 24;
+    private static final CodexMetrics METRICS = CodexMetrics.DEFAULT;
 
     private Mode mode = Mode.GOALS;
     private Filter filter = Filter.ALL;
@@ -120,16 +118,16 @@ public final class AlchemistCodexScreen extends Screen {
     }
 
     private void renderModeTabs(GuiGraphics graphics, ScreenRect root, int mouseX, int mouseY) {
-        int x = root.right() - 14 - Mode.values().length * BUTTON_SIZE - (Mode.values().length - 1) * 5;
+        int x = root.right() - 14 - Mode.values().length * METRICS.buttonSize() - (Mode.values().length - 1) * METRICS.cellGap();
         int y = root.y() + 7;
         for (Mode next : Mode.values()) {
-            ScreenRect rect = new ScreenRect(x, y, BUTTON_SIZE, BUTTON_SIZE);
+            ScreenRect rect = new ScreenRect(x, y, METRICS.buttonSize(), METRICS.buttonSize());
             SynthesisStationDrawing.recipeCell(graphics, rect, next == mode);
             renderCenteredItem(graphics, AlchemyDiscoveryIcons.modeIcon(next), rect);
             if (rect.contains(mouseX, mouseY)) {
                 graphics.renderTooltip(font, Component.translatable(next.tooltipKey()), mouseX, mouseY);
             }
-            x += BUTTON_SIZE + 5;
+            x += METRICS.buttonSize() + METRICS.cellGap();
         }
     }
 
@@ -137,13 +135,13 @@ public final class AlchemistCodexScreen extends Screen {
         int x = root.x() + 14;
         int y = root.y() + 28;
         for (Filter next : Filter.values()) {
-            ScreenRect rect = new ScreenRect(x, y, BUTTON_SIZE, BUTTON_SIZE);
+            ScreenRect rect = new ScreenRect(x, y, METRICS.buttonSize(), METRICS.buttonSize());
             SynthesisStationDrawing.recipeCell(graphics, rect, next == filter);
             renderCenteredItem(graphics, AlchemyDiscoveryIcons.filterIcon(next), rect);
             if (rect.contains(mouseX, mouseY)) {
                 graphics.renderTooltip(font, Component.translatable(next.tooltipKey()), mouseX, mouseY);
             }
-            x += BUTTON_SIZE + 5;
+            x += METRICS.buttonSize() + METRICS.cellGap();
         }
     }
 
@@ -412,15 +410,15 @@ public final class AlchemistCodexScreen extends Screen {
     }
 
     private boolean handleModeClick(ScreenRect root, double mouseX, double mouseY) {
-        int x = root.right() - 14 - Mode.values().length * BUTTON_SIZE - (Mode.values().length - 1) * 5;
+        int x = root.right() - 14 - Mode.values().length * METRICS.buttonSize() - (Mode.values().length - 1) * METRICS.cellGap();
         int y = root.y() + 7;
         for (Mode next : Mode.values()) {
-            ScreenRect rect = new ScreenRect(x, y, BUTTON_SIZE, BUTTON_SIZE);
+            ScreenRect rect = new ScreenRect(x, y, METRICS.buttonSize(), METRICS.buttonSize());
             if (rect.contains((int) mouseX, (int) mouseY)) {
                 mode = next;
                 return true;
             }
-            x += BUTTON_SIZE + 5;
+            x += METRICS.buttonSize() + METRICS.cellGap();
         }
         return false;
     }
@@ -429,14 +427,14 @@ public final class AlchemistCodexScreen extends Screen {
         int filterX = root.x() + 14;
         int filterY = root.y() + 28;
         for (Filter next : Filter.values()) {
-            ScreenRect rect = new ScreenRect(filterX, filterY, BUTTON_SIZE, BUTTON_SIZE);
+            ScreenRect rect = new ScreenRect(filterX, filterY, METRICS.buttonSize(), METRICS.buttonSize());
             if (rect.contains((int) mouseX, (int) mouseY)) {
                 filter = next;
                 selectedSourceId = null;
                 sourceScroll = 0;
                 return true;
             }
-            filterX += BUTTON_SIZE + 5;
+            filterX += METRICS.buttonSize() + METRICS.cellGap();
         }
 
         if (ClientExtractionKnowledgeData.hasPinnedReagentGoal()
@@ -683,7 +681,7 @@ public final class AlchemistCodexScreen extends Screen {
     }
 
     private ScreenRect sourceDetails(ScreenRect root, ScreenRect grid) {
-        return new ScreenRect(grid.right() + 10, grid.y(), root.right() - grid.right() - 24, grid.height());
+        return new ScreenRect(grid.right() + METRICS.sectionGap(), grid.y(), root.right() - grid.right() - 24, grid.height());
     }
 
     private ScreenRect goalGrid(ScreenRect root) {
@@ -691,39 +689,39 @@ public final class AlchemistCodexScreen extends Screen {
     }
 
     private ScreenRect goalDetails(ScreenRect root, ScreenRect grid) {
-        return new ScreenRect(grid.right() + 10, grid.y(), root.right() - grid.right() - 24, grid.height());
+        return new ScreenRect(grid.right() + METRICS.sectionGap(), grid.y(), root.right() - grid.right() - 24, grid.height());
     }
 
     private int pinnedGoalX(ScreenRect root) {
-        return root.x() + 14 + Filter.values().length * (BUTTON_SIZE + 5) + 4;
+        return root.x() + 14 + Filter.values().length * (METRICS.buttonSize() + METRICS.cellGap()) + UiMetrics.INSET_MEDIUM;
     }
 
     private ScreenRect clearPinnedGoalRect(ScreenRect root) {
         int maxPinned = Math.min(4, ClientExtractionKnowledgeData.pinnedReagentGoal().size());
-        return new ScreenRect(pinnedGoalX(root) + maxPinned * 20 + 3, root.y() + 28, BUTTON_SIZE, BUTTON_SIZE);
+        return new ScreenRect(pinnedGoalX(root) + maxPinned * 20 + 3, root.y() + 28, METRICS.buttonSize(), METRICS.buttonSize());
     }
 
     private ScreenRect sourceCellRect(ScreenRect grid, int index) {
         int columns = gridColumns(grid);
-        int x = grid.x() + 8 + (index % columns) * (CELL + GAP);
-        int y = grid.y() + 8 + (index / columns) * (CELL + GAP);
-        return new ScreenRect(x, y, CELL, CELL);
+        int x = grid.x() + METRICS.gridInset() + (index % columns) * (METRICS.cellSize() + METRICS.cellGap());
+        int y = grid.y() + METRICS.gridInset() + (index / columns) * (METRICS.cellSize() + METRICS.cellGap());
+        return new ScreenRect(x, y, METRICS.cellSize(), METRICS.cellSize());
     }
 
     private ScreenRect goalCellRect(ScreenRect grid, int index) {
         int columns = gridColumns(grid);
-        int x = grid.x() + 8 + (index % columns) * (CELL + GAP);
-        int y = grid.y() + 8 + (index / columns) * (CELL + GAP);
-        return new ScreenRect(x, y, CELL, CELL);
+        int x = grid.x() + METRICS.gridInset() + (index % columns) * (METRICS.cellSize() + METRICS.cellGap());
+        int y = grid.y() + METRICS.gridInset() + (index / columns) * (METRICS.cellSize() + METRICS.cellGap());
+        return new ScreenRect(x, y, METRICS.cellSize(), METRICS.cellSize());
     }
 
     private int visibleCellCount(ScreenRect grid) {
-        int rows = Math.max(1, (grid.height() - 12) / (CELL + GAP));
+        int rows = Math.max(1, (grid.height() - 12) / (METRICS.cellSize() + METRICS.cellGap()));
         return rows * gridColumns(grid);
     }
 
     private int gridColumns(ScreenRect grid) {
-        return Math.max(1, (grid.width() - 12) / (CELL + GAP));
+        return Math.max(1, (grid.width() - 12) / (METRICS.cellSize() + METRICS.cellGap()));
     }
 
     private int clampScroll(int scroll, int total, int visible) {
@@ -734,8 +732,8 @@ public final class AlchemistCodexScreen extends Screen {
         if (total <= visible) {
             return;
         }
-        int trackX = grid.right() - 5;
-        int trackY = grid.y() + 8;
+        int trackX = grid.right() - METRICS.scrollbarInset();
+        int trackY = grid.y() + METRICS.gridInset();
         int trackHeight = grid.height() - 16;
         graphics.fill(trackX, trackY, trackX + 2, trackY + trackHeight, SynthesisScreenTheme.PANEL_LIGHT);
         int thumbHeight = Math.max(12, trackHeight * visible / total);
@@ -748,8 +746,8 @@ public final class AlchemistCodexScreen extends Screen {
     }
 
     private ScreenRect root() {
-        int width = Math.min(420, this.width - 24);
-        int height = Math.min(236, this.height - 24);
+        int width = Math.min(METRICS.rootMaxWidth(), this.width - METRICS.rootMargin());
+        int height = Math.min(METRICS.rootMaxHeight(), this.height - METRICS.rootMargin());
         return new ScreenRect((this.width - width) / 2, (this.height - height) / 2, width, height);
     }
 

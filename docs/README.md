@@ -1,24 +1,23 @@
 # Zen Atelier
 
-A Minecraft mod (NeoForge 1.21.1) that automatically detects and analyzes rooms, zones, and enclosed spaces. Zen Atelier classifies interior air volumes, evaluates room quality, and syncs zone data to clients for HUD display and room-based mechanics.
+A Minecraft mod for NeoForge 1.21.1 that detects and rates rooms, zones, and enclosed spaces, similar to Dragon Quest Builders or Pokopia. Mods and modpacks can register custom room types and how the room and its decorations, size, and quality can affect crafting, alchemy, or whatever they want. 
+
+It also adds a new alchemy system based on breaking down items into randomized quality and trait bearing reagents for synthesizing new, useful magical items akin to the Atelier series. 
 
 ## What It Does
 
-Zen Atelier solves a fundamental problem: **Minecraft has no native concept of "rooms."** This mod automatically:
+Zen Atelier solves a difficult problem: **Minecraft has no native concept of "rooms."** It
 
 - **Detects zones**: Flood-fills connected air blocks across chunk boundaries to identify unique enclosed spaces
-- **Evaluates quality**: Computes room metrics like volume, ceiling profile, enclosure score, and furniture density
+- **Evaluates quality**: Computes room metrics like volume, ceiling profile, enclosure score, and furniture density/quality
 - **Tracks ownership**: Maintains persistent zone identity and custom naming across world saves
 - **Syncs to clients**: Displays zone information in a HUD overlay showing your current room's quality and type
 - **Supports creativity**: Handles complex designs like multi-level rooms, basements, atriums, mid-room elevators, and Create mod integration
 
 ## Features
 
-### Core Zone Detection
-- **Cross-chunk stitching**: Single rooms spanning multiple chunks are unified into one logical zone
-- **Intelligent classification**: Distinguishes between interior air, exterior, solid blocks, and boundary openings
-- **Live expansion/shrinking**: Zones grow when walls are broken, shrink when blocks are placed, and split when separated
-- **Entry point tracking**: Identifies doors, stairs, trapdoors, and slabs as zone access points
+## Alchemy and Synthesis 
+- TBA
 
 ### Quality Evaluation
 - **Volume calculation**: Total breathable air space (m³)
@@ -26,17 +25,6 @@ Zen Atelier solves a fundamental problem: **Minecraft has no native concept of "
 - **Furniture detection**: Block-based heuristics for beds, tables, bookshelves, and decorations
 - **Enclosure scoring**: Ratio of openings to surface area (sealing = higher scores)
 - **Room typing**: Automatic classification as bedroom, library, kitchen, storage, etc.
-
-### Persistence & Metadata
-- **Zone preservation**: Zones are saved and restored across world sessions
-- **Custom naming**: Players can name zones, names persist through world saves
-- **Grace periods**: Temporarily disabled zones are restored if issues are fixed within 60 seconds
-- **Reliable identity**: UUIDs ensure zones maintain identity through merges and reclassification
-
-### Client-Side Display
-- **HUD overlay**: Shows current zone name, quality, type, and atmospheric rating
-- **Real-time updates**: Responds instantly to room changes and player movement
-- **Discovery system**: Tracks and displays discovered rooms in a journal
 
 ## Installation
 

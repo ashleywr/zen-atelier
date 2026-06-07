@@ -164,9 +164,8 @@ dependencies {
     compileOnly "maven.modrinth:emi:${emi_version}"
     localRuntime "maven.modrinth:emi:${emi_version}"
 
-    // AMI (AutomatedMaterialsIndex) — run ./gradlew :neoforge:publishToMavenLocal in that project to update
-    compileOnly "com.sanhiruzu.ami:neoforge:${ami_version}"
-    localRuntime "com.sanhiruzu.ami:neoforge:${ami_version}"
+    // AMI (AutomatedMaterialsIndex) — optional integration, loaded via service discovery when present
+    compileOnly "maven.modrinth:QOM56zjQ:${ami_version}"
 
     // Testing dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'

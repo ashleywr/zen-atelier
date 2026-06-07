@@ -26,7 +26,7 @@ class RoomAlchemyContextFactoryTest {
         RoomAlchemyContext context = RoomAlchemyContextFactory.fromZoneData(room);
 
         assertThat(context.profileId()).isEqualTo("zen_atelier:atelier");
-        assertThat(context.tierCap()).isEqualTo(3);
+        assertThat(context.tierCap()).isEqualTo(4);
         assertThat(context.quality()).isEqualTo(82);
         assertThat(context.stability()).isEqualTo(20);
         assertThat(context.signals()).containsExactlyInAnyOrder("minecraft:bookshelf", "minecraft:cauldron");

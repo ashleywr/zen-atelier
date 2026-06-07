@@ -1,12 +1,12 @@
 # Zen Atelier
 
-A Minecraft mod for NeoForge 1.21.1 that detects and rates rooms, zones, and enclosed spaces, similar to Dragon Quest Builders or Pokopia. Mods and modpacks can register custom room types and how the room and its decorations, size, and quality can affect crafting, alchemy, or whatever they want. 
+A Minecraft mod for NeoForge 1.21.1 that detects and rates rooms, zones, and enclosed spaces, inspired by systems like Dragon Quest Builders or Pokopia. Mods and modpacks can register custom room types and define how a room's decorations, size, and quality affect crafting, alchemy, or anything else they want.
 
-It also adds a new alchemy system based on breaking down items into randomized quality and trait bearing reagents for synthesizing new, useful magical items akin to the Atelier series. 
+It also adds a full alchemy system where items are broken down into randomized, trait-bearing reagents that you recombine into new magical things, inspired by the Atelier series.
 
 ## What It Does
 
-Zen Atelier solves a difficult problem: **Minecraft has no native concept of "rooms."** It
+Zen Atelier solves a surprisingly tricky problem: **Minecraft has no native concept of "rooms."** It
 
 - **Detects zones**: Flood-fills connected air blocks across chunk boundaries to identify unique enclosed spaces
 - **Evaluates quality**: Computes room metrics like volume, ceiling profile, enclosure score, and furniture density/quality
@@ -16,8 +16,24 @@ Zen Atelier solves a difficult problem: **Minecraft has no native concept of "ro
 
 ## Features
 
-## Alchemy and Synthesis 
-- TBA
+## Alchemy and Synthesis
+
+Zen Atelier adds a crafting system where items aren't just combined, they're distilled, recombined, and refined into something with real character.
+
+**Extraction** is where it starts. Throw items into a cauldron and pull out **reagents** -- raw alchemical material with randomized attributes: tier, quality, purity, instability, elemental affinities, and traits. The same item won't produce the same reagents twice. Higher-quality sources and better apparatus tend to do better, but there's always variance. Over time you start to build up knowledge about which items reliably produce what.
+
+**Synthesis** is what you do with those reagents. You arrange them spatially on a **synthesis board** at a synthesis station, placing pieces to activate nodes and meet elemental value requirements. Each recipe has ingredient requirements and a layout that matters -- resonant trait pairs, overlapping shapes, and activated node patterns all affect what comes out. It's less like a crafting table and more like a small puzzle you get better at.
+
+**Outcomes aren't fixed.** Every attempt rolls against a weighted outcome table -- routine success, elevated success, failure, or something rarer. Risk shifts the spread: keeping risk low makes results predictable, pushing it high means more variance in both directions. Failed attempts can still yield byproducts worth keeping.
+
+**The room you work in affects everything.** A well-built atelier -- high quality, properly enclosed, right furniture -- increases your tier cap, stabilizes your apparatus, and can bias outputs toward specific elemental affinities. A cramped storage room technically works, but you'll feel the ceiling. Crafting signals from nearby stations can also gate recipe tiers, so there's actual reason to build a real workshop.
+
+**What you can make includes:**
+- Consumables like salves, phlogiston pebbles, and gels
+- Tool coatings that can be applied to your existing equipment
+- Higher-tier reagents to feed back into further synthesis
+
+All recipes are data-driven, so modpacks and integrations can add their own without touching code.
 
 ### Quality Evaluation
 - **Volume calculation**: Total breathable air space (m³)
@@ -138,15 +154,15 @@ Key test suites:
 
 ## Known Limitations
 
-- **Stale blockToRegion entries**: Now-solid blocks retain `blockToRegion` entries (harmless; can be cleaned up with a full sweep)
-- **Create mod elevators**: Multi-block elevators are detected as entry blocks but don't yet integrate with the full access-point system (planned)
-- **Sloped roofs**: Angled ceilings may be underestimated in slope calculation (acceptable approximation)
+- **Stale blockToRegion entries**: Now-solid blocks retain `blockToRegion` entries -- harmless, but they could be cleaned with a full sweep after reclassification
+- **Create mod elevators**: Multi-block elevators are detected as entry blocks but don't yet fully integrate with the access-point system (planned)
+- **Sloped roofs**: Angled ceilings may be underestimated in slope calculation -- it's a reasonable approximation for now
 
 ## Contributing
 
-Contributions are welcome! Areas of interest:
+Contributions are welcome! A few areas that could use attention:
 
-- **Ladder support**: Extend entry detection to support ladder blocks
+- **Ladder support**: Extend entry detection to ladder blocks
 - **Create integration**: Better handling for elevator and conveyor systems
 - **Performance**: Optimize flood-fill for large open spaces
 - **New metrics**: Room dampness, temperature, light level scoring
@@ -172,4 +188,4 @@ MIT License — see [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-Built with [NeoForge](https://neoforged.net/) and inspired by room-detection challenges in survival Minecraft.
+Built with [NeoForge](https://neoforged.net/). Room detection started as a personal itch -- it turns out making Minecraft care about rooms is genuinely hard.

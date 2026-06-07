@@ -400,7 +400,14 @@ publishing {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.encoding = 'UTF-8'
+}
+
+// Strict warnings only on our own source, not on NeoForm-recompiled Minecraft/NeoForge code.
+tasks.named('compileJava').configure {
+    options.compilerArgs.addAll(['-Xlint:deprecation', '-Xlint:removal', '-Werror'])
+}
+tasks.named('compileTestJava').configure {
     options.compilerArgs.addAll(['-Xlint:deprecation', '-Xlint:removal', '-Werror'])
 }
 

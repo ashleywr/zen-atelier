@@ -23,10 +23,7 @@ assets/
 !src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us/
 !src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us/entries/
 !src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us/entries/basics/
-src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us/entries/basics/*
-!src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us/entries/basics/naming_rooms.json
-src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us/entries/rooms/*
-!src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us/entries/rooms/room_stat_cards.json
+!src/main/resources/assets/zen_atelier/patchouli_books/room_journal/en_us/entries/rooms/
 out/
 !**/src/**/out/
 bin/

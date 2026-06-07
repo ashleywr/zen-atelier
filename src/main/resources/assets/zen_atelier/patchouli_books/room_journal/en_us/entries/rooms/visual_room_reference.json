@@ -1,0 +1,41 @@
+{
+  "name": "patchouli.zen_atelier.room_journal.entry.visual_room_reference.name",
+  "icon": "zen_atelier:textures/gui/book_icons/discoveries.png",
+  "category": "zen_atelier:rooms",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.visual_room_reference.page.1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.visual_room_reference.page.2"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.visual_room_reference.page.3"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.visual_room_reference.page.4"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.visual_room_reference.page.5"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "patchouli.zen_atelier.room_journal.entry.visual_room_reference.page.6"
+    },
+    {
+      "type": "patchouli:relations",
+      "entries": [
+        "zen_atelier:basics/how_to_use",
+        "zen_atelier:rooms/room_hints"
+      ],
+      "title": "patchouli.zen_atelier.room_journal.relations.title",
+      "text": "patchouli.zen_atelier.room_journal.relations.text"
+    }
+  ]
+}

@@ -21,6 +21,14 @@ public record ResolvedFusionData(
         resonanceCount = Math.max(0, resonanceCount);
     }
 
+    public ResolvedFusionData withCatalyst(List<String> catalystAffixes, int catalystQualityBonus) {
+        if (catalystAffixes.isEmpty() && catalystQualityBonus == 0) return this;
+        LinkedHashSet<String> merged = new LinkedHashSet<>(fusedAffixes);
+        merged.addAll(catalystAffixes);
+        return new ResolvedFusionData(List.copyOf(merged), qualityBonus + catalystQualityBonus,
+                successWeightBonus, resonanceCount);
+    }
+
     public static ResolvedFusionData fromRules(List<TraitFusionRule> uniqueRules, int rawResonanceCount) {
         if (uniqueRules.isEmpty()) {
             return EMPTY;

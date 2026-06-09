@@ -504,5 +504,11 @@
   "screen.zen_atelier.codex.state.suspected": "Possible",
   "screen.zen_atelier.codex.state.empty": "Tested Empty",
   "key.zen_atelier.show_zone_bounds": "Show Zone Bounds",
-  "key.categories.zen_atelier": "Categories"
+  "key.categories.zen_atelier": "Categories",
+  "tooltip.zen_atelier.quality.crude": "Crude",
+  "tooltip.zen_atelier.quality.fine": "Fine",
+  "tooltip.zen_atelier.quality.superior": "Superior",
+  "tooltip.zen_atelier.quality.masterwork": "Masterwork",
+  "tooltip.zen_atelier.catalyst.empty": "Catalyst — place a fresh synthesis item to transfer its affixes to this synthesis",
+  "tooltip.zen_atelier.catalyst.filled": "Catalyst: affixes and quality bonus will carry into this synthesis"
 }

@@ -22,6 +22,8 @@ import com.sanhiruzu.atelier.synthesis.engine.SynthesisPlanner;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisProfile;
 import com.sanhiruzu.atelier.synthesis.item.CarriedReagentInventory;
 import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
+import com.sanhiruzu.atelier.synthesis.item.SynthesisItemEvents;
+import com.sanhiruzu.atelier.synthesis.item.SynthesisOutputData;
 import com.sanhiruzu.atelier.synthesis.item.SynthesisOutputItemFactory;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
@@ -39,6 +41,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -82,6 +85,10 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
     private List<ReagentStack> lastServerRoomVaultReagents = List.of();
     private String lastSyncedRoomVaultSignature = "";
     private SynthesisBoardFusionPayload pendingFusionData;
+    public static final int CATALYST_SLOT_INDEX = 36;
+    private static final int CATALYST_X = 372;
+    private static final int CATALYST_Y = 190;
+    private final SimpleContainer catalystContainer = new SimpleContainer(1);
 
     public SynthesisStationMenu(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf data) {
         this(containerId, playerInventory, ContainerLevelAccess.NULL);
@@ -163,6 +170,13 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         forceStationRoomRefresh();
         refreshStationState();
         addPlayerInventorySlots(playerInventory);
+        addSlot(new Slot(catalystContainer, 0, CATALYST_X, CATALYST_Y) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return stack.has(ZenAtelier.SYNTHESIS_OUTPUT_DATA.get())
+                       && SynthesisItemEvents.isFresh(stack);
+            }
+        });
     }
 
     public List<SynthesisProfile> profiles() {
@@ -393,6 +407,18 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
             return;
         }
 
+        // Enrich fusion with catalyst affixes and quality bonus
+        ItemStack catalystStack = catalystContainer.getItem(0);
+        SynthesisOutputData catalystData = catalystStack.isEmpty() ? null
+                : catalystStack.get(ZenAtelier.SYNTHESIS_OUTPUT_DATA.get());
+        boolean usingCatalyst = catalystData != null && SynthesisItemEvents.isFresh(catalystStack);
+        if (usingCatalyst) {
+            ResolvedFusionData enriched = input.fusion().withCatalyst(
+                    catalystData.affixes(), catalystData.qualityTier() * 5);
+            input = new SynthesisAttemptInput(
+                    input.effectiveProfile(), input.reagents(), input.context(), enriched);
+        }
+
         boolean creative = player.getAbilities().instabuild;
         SynthesisPlan plan = new SynthesisPlanner().plan(input);
         if (!plan.canSynthesize()) {
@@ -447,6 +473,9 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         }
         for (ReagentStack byproduct : result.result().byproducts()) {
             giveOrDrop(player, ReagentItem.createStack(byproduct));
+        }
+        if (usingCatalyst && !creative) {
+            catalystContainer.setItem(0, ItemStack.EMPTY);
         }
         player.getInventory().setChanged();
         PlayerSynthesisKnowledge.markCrafted(player, input.effectiveProfile().id());

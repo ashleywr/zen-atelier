@@ -25,6 +25,8 @@ import java.util.Optional;
 
 public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisStationMenu> {
     private static final boolean DEBUG_LAYOUT = Boolean.getBoolean("zen_atelier.debugSynthesisLayout");
+    private static final ScreenRect CATALYST_SLOT = new ScreenRect(372, 190, 18, 18);
+    private static final ScreenRect CATALYST_LABEL = new ScreenRect(372, 181, 40, 8);
     private final SynthesisStationLayout layout = new SynthesisStationLayout();
     private final SynthesisSpatialPrototype spatialPrototype = new SynthesisSpatialPrototype();
     private Button synthesizeButton;
@@ -96,8 +98,22 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentSort));
         SynthesisRecipeGrid.render(graphics, font, menu, layout, origin(), selectedCategory());
         spatialPrototype.render(graphics, font, currentPlan(), origin());
+        renderCatalystSlot(graphics, mouseX, mouseY);
         if (DEBUG_LAYOUT) {
             SynthesisStationLayoutDebug.render(graphics, font, layout, origin());
+        }
+    }
+
+    private void renderCatalystSlot(GuiGraphics graphics, int mouseX, int mouseY) {
+        ScreenRect rect = absolute(CATALYST_SLOT);
+        SynthesisStationDrawing.slotFrame(graphics, rect);
+        if (rect.contains(mouseX, mouseY)) {
+            graphics.fill(rect.x() + 1, rect.y() + 1, rect.right() - 1, rect.bottom() - 1, 0x80FFFFFF);
+        }
+        ItemStack stack = menu.getSlot(SynthesisStationMenu.CATALYST_SLOT_INDEX).getItem();
+        if (!stack.isEmpty()) {
+            graphics.renderFakeItem(stack, rect.x() + 1, rect.y() + 1);
+            graphics.renderItemDecorations(font, stack, rect.x() + 1, rect.y() + 1);
         }
     }
 
@@ -115,6 +131,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         SynthesisStationText.drawFit(graphics, font, Component.literal("[Reagent Vault]"), layout.reagentSearch.inset(UiMetrics.INSET_MEDIUM), vaultLabelColor());
         SynthesisStationText.drawFit(graphics, font, roomStorageSummary(), new ScreenRect(380, 235, 84, 9), SynthesisScreenTheme.GOOD);
         renderCategoryTabLabels(graphics);
+
+        SynthesisStationText.drawFit(graphics, font, Component.literal("Catalyst"),
+                CATALYST_LABEL, SynthesisScreenTheme.MUTED);
 
         Optional<SynthesisProfile> selected = menu.selectedProfile();
         if (selected.isEmpty()) {
@@ -157,8 +176,20 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             renderRoomVaultTooltip(graphics, mouseX, mouseY);
             renderCategoryTooltip(graphics, mouseX, mouseY);
             renderCraftReasonTooltip(graphics, mouseX, mouseY);
+            renderCatalystTooltip(graphics, mouseX, mouseY);
             SynthesisRecipeGrid.renderTooltip(graphics, font, menu, layout, origin(), selectedCategory(), mouseX, mouseY);
             renderTooltip(graphics, mouseX, mouseY);
+        }
+    }
+
+    private void renderCatalystTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (!absolute(CATALYST_SLOT).contains(mouseX, mouseY)) return;
+        ItemStack stack = menu.getSlot(SynthesisStationMenu.CATALYST_SLOT_INDEX).getItem();
+        if (!stack.isEmpty()) {
+            graphics.renderTooltip(font, stack, mouseX, mouseY);
+        } else {
+            graphics.renderTooltip(font,
+                    Component.translatable("tooltip.zen_atelier.catalyst.empty"), mouseX, mouseY);
         }
     }
 

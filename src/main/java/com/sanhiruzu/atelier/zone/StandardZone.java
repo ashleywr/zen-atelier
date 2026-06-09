@@ -69,6 +69,11 @@ public class StandardZone {
         return getQuality() * 100.0f;
     }
 
+    public float getNetFlux() {
+        // Net heat flux in the zone (0 by default, can be modified)
+        return 0.0f;
+    }
+
     @Override
     public String toString() {
         return "StandardZone{" +

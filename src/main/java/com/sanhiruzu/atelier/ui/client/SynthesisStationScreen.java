@@ -114,6 +114,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         if (!stack.isEmpty()) {
             graphics.renderFakeItem(stack, rect.x() + 1, rect.y() + 1);
             graphics.renderItemDecorations(font, stack, rect.x() + 1, rect.y() + 1);
+            SynthesisStationDrawing.frame(graphics, rect.inset(1), 0xAAB3E5FF);
         }
     }
 
@@ -132,8 +133,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         SynthesisStationText.drawFit(graphics, font, roomStorageSummary(), new ScreenRect(380, 235, 84, 9), SynthesisScreenTheme.GOOD);
         renderCategoryTabLabels(graphics);
 
+        boolean catalystActive = !menu.getSlot(SynthesisStationMenu.CATALYST_SLOT_INDEX).getItem().isEmpty();
         SynthesisStationText.drawFit(graphics, font, Component.literal("Catalyst"),
-                CATALYST_LABEL, SynthesisScreenTheme.MUTED);
+                CATALYST_LABEL, catalystActive ? SynthesisScreenTheme.ACCENT_DIM : SynthesisScreenTheme.MUTED);
 
         Optional<SynthesisProfile> selected = menu.selectedProfile();
         if (selected.isEmpty()) {
@@ -385,7 +387,12 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     }
 
     private Optional<SynthesisPlan> currentPlan() {
-        return menu.currentPlan(spatialPrototype.currentFusion());
+        ResolvedFusionData fusion = spatialPrototype.currentFusion();
+        ResolvedFusionData catalyst = menu.catalystFusion();
+        if (!catalyst.fusedAffixes().isEmpty() || catalyst.qualityBonus() > 0) {
+            fusion = fusion.withCatalyst(catalyst.fusedAffixes(), catalyst.qualityBonus());
+        }
+        return menu.currentPlan(fusion);
     }
 
     private String selectedCategory() {

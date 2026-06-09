@@ -66,13 +66,19 @@ final class SynthesisResultOverlay {
                 Item item = (loc != null) ? BuiltInRegistries.ITEM.get(loc) : Items.AIR;
                 Component name = (item != Items.AIR) ? item.getDescription()
                         : Component.literal(SynthesisStationText.shortLabel(output.outputId()));
-                String stats = output.count() + "x  T" + output.tier() + "  " + output.quality() + "Q";
+                ChatFormatting qualityFmt = output.quality() >= 100 ? ChatFormatting.GOLD
+                        : output.quality() >= 75 ? ChatFormatting.AQUA
+                        : output.quality() >= 50 ? ChatFormatting.GRAY
+                        : ChatFormatting.DARK_GRAY;
+                MutableComponent statsComp = Component.literal(output.count() + "x  T" + output.tier() + "  ")
+                        .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED))
+                        .append(Component.literal(output.quality() + "Q").withStyle(qualityFmt));
                 if (item != Items.AIR) {
                     graphics.renderFakeItem(item.getDefaultInstance(), px + 12, listY);
                 }
                 graphics.drawString(font, name, px + 32, listY + 5, SynthesisScreenTheme.TEXT, false);
-                graphics.drawString(font, stats, px + pw - 10 - font.width(stats), listY + 5,
-                        SynthesisScreenTheme.MUTED, false);
+                graphics.drawString(font, statsComp, px + pw - 10 - font.width(statsComp), listY + 5,
+                        SynthesisScreenTheme.TEXT, false);
                 listY += 18;
                 if (!output.affixes().isEmpty()) {
                     MutableComponent affixLine = Component.empty();

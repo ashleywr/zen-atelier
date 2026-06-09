@@ -1,5 +1,6 @@
 package com.sanhiruzu.atelier.zone;
 
+import com.sanhiruzu.atelier.api.IAtmosphere;
 import com.sanhiruzu.atelier.api.ZoneAPI;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -45,5 +46,9 @@ public class ZoneManager {
 
     public boolean isInsideRoom(BlockPos pos) {
         return ZoneAPI.isInsideRoom(level, pos);
+    }
+
+    public IAtmosphere getOrCreateOutdoorZone(BlockPos pos) {
+        return AtmosphereManager.get(level).getOrCreateOutdoorZone(pos);
     }
 }

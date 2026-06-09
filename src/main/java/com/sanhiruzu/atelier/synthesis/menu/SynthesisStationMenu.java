@@ -201,6 +201,14 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         return currentPlan(ResolvedFusionData.EMPTY);
     }
 
+    public ResolvedFusionData catalystFusion() {
+        ItemStack catalyst = catalystContainer.getItem(0);
+        if (catalyst.isEmpty()) return ResolvedFusionData.EMPTY;
+        SynthesisOutputData data = catalyst.get(ZenAtelier.SYNTHESIS_OUTPUT_DATA.get());
+        if (data == null || !SynthesisItemEvents.isFresh(catalyst)) return ResolvedFusionData.EMPTY;
+        return ResolvedFusionData.EMPTY.withCatalyst(data.affixes(), data.qualityTier() * 5);
+    }
+
     public Optional<SynthesisPlan> currentPlan(ResolvedFusionData fusion) {
         return selectedProfile().map(profile -> {
             SynthesisProfile effective = effectiveProfile(profile);

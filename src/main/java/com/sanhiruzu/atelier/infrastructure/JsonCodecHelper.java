@@ -2,15 +2,25 @@ package com.sanhiruzu.atelier.infrastructure;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import net.minecraft.util.GsonHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Helper utilities for JSON codec operations.
  * Simplifies serialization and deserialization of complex objects.
  */
 public class JsonCodecHelper {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JsonCodecHelper.class);
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     /**
      * Encode an object to JSON using a codec.
@@ -65,5 +75,47 @@ public class JsonCodecHelper {
         } catch (Exception e) {
             return fallback;
         }
+    }
+
+    /**
+     * Save an object to a JSON file using a codec.
+     */
+    public static <T> void save(Path path, Codec<T> codec, T value) throws IOException {
+        try {
+            JsonElement json = encode(value, codec);
+            String content = GSON.toJson(json);
+            Files.createDirectories(path.getParent());
+            Files.writeString(path, content);
+        } catch (IOException e) {
+            LOGGER.error("Failed to save to {}", path, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Load an object from a JSON file using a codec.
+     */
+    public static <T> T load(Path path, Codec<T> codec) throws IOException {
+        try {
+            String content = Files.readString(path);
+            return decodeFromString(content, codec);
+        } catch (IOException e) {
+            LOGGER.error("Failed to load from {}", path, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Load with a fallback default if the file doesn't exist or fails to parse.
+     */
+    public static <T> T loadOrDefault(Path path, Codec<T> codec, T defaultValue) {
+        try {
+            if (Files.exists(path)) {
+                return load(path, codec);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to load from {}, using default value", path, e);
+        }
+        return defaultValue;
     }
 }

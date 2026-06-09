@@ -61,4 +61,11 @@ public class ZenZonesConfig {
     public static boolean shouldApplyAtmosphereEffects(float quality) {
         return quality < 0.5f; // Apply effects when quality drops below 50%
     }
+
+    /**
+     * Format temperature for display.
+     */
+    public static String formatTemperature(float celsius) {
+        return String.format("%.1f°C", celsius);
+    }
 }

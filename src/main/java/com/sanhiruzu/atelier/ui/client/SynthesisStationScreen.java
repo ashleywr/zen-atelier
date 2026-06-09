@@ -2,10 +2,13 @@ package com.sanhiruzu.atelier.ui.client;
 
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import com.sanhiruzu.atelier.synthesis.core.SynthesisRecipeCategory;
+import com.sanhiruzu.atelier.synthesis.engine.ResolvedFusionData;
 import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
+import com.sanhiruzu.atelier.synthesis.engine.SynthesisPlan;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisProfile;
 import com.sanhiruzu.atelier.synthesis.menu.SynthesisStationMenu;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
+import com.sanhiruzu.atelier.ui.network.SynthesisResultPayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -25,6 +28,8 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     private final SynthesisStationLayout layout = new SynthesisStationLayout();
     private final SynthesisSpatialPrototype spatialPrototype = new SynthesisSpatialPrototype();
     private Button synthesizeButton;
+    private Button confirmButton;
+    private SynthesisResultOverlay pendingResult;
     private int lastMouseX;
     private int lastMouseY;
 
@@ -39,22 +44,34 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     @Override
     protected void init() {
         super.init();
-        addButton(Component.literal("<"), layout.previousButton, SynthesisStationMenu.BUTTON_PREVIOUS);
-        addButton(Component.literal(">"), layout.nextButton, SynthesisStationMenu.BUTTON_NEXT);
+        addButton(Component.literal("◄"), layout.previousButton, SynthesisStationMenu.BUTTON_PREVIOUS);
+        addButton(Component.literal("►"), layout.nextButton, SynthesisStationMenu.BUTTON_NEXT);
         ScreenRect synthesize = absolute(layout.synthesizeButton);
         synthesizeButton = addRenderableWidget(SynthesisStationButton.build(Button.builder(
-                        Component.literal("[ Craft ]"),
+                        Component.literal("Craft"),
                         button -> clickMenuButton(SynthesisStationMenu.BUTTON_SYNTHESIZE)
                 )
                 .bounds(synthesize.x(), synthesize.y(), synthesize.width(), synthesize.height()),
                 SynthesisScreenTheme.ACCENT));
+        confirmButton = addRenderableWidget(SynthesisStationButton.build(Button.builder(
+                        Component.literal("Confirm"),
+                        button -> clearResult()
+                )
+                .bounds(synthesize.x(), synthesize.y(), synthesize.width(), synthesize.height()),
+                SynthesisScreenTheme.GOOD));
+        confirmButton.visible = false;
     }
 
     @Override
     protected void containerTick() {
         super.containerTick();
+        boolean hasResult = pendingResult != null;
         if (synthesizeButton != null) {
-            synthesizeButton.active = menu.canSynthesize();
+            synthesizeButton.active = menu.canSynthesize() && !hasResult;
+            synthesizeButton.visible = !hasResult;
+        }
+        if (confirmButton != null) {
+            confirmButton.visible = hasResult;
         }
     }
 
@@ -75,8 +92,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentFilter));
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentSort));
         SynthesisRecipeGrid.render(graphics, font, menu, layout, origin(), selectedCategory());
-        spatialPrototype.render(graphics, font, menu.currentPlan(), origin());
-        renderSlots(graphics);
+        spatialPrototype.render(graphics, font, currentPlan(), origin());
         if (DEBUG_LAYOUT) {
             SynthesisStationLayoutDebug.render(graphics, font, layout, origin());
         }
@@ -84,6 +100,8 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        graphics.fill(8, 226, imageWidth - 8, imageHeight - 7, SynthesisScreenTheme.PANEL_DARKEST);
+
         SynthesisStationText.drawCenteredFit(
                 graphics,
                 font,
@@ -108,23 +126,74 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         lastMouseX = mouseX;
         lastMouseY = mouseY;
-        super.render(graphics, mouseX, mouseY, partialTick);
-        spatialPrototype.renderOverlay(graphics, font, menu.currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY);
-        SynthesisUiLayer.TOOLTIP.run(graphics, () -> renderSynthesisTooltips(graphics, mouseX, mouseY));
+        // Bypass AbstractContainerScreen.render() to avoid its slot-item and slot-highlight
+        // rendering, which bleeds non-reagent inventory items through the custom palette layer.
+        // We replicate the parts we need: background, bg, widgets, labels, then our overlay.
+        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBg(graphics, partialTick, mouseX, mouseY);
+        for (net.minecraft.client.gui.components.Renderable renderable : renderables) {
+            renderable.render(graphics, mouseX, mouseY, partialTick);
+        }
+        graphics.pose().pushPose();
+        graphics.pose().translate(leftPos, topPos, 0.0F);
+        renderLabels(graphics, mouseX, mouseY);
+        graphics.pose().popPose();
+        spatialPrototype.renderOverlay(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY);
+        if (pendingResult != null) {
+            pendingResult.render(graphics, font, origin());
+        }
+        UiLayer.TOOLTIP.run(graphics, () -> renderSynthesisTooltips(graphics, mouseX, mouseY));
     }
 
     private void renderSynthesisTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (!spatialPrototype.renderTooltip(graphics, font, menu.currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY)) {
+        if (!spatialPrototype.renderTooltip(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY)) {
             renderRoomStatusTooltip(graphics, mouseX, mouseY);
             renderRoomVaultTooltip(graphics, mouseX, mouseY);
             renderCategoryTooltip(graphics, mouseX, mouseY);
+            renderCraftReasonTooltip(graphics, mouseX, mouseY);
             SynthesisRecipeGrid.renderTooltip(graphics, font, menu, layout, origin(), selectedCategory(), mouseX, mouseY);
             renderTooltip(graphics, mouseX, mouseY);
         }
     }
 
+    private void renderCraftReasonTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (menu.canSynthesize()) {
+            return;
+        }
+        if (!absolute(layout.synthesizeButton).contains(mouseX, mouseY)) {
+            return;
+        }
+        List<Component> lines = new ArrayList<>();
+        Optional<SynthesisPlan> plan = currentPlan();
+        if (plan.isEmpty()) {
+            lines.add(Component.literal("No recipe selected."));
+        } else {
+            lines.add(Component.literal("Cannot craft:").withStyle(s -> s.withColor(SynthesisScreenTheme.BAD)));
+            for (var status : plan.get().requirements()) {
+                if (!status.satisfied()) {
+                    lines.add(Component.literal(
+                            status.availableAmount() + " / " + status.requirement().amount() + " available"
+                    ).withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
+                }
+            }
+            if (lines.size() == 1) {
+                lines.add(Component.literal("Not enough reagents in storage or inventory.").withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
+            }
+        }
+        graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (pendingResult != null) {
+            // Only the confirm button (rendered above the overlay) should receive clicks
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
+        // spatialPrototype runs first so popup overlays (filter drawer) can block clicks
+        // from reaching widgets that sit visually behind them.
+        if (spatialPrototype.mouseClicked(mouseX, mouseY, button, hasShiftDown(), currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin())) {
+            return true;
+        }
         Optional<Integer> hoveredCategory = hoveredCategoryIndex((int) mouseX, (int) mouseY);
         if (hoveredCategory.isPresent()) {
             clickMenuButton(SynthesisStationMenu.BUTTON_CATEGORY_BASE + hoveredCategory.get());
@@ -134,9 +203,6 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         if (hovered.isPresent()) {
             menu.selectProfile(hovered.get());
             clickMenuButton(SynthesisStationMenu.BUTTON_PROFILE_BASE + hovered.get());
-            return true;
-        }
-        if (spatialPrototype.mouseClicked(mouseX, mouseY, button, hasShiftDown(), menu.currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin())) {
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -152,7 +218,14 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_R && spatialPrototype.rotateCarriedAt(lastMouseX, lastMouseY, menu.currentPlan(), origin())) {
+        if (pendingResult != null) {
+            if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_SPACE) {
+                clearResult();
+                return true;
+            }
+            return false;
+        }
+        if (keyCode == GLFW.GLFW_KEY_R && spatialPrototype.rotateCarriedAt(lastMouseX, lastMouseY, currentPlan(), origin())) {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
@@ -268,6 +341,10 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             }
         }
         return reagents;
+    }
+
+    private Optional<SynthesisPlan> currentPlan() {
+        return menu.currentPlan(spatialPrototype.currentFusion());
     }
 
     private String selectedCategory() {
@@ -458,6 +535,16 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         if (payload.containerId() == menu.containerId) {
             menu.setClientRoomVaultReagents(payload.decodeEntries());
         }
+    }
+
+    public void handleSynthesisResult(SynthesisResultPayload payload) {
+        if (payload.containerId() == menu.containerId) {
+            pendingResult = new SynthesisResultOverlay(payload.outcomeClass(), payload.outputs(), payload.byproducts());
+        }
+    }
+
+    private void clearResult() {
+        pendingResult = null;
     }
 
     private ScreenRect absolute(ScreenRect rect) {

@@ -11,8 +11,8 @@ import com.sanhiruzu.atelier.synthesis.core.OutcomeClass;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import com.sanhiruzu.atelier.synthesis.core.SynthesisRecipeCategory;
 import com.sanhiruzu.atelier.synthesis.data.SynthesisProfileRegistry;
-import com.sanhiruzu.atelier.synthesis.data.TraitFusionRegistry;
-import com.sanhiruzu.atelier.synthesis.data.TraitFusionRule;
+import com.sanhiruzu.atelier.synthesis.engine.ResolvedFusionData;
+import com.sanhiruzu.atelier.synthesis.engine.SynthesisAttemptInput;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisExecutionResult;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisExecutor;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisOutput;
@@ -30,6 +30,7 @@ import com.sanhiruzu.atelier.synthesis.world.RoomReagentStorage;
 import com.sanhiruzu.atelier.synthesis.world.RoomAlchemyContextFactory;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisBoardFusionPayload;
+import com.sanhiruzu.atelier.ui.network.SynthesisResultPayload;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -68,8 +69,6 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
     private static final int VAULT_COLUMNS = 18;
     private static final int HOTBAR_Y = 256;
     private static final int SLOT_SIZE = 18;
-    private static final int MAX_BOARD_RESONANCE = 49;
-
     private final Inventory playerInventory;
     private final ContainerLevelAccess access;
     private int selectedProfileIndex;
@@ -184,11 +183,18 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
     }
 
     public Optional<SynthesisPlan> currentPlan() {
-        return selectedProfile().map(profile -> new SynthesisPlanner().plan(
-                effectiveProfile(profile),
-                availableReagents(),
-                contextRisk
-        ));
+        return currentPlan(ResolvedFusionData.EMPTY);
+    }
+
+    public Optional<SynthesisPlan> currentPlan(ResolvedFusionData fusion) {
+        return selectedProfile().map(profile -> {
+            SynthesisProfile effective = effectiveProfile(profile);
+            if (fusion.successWeightBonus() > 0) {
+                effective = applyFusionSuccessBonus(effective, fusion.successWeightBonus());
+            }
+            int risk = Math.clamp(contextRisk + fusion.resonanceCount() * 15, 0, 100);
+            return new SynthesisPlanner().plan(effective, availableReagents(), risk);
+        });
     }
 
     public int selectedProfileIndex() {
@@ -356,44 +362,48 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         }, false);
     }
 
+    private SynthesisAttemptInput buildAttemptInput(Player player, SynthesisBoardFusionPayload payload) {
+        int executionContext = stationRoomContext();
+        roomContext = executionContext;
+        Optional<SynthesisProfile> profile = selectedProfile();
+        if (profile.isEmpty()) {
+            return null;
+        }
+        ReagentContainer carried = CarriedReagentInventory.snapshot(player.getInventory());
+        ReagentContainer roomStorage = roomStorageAtStation();
+        ReagentContainer combined = RoomReagentStorage.combine(carried, roomStorage);
+        AttemptContext context = currentAttemptContext();
+        ResolvedFusionData fusion = payload != null ? payload.resolve() : ResolvedFusionData.EMPTY;
+        SynthesisProfile effective = effectiveProfile(profile.get(), executionContext);
+        if (fusion.successWeightBonus() > 0) {
+            effective = applyFusionSuccessBonus(effective, fusion.successWeightBonus());
+        }
+        return new SynthesisAttemptInput(effective, combined, context, fusion);
+    }
+
     private void execute(Player player) {
         if (player.level().isClientSide) {
             return;
         }
 
-        roomContext = stationRoomContext();
-        Optional<SynthesisProfile> profile = selectedProfile();
-        if (profile.isEmpty()) {
+        SynthesisAttemptInput input = buildAttemptInput(player, pendingFusionData);
+        pendingFusionData = null;
+        if (input == null) {
             return;
         }
 
-        ReagentContainer carried = CarriedReagentInventory.snapshot(player.getInventory());
-        ReagentContainer roomStorage = roomStorageAtStation();
-        ReagentContainer container = RoomReagentStorage.combine(carried, roomStorage);
-        AttemptContext context = currentAttemptContext();
-
-        int executionContext = stationRoomContext();
-        roomContext = executionContext;
-        SynthesisProfile effectiveProfile = effectiveProfile(profile.get(), executionContext);
-        ResolvedFusionData fusionData = resolveFusionData(pendingFusionData);
-        pendingFusionData = null;
-        if (fusionData.successWeightBonus() > 0) {
-            effectiveProfile = applyFusionSuccessBonus(effectiveProfile, fusionData.successWeightBonus());
-        }
-        int effectiveRisk = Math.clamp(context.risk() + fusionData.resonanceCount() * 15, 0, 100);
-        SynthesisPlan plan = new SynthesisPlanner().plan(effectiveProfile, container, effectiveRisk);
+        SynthesisPlan plan = new SynthesisPlanner().plan(input);
         if (!plan.canSynthesize()) {
             return;
         }
 
         long seed = player.level().getGameTime() ^ player.getUUID().getLeastSignificantBits();
-        SynthesisExecutionResult result = new SynthesisExecutor().execute(effectiveProfile, container, context, effectiveRisk, seed);
+        SynthesisExecutionResult result = new SynthesisExecutor().execute(input, seed);
+
+        ReagentContainer carried = CarriedReagentInventory.snapshot(player.getInventory());
         java.util.Map<net.minecraft.core.BlockPos, ReagentContainer> storageContainers = roomStorageContainersAtStation();
         java.util.Optional<RoomReagentStorage.ConsumptionPlan> consumption = RoomReagentStorage.planConsumption(
-                carried,
-                storageContainers,
-                result.consumedReagents()
-        );
+                carried, storageContainers, result.consumedReagents());
         if (consumption.isEmpty()) {
             return;
         }
@@ -405,12 +415,13 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
             return;
         }
 
+        ResolvedFusionData fusion = input.fusion();
         java.util.List<SynthesisOutput> outputs = result.result().outputs();
-        if (!fusionData.fusedAffixes().isEmpty() || fusionData.qualityBonus() > 0) {
+        if (!fusion.fusedAffixes().isEmpty() || fusion.qualityBonus() > 0) {
             java.util.List<SynthesisOutput> enhanced = new java.util.ArrayList<>(outputs.size());
             for (SynthesisOutput output : outputs) {
-                SynthesisOutput o = output.withAddedAffixes(fusionData.fusedAffixes());
-                o = o.withBoostedQuality(fusionData.qualityBonus());
+                SynthesisOutput o = output.withAddedAffixes(fusion.fusedAffixes());
+                o = o.withBoostedQuality(fusion.qualityBonus());
                 enhanced.add(o);
             }
             outputs = enhanced;
@@ -422,11 +433,15 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
             giveOrDrop(player, ReagentItem.createStack(byproduct));
         }
         player.getInventory().setChanged();
-        PlayerSynthesisKnowledge.markCrafted(player, profile.get().id());
+        PlayerSynthesisKnowledge.markCrafted(player, input.effectiveProfile().id());
         refreshRoomStorageStats();
         syncRoomVaultSnapshot();
         refreshCraftedRecipeMask(player);
-        emitSynthesisVfx(player, profile.get(), result);
+        emitSynthesisVfx(player, input.effectiveProfile(), result);
+        if (player instanceof ServerPlayer serverPlayer) {
+            PacketDistributor.sendToPlayer(serverPlayer,
+                    new SynthesisResultPayload(containerId, result.result().outcomeClass(), outputs, result.result().byproducts()));
+        }
     }
 
     private AttemptContext currentAttemptContext() {
@@ -740,43 +755,4 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
                 boosted);
     }
 
-    private static ResolvedFusionData resolveFusionData(SynthesisBoardFusionPayload payload) {
-        if (payload == null || payload.activeRuleIds().isEmpty()) {
-            return ResolvedFusionData.EMPTY;
-        }
-
-        java.util.LinkedHashSet<String> affixes = new java.util.LinkedHashSet<>();
-        int qualityBonus = 0;
-        int successWeightBonus = 0;
-        int validRuleCount = 0;
-        for (String ruleId : payload.activeRuleIds()) {
-            Optional<TraitFusionRule> rule = TraitFusionRegistry.findById(ruleId);
-            if (rule.isEmpty()) {
-                continue;
-            }
-            validRuleCount++;
-            rule.get().outputAffix().ifPresent(affixes::add);
-            qualityBonus += rule.get().qualityBonus();
-            successWeightBonus += rule.get().successWeightBonus();
-        }
-
-        int resonanceCount = validRuleCount == 0
-                ? 0
-                : Math.min(Math.clamp(payload.resonanceCount(), 0, MAX_BOARD_RESONANCE), validRuleCount * 2);
-        return new ResolvedFusionData(
-                java.util.List.copyOf(affixes),
-                Math.clamp(qualityBonus, 0, 100),
-                Math.max(0, successWeightBonus),
-                resonanceCount
-        );
-    }
-
-    private record ResolvedFusionData(
-            List<String> fusedAffixes,
-            int qualityBonus,
-            int successWeightBonus,
-            int resonanceCount
-    ) {
-        private static final ResolvedFusionData EMPTY = new ResolvedFusionData(List.of(), 0, 0, 0);
-    }
 }

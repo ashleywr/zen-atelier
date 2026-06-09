@@ -5,6 +5,7 @@ import com.sanhiruzu.atelier.synthesis.core.ReagentShape;
 import com.sanhiruzu.atelier.synthesis.core.OutcomeClass;
 import com.sanhiruzu.atelier.synthesis.data.TraitFusionRegistry;
 import com.sanhiruzu.atelier.synthesis.data.TraitFusionRule;
+import com.sanhiruzu.atelier.synthesis.engine.ResolvedFusionData;
 import com.sanhiruzu.atelier.synthesis.engine.RequirementStatus;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisBoard;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisPlan;
@@ -39,14 +40,17 @@ final class SynthesisSpatialPrototype {
     private static final ScreenRect BOARD_AREA = new ScreenRect(164, 66, MAX_BOARD_SIZE * CELL_SIZE, MAX_BOARD_SIZE * CELL_SIZE);
     private static final ScreenRect READOUT = new ScreenRect(278, 58, 180, 168);
     private static final ScreenRect PALETTE = new ScreenRect(8, 226, 464, 93);
-    private static final ScreenRect PALETTE_STORAGE_TAB = new ScreenRect(18, 233, 62, 12);
-    private static final ScreenRect PALETTE_INVENTORY_TAB = new ScreenRect(82, 233, 70, 12);
-    private static final ScreenRect CHIP_FIRE  = new ScreenRect(162, 233, 40, 12);
-    private static final ScreenRect CHIP_WATER = new ScreenRect(204, 233, 40, 12);
-    private static final ScreenRect CHIP_EARTH = new ScreenRect(246, 233, 40, 12);
-    private static final ScreenRect CHIP_WIND  = new ScreenRect(288, 233, 40, 12);
-    private static final ScreenRect CHIP_FILTER = new ScreenRect(332, 233, 40, 12);
-    private static final ScreenRect CHIP_SORT  = new ScreenRect(380, 233, 36, 12);
+    // Inventory slot rows sit at y=220, 6px above the palette. This constant is used to
+    // extend click and cover regions upward so that gap doesn't leak to vanilla slot handling.
+    private static final int SLOTS_TOP = 220;
+    private static final ScreenRect CHIP_FILTER = new ScreenRect(8, 233, 40, 12);
+    private static final ScreenRect PALETTE_STORAGE_TAB = new ScreenRect(58, 233, 62, 12);
+    private static final ScreenRect PALETTE_INVENTORY_TAB = new ScreenRect(122, 233, 70, 12);
+    private static final ScreenRect CHIP_FIRE  = new ScreenRect(200, 233, 40, 12);
+    private static final ScreenRect CHIP_WATER = new ScreenRect(242, 233, 40, 12);
+    private static final ScreenRect CHIP_EARTH = new ScreenRect(284, 233, 40, 12);
+    private static final ScreenRect CHIP_WIND  = new ScreenRect(326, 233, 40, 12);
+    private static final ScreenRect CHIP_SORT   = new ScreenRect(370, 233, 36, 12);
     private static final ScreenRect FILTER_DRAWER = new ScreenRect(8, 58, 146, 154);
     private static final ScreenRect FILTER_NEEDS = new ScreenRect(16, 92, 130, 14);
     private static final ScreenRect FILTER_FUSION = new ScreenRect(16, 110, 130, 14);
@@ -106,10 +110,10 @@ final class SynthesisSpatialPrototype {
 
     void renderOverlay(GuiGraphics graphics, Font font, Optional<SynthesisPlan> plan, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents, ScreenRect origin, int mouseX, int mouseY) {
         graphics.flush();
-        SynthesisUiLayer.ABOVE_VANILLA_SLOTS.run(graphics, () ->
-                renderPalette(graphics, font, paletteView(plan, storageReagents, inventoryReagents), origin, mouseX, mouseY)
+        UiLayer.ABOVE_ITEMS.run(graphics, () ->
+            renderPalette(graphics, font, paletteView(plan, storageReagents, inventoryReagents), origin, mouseX, mouseY)
         );
-        SynthesisUiLayer.CARRIED_REAGENT.run(graphics, () ->
+        UiLayer.CARRIED.run(graphics, () ->
                 renderCarriedGhost(graphics, font, currentBoard(plan), origin, mouseX, mouseY)
         );
         graphics.flush();
@@ -197,16 +201,29 @@ final class SynthesisSpatialPrototype {
                 paletteScroll = 0;
                 return true;
             }
+            // Drawer is open — consume any click inside it so widgets behind it can't fire.
+            if (drawer.contains(localX, localY)) {
+                return true;
+            }
         }
         PaletteView palette = paletteView(plan, storageReagents, inventoryReagents);
         Optional<Integer> paletteIndex = hoveredPaletteIndex(localX, localY, palette.entries());
         if (paletteIndex.isPresent()) {
             Piece selected = palette.entries().get(paletteIndex.get()).piece();
-            startCarrying(selected, 0);
+            if (shiftDown) {
+                if (!autoPlace(board, selected)) {
+                    startCarrying(selected, 0);
+                }
+            } else {
+                startCarrying(selected, 0);
+            }
             return true;
         }
         if (boardCell.isEmpty()) {
-            return PALETTE.contains(localX, localY);
+            // Extend the catch-all upward to SLOTS_TOP so the 6px strip above the palette
+            // (where inventory row tops sit) doesn't leak clicks to vanilla slot handling.
+            return localX >= PALETTE.x() && localX < PALETTE.right()
+                    && localY >= SLOTS_TOP && localY < PALETTE.bottom();
         }
         if (carried != null) {
             if (shiftDown) {
@@ -293,6 +310,9 @@ final class SynthesisSpatialPrototype {
         SynthesisBoard board = currentBoard(plan);
         int localX = mouseX - origin.x();
         int localY = mouseY - origin.y();
+        if (paletteFiltersOpen && filterDrawerLocal(origin).contains(localX, localY)) {
+            return true;
+        }
         PaletteView palette = paletteView(plan, storageReagents, inventoryReagents);
         Optional<Integer> paletteIndex = hoveredPaletteIndex(localX, localY, palette.entries());
         if (paletteIndex.isPresent()) {
@@ -474,7 +494,7 @@ final class SynthesisSpatialPrototype {
         renderPaletteChip(graphics, font, drawerControlRect(FILTER_NEEDS, drawer), "Need Now", filterNeedsOnly, SynthesisScreenTheme.GOOD);
         renderPaletteChip(graphics, font, drawerControlRect(FILTER_FUSION, drawer), "Fusion Ready", filterFusionOnly, 0xFFFFB454);
         renderPaletteChip(graphics, font, drawerControlRect(FILTER_FITS, drawer), "Fits Board", filterFitsOnly, 0xFF7FB7FF);
-        SynthesisStationText.drawFit(graphics, font, "Shape", new ScreenRect(drawer.x() + UiMetrics.LABEL_PADDING, drawer.y() + 82, drawer.width() - UiMetrics.LABEL_PADDING * 2, UiMetrics.TEXT_HEIGHT), SynthesisScreenTheme.TEXT);
+        SynthesisStationText.drawFit(graphics, font, "Shape", new ScreenRect(drawer.x() + 8, drawer.y() + 86, drawer.width() - 16, UiMetrics.TEXT_HEIGHT), SynthesisScreenTheme.TEXT);
         for (int i = 0; i < ShapeFilterMode.VALUES.size(); i++) {
             ShapeFilterMode mode = ShapeFilterMode.VALUES.get(i);
             renderPaletteChip(graphics, font, drawerControlRect(FILTER_SHAPE_RECTS.get(i), drawer),
@@ -520,19 +540,24 @@ final class SynthesisSpatialPrototype {
         SynthesisPlan placedPlan = new SynthesisPlanner().plan(current.profile(), placedReagentContainer(), 0);
         SpatialEvaluation spatial = evaluate(board);
         int resonanceRisk = spatial.resonantPlacementIds().size() * 15;
-        ReadoutLayout layout = buildReadoutLayout(panel, placedPlan, spatial);
+        int occupied = occupiedCellCount();
+        int totalCells = board.size() * board.size();
+        ReadoutLayout layout = buildReadoutLayout(panel, placedPlan, spatial, board, occupied);
         int successColor = !placedPlan.canSynthesize() ? SynthesisScreenTheme.MUTED
                 : resonanceRisk > 0 ? 0xFFFF8040
                 : SynthesisScreenTheme.GOOD;
-        renderReadoutBar(graphics, font, "Success", current.preview().successProbability(), layout.successLabel(), layout.successBar(), successColor);
+        boolean hasPlaced = !placements.isEmpty();
+        renderReadoutBar(graphics, font, "Success", hasPlaced ? current.preview().successProbability() : 0.0, layout.successLabel(), layout.successBar(), successColor);
         layout.resonanceLine().ifPresent(rect ->
                 SynthesisStationText.drawFit(graphics, font, "Resonance  +" + resonanceRisk + " risk", rect, 0xFFFF8040));
-        renderReadoutBar(graphics, font, "Perfect", current.preview().probabilityOf(OutcomeClass.PERFECT_SUCCESS), layout.perfectLabel(), layout.perfectBar(), SynthesisScreenTheme.ACCENT);
+        renderReadoutBar(graphics, font, "Perfect", hasPlaced ? current.preview().probabilityOf(OutcomeClass.PERFECT_SUCCESS) : 0.0, layout.perfectLabel(), layout.perfectBar(), SynthesisScreenTheme.ACCENT);
 
-        int occupied = occupiedCellCount();
-        int totalCells = board.size() * board.size();
         SynthesisStationText.drawFit(graphics, font, "Fill " + occupied + "/" + totalCells, layout.fillLine(), SynthesisScreenTheme.TEXT);
-        SynthesisStationText.drawFit(graphics, font, "Empty " + (totalCells - occupied), layout.emptyLine(), occupied == totalCells ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.MUTED);
+        SynthesisStationText.drawFit(graphics, font, buildEmptyText(totalCells - occupied, board), layout.emptyLine(), occupied == totalCells ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.MUTED);
+        layout.nodeBonusLine().ifPresent(rect ->
+                SynthesisStationText.drawFit(graphics, font, buildNodeBonusText(spatial.qualityBonus(), spatial.perfectBonus()), rect, SynthesisScreenTheme.GOOD));
+        layout.morphLine().ifPresent(rect ->
+                SynthesisStationText.drawFit(graphics, font, buildMorphText(spatial.morphTargets()), rect, 0xFFE2A35D));
 
         SynthesisStationText.drawFit(graphics, font, "Needs", layout.needsHeader(), placedPlan.canSynthesize() ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.BAD);
         List<RequirementStatus> displayedRequirements = displayedRequirements(placedPlan);
@@ -676,6 +701,20 @@ final class SynthesisSpatialPrototype {
         carriedCursorCell = new Cell(0, 0);
     }
 
+    private boolean autoPlace(SynthesisBoard board, Piece piece) {
+        for (int rotation = 0; rotation < 4; rotation++) {
+            for (int y = 0; y < board.size(); y++) {
+                for (int x = 0; x < board.size(); x++) {
+                    if (canPlace(board, piece, rotation, x, y, -1)) {
+                        placements.add(new Placement(nextPlacementId++, piece, rotation, x, y));
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     private PlacementPreview placementPreview(SynthesisBoard board, Piece piece, int rotation, Cell hover) {
         Optional<PlacementPreview> preferred = previewForCursorCell(board, piece, rotation, hover, carriedCursorCell);
         if (preferred.isPresent() && preferred.get().valid()) {
@@ -817,18 +856,34 @@ final class SynthesisSpatialPrototype {
         }
 
         int qualityBonus = 0;
-        boolean morphed = false;
+        int perfectBonus = 0;
+        List<String> morphTargets = new ArrayList<>();
         for (SynthesisBoard.Node node : board.nodes()) {
             Optional<Placement> cover = placementAt(node.x(), node.y());
             if (cover.isEmpty() || !nodeActive(node, cover.get())) {
                 continue;
             }
             qualityBonus += node.qualityBonus();
-            morphed = morphed || node.morphTarget().isPresent();
+            perfectBonus += node.perfectBonus();
+            node.morphTarget().ifPresent(morphTargets::add);
         }
-        SpatialEvaluation result = new SpatialEvaluation(links, expectedTraits, fusedTraits, qualityBonus, morphed, fusionResults, resonantIds);
+        SpatialEvaluation result = new SpatialEvaluation(links, expectedTraits, fusedTraits, qualityBonus, perfectBonus, List.copyOf(morphTargets), fusionResults, resonantIds);
         lastEvaluation = result;
         return result;
+    }
+
+    ResolvedFusionData currentFusion() {
+        if (lastEvaluation == null || lastEvaluation.fusionResults().isEmpty()) {
+            return ResolvedFusionData.EMPTY;
+        }
+        java.util.LinkedHashSet<String> seenIds = new java.util.LinkedHashSet<>();
+        java.util.List<TraitFusionRule> rules = new java.util.ArrayList<>();
+        for (FusionResult fr : lastEvaluation.fusionResults()) {
+            if (seenIds.add(fr.rule().id())) {
+                rules.add(fr.rule());
+            }
+        }
+        return ResolvedFusionData.fromRules(rules, lastEvaluation.resonantPlacementIds().size());
     }
 
     SynthesisBoardFusionPayload buildFusionPayload(int containerId) {
@@ -1154,7 +1209,7 @@ final class SynthesisSpatialPrototype {
             return List.of();
         }
         SynthesisPlan placedPlan = new SynthesisPlanner().plan(plan.get().profile(), placedReagentContainer(), 0);
-        return buildReadoutLayout(READOUT, placedPlan, evaluate(board)).requirementLines();
+        return buildReadoutLayout(READOUT, placedPlan, evaluate(board), board, occupiedCellCount()).requirementLines();
     }
 
     private static List<RequirementStatus> displayedRequirements(SynthesisPlan placedPlan) {
@@ -1165,7 +1220,7 @@ final class SynthesisSpatialPrototype {
         return new ScreenRect(panel.x() + READOUT_INSET_X, y, panel.width() - READOUT_INSET_X * 2, READOUT_TEXT_HEIGHT);
     }
 
-    private static ReadoutLayout buildReadoutLayout(ScreenRect panel, SynthesisPlan placedPlan, SpatialEvaluation spatial) {
+    private static ReadoutLayout buildReadoutLayout(ScreenRect panel, SynthesisPlan placedPlan, SpatialEvaluation spatial, SynthesisBoard board, int occupied) {
         int y = panel.y() + READOUT_TOP_PADDING;
         ScreenRect successLabel = readoutLineRect(panel, y);
         ScreenRect successBar = new ScreenRect(successLabel.x(), y + READOUT_BAR_LABEL_GAP, successLabel.width(), READOUT_BAR_HEIGHT);
@@ -1185,6 +1240,18 @@ final class SynthesisSpatialPrototype {
         ScreenRect fillLine = new ScreenRect(panel.x() + READOUT_INSET_X, y, READOUT_FILL_VALUE_WIDTH, READOUT_TEXT_HEIGHT);
         ScreenRect emptyLine = new ScreenRect(panel.x() + READOUT_FILL_SECONDARY_X, y, READOUT_FILL_VALUE_WIDTH, READOUT_TEXT_HEIGHT);
         y += 12;
+
+        Optional<ScreenRect> nodeBonusLine = Optional.empty();
+        if (spatial.qualityBonus() > 0 || spatial.perfectBonus() > 0) {
+            nodeBonusLine = Optional.of(readoutLineRect(panel, y));
+            y += READOUT_ROW_GAP;
+        }
+
+        Optional<ScreenRect> morphLine = Optional.empty();
+        if (!spatial.morphTargets().isEmpty()) {
+            morphLine = Optional.of(readoutLineRect(panel, y));
+            y += READOUT_ROW_GAP;
+        }
 
         ScreenRect needsHeader = readoutLineRect(panel, y);
         y += READOUT_SECTION_GAP;
@@ -1238,6 +1305,8 @@ final class SynthesisSpatialPrototype {
                 perfectBar,
                 fillLine,
                 emptyLine,
+                nodeBonusLine,
+                morphLine,
                 needsHeader,
                 requirementLines,
                 extraNeedsLine,
@@ -1563,7 +1632,7 @@ final class SynthesisSpatialPrototype {
     private record FusionResult(Cell from, Cell to, String traitA, String traitB, TraitFusionRule rule) {
     }
 
-    private record SpatialEvaluation(List<TraitLink> links, Map<String, Integer> expectedTraits, Map<String, Integer> fusedTraits, int qualityBonus, boolean morphed, List<FusionResult> fusionResults, Set<Integer> resonantPlacementIds) {
+    private record SpatialEvaluation(List<TraitLink> links, Map<String, Integer> expectedTraits, Map<String, Integer> fusedTraits, int qualityBonus, int perfectBonus, List<String> morphTargets, List<FusionResult> fusionResults, Set<Integer> resonantPlacementIds) {
     }
 
     private record ReadoutLayout(
@@ -1574,6 +1643,8 @@ final class SynthesisSpatialPrototype {
             ScreenRect perfectBar,
             ScreenRect fillLine,
             ScreenRect emptyLine,
+            Optional<ScreenRect> nodeBonusLine,
+            Optional<ScreenRect> morphLine,
             ScreenRect needsHeader,
             List<ScreenRect> requirementLines,
             Optional<ScreenRect> extraNeedsLine,
@@ -1589,6 +1660,36 @@ final class SynthesisSpatialPrototype {
         boolean sameX = cells.stream().mapToInt(ReagentShape.Cell::x).distinct().count() == 1;
         boolean sameY = cells.stream().mapToInt(ReagentShape.Cell::y).distinct().count() == 1;
         return sameX || sameY;
+    }
+
+    private static String buildEmptyText(int empty, SynthesisBoard board) {
+        if (empty <= 0 || (board.emptyCellSuccessPenalty() == 0 && board.emptyCellPerfectPenalty() == 0)) {
+            return "Empty " + empty;
+        }
+        StringBuilder sb = new StringBuilder("Empty ").append(empty);
+        if (board.emptyCellSuccessPenalty() > 0) {
+            sb.append("  -").append(empty * board.emptyCellSuccessPenalty()).append("s");
+        }
+        if (board.emptyCellPerfectPenalty() > 0) {
+            sb.append("  -").append(empty * board.emptyCellPerfectPenalty()).append("p");
+        }
+        return sb.toString();
+    }
+
+    private static String buildNodeBonusText(int qualityBonus, int perfectBonus) {
+        if (qualityBonus > 0 && perfectBonus > 0) {
+            return "Node  +" + qualityBonus + " quality  +" + perfectBonus + " perfect";
+        }
+        if (qualityBonus > 0) {
+            return "Node  +" + qualityBonus + " quality";
+        }
+        return "Node  +" + perfectBonus + " perfect";
+    }
+
+    private static String buildMorphText(List<String> morphTargets) {
+        return "Morph → " + morphTargets.stream()
+                .map(SynthesisStationText::shortLabel)
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 
     private static boolean hasCorner(List<ReagentShape.Cell> cells) {

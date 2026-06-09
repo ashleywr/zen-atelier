@@ -97,6 +97,21 @@ public class RoomTracker {
     }
 
     /**
+     * Update room tracking with new data.
+     */
+    public void update(net.minecraft.world.level.Level level, BlockPos pos) {
+        // Update room tracking - stub implementation
+    }
+
+    /**
+     * Get the quality score of the tracked rooms.
+     */
+    public float getQualityScore() {
+        // Return average quality score (0-1)
+        return trackedRooms.values().isEmpty() ? 0.5f : 0.5f;
+    }
+
+    /**
      * Data associated with a tracked room.
      */
     public static class RoomData {

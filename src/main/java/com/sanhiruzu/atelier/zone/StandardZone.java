@@ -155,6 +155,11 @@ public class StandardZone {
         setProperty("sealed", sealed ? 1.0f : 0.0f);
     }
 
+    public void initializeFromBiome(net.minecraft.server.level.ServerLevel level, BlockPos pos) {
+        // Initialize zone properties from biome data
+        // Stub implementation
+    }
+
     @Override
     public String toString() {
         return "StandardZone{" +

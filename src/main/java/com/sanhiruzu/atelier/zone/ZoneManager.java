@@ -75,4 +75,22 @@ public class ZoneManager {
         // Orphan a zone (remove ownership but keep data)
         // In a full implementation, this would change the zone's owner
     }
+
+    public StandardZone createOrReplaceManagedZone(java.util.UUID zoneId, net.minecraft.world.level.levelgen.structure.BoundingBox bounds,
+                                                   String displayName, String atmosphereId, BlockPos pos, String identifier) {
+        // Create or replace a managed zone
+        var zoneData = getAt(pos);
+        if (zoneData == null) {
+            zoneData = new StandardZone(new com.sanhiruzu.atelier.space.zone.ZoneData(zoneId, 1000, 0.5f) {
+                @Override
+                public boolean isOutdoor() {
+                    return false;
+                }
+            });
+        }
+        zoneData.setProperty("display_name", displayName);
+        zoneData.setProperty("atmosphere_id", atmosphereId);
+        zoneData.setProperty("identifier", identifier);
+        return zoneData;
+    }
 }

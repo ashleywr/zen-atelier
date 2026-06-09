@@ -51,4 +51,9 @@ public class ZoneManager {
     public IAtmosphere getOrCreateOutdoorZone(BlockPos pos) {
         return AtmosphereManager.get(level).getOrCreateOutdoorZone(pos);
     }
+
+    public void tick() {
+        // Update zone-related systems each tick
+        // This is called by Create Kaizen to update atmosphere effects
+    }
 }

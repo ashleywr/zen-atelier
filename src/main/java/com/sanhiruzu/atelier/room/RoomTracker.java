@@ -149,5 +149,24 @@ public class RoomTracker {
         public void setInteriorBounds(@Nullable BoundingBox bounds) {
             this.interiorBounds = bounds;
         }
+
+        /**
+         * Get the leak point (if any) in the room's enclosure.
+         */
+        @Nullable
+        public BlockPos getLeakPoint() {
+            return (BlockPos) getProperty("leak_point");
+        }
+
+        /**
+         * Set the leak point in the room's enclosure.
+         */
+        public void setLeakPoint(@Nullable BlockPos pos) {
+            if (pos != null) {
+                setProperty("leak_point", pos);
+            } else {
+                removeProperty("leak_point");
+            }
+        }
     }
 }

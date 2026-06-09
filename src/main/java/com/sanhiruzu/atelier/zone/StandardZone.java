@@ -74,6 +74,65 @@ public class StandardZone {
         return 0.0f;
     }
 
+    public float getTemperature() {
+        // Default room temperature, can be customized per zone
+        return getProperty("temperature", 20.0f);
+    }
+
+    public void setTemperature(float temp) {
+        setProperty("temperature", temp);
+    }
+
+    public String getName() {
+        // Generate a name based on zone type or ID
+        String zoneType = getZoneType();
+        if (zoneType != null) {
+            return zoneType.replaceAll(".*:", "").replace("_", " ");
+        }
+        return "Unknown Zone";
+    }
+
+    private float getProperty(String key, float defaultValue) {
+        Object value = zoneData.getRegionId(); // Use region ID for custom data storage
+        // Store custom properties in API data store
+        Object prop = com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.get(zoneData.getRegionId(), "zone_" + key);
+        if (prop instanceof Number) {
+            return ((Number) prop).floatValue();
+        }
+        return defaultValue;
+    }
+
+    private void setProperty(String key, float value) {
+        com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.set(zoneData.getRegionId(), "zone_" + key, value);
+    }
+
+    public BlockPos getBounds() {
+        // Return origin as a simple bounds reference
+        return getOrigin();
+    }
+
+    public float getHumidity() {
+        // Default humidity level
+        return getProperty("humidity", 50.0f);
+    }
+
+    public void setHumidity(float humidity) {
+        setProperty("humidity", humidity);
+    }
+
+    public float getChemicalPurity() {
+        // Use quality as purity (0-1 becomes 0-100%)
+        return getQuality() * 100.0f;
+    }
+
+    public boolean isRenderingWireframe() {
+        return getProperty("render_wireframe", 0.0f) > 0.5f;
+    }
+
+    public void setRenderingWireframe(boolean rendering) {
+        setProperty("render_wireframe", rendering ? 1.0f : 0.0f);
+    }
+
     @Override
     public String toString() {
         return "StandardZone{" +

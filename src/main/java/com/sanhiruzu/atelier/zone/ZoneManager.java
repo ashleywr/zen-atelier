@@ -22,6 +22,14 @@ public class ZoneManager {
     }
 
     @Nullable
+    public static ZoneManager get(Level level) {
+        if (level instanceof ServerLevel serverLevel) {
+            return new ZoneManager(serverLevel);
+        }
+        return null;
+    }
+
+    @Nullable
     public StandardZone getAt(BlockPos pos) {
         var zoneData = ZoneAPI.getZoneContaining(level, pos);
         if (zoneData == null) return null;

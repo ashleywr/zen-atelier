@@ -24,6 +24,21 @@ public interface IAtmosphere {
     float getTemperature();
 
     /**
+     * Get the humidity of the atmosphere (0-100).
+     */
+    float getHumidity();
+
+    /**
+     * Add heat to the atmosphere.
+     */
+    void addHeat(float amount);
+
+    /**
+     * Add chemical pollution to the atmosphere.
+     */
+    void addChemicalPollution(float amount);
+
+    /**
      * Set custom atmosphere property.
      */
     void setProperty(String key, float value);

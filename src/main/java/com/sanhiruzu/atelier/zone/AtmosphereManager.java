@@ -27,7 +27,9 @@ public class AtmosphereManager {
      */
     @Nullable
     public IAtmosphere getAtmosphereAt(BlockPos pos) {
-        var zone = ZoneManager.get(level).getAt(pos);
+        var manager = ZoneManager.get(level);
+        if (manager == null) return new DefaultAtmosphere();
+        var zone = manager.getAt(pos);
         if (zone == null) {
             return new DefaultAtmosphere();
         }
@@ -35,9 +37,43 @@ public class AtmosphereManager {
     }
 
     /**
+     * Get or create an outdoor zone at the given position.
+     * Used for areas outside enclosed rooms.
+     */
+    public IAtmosphere getOrCreateOutdoorZone(BlockPos pos) {
+        return getAtmosphereAt(pos);
+    }
+
+    /**
+     * Determine the atmosphere type at a position based on conditions.
+     */
+    public static String determineAtmosphere(IAtmosphere atmosphere) {
+        if (atmosphere == null) return "neutral";
+
+        float temp = atmosphere.getTemperature();
+        float humidity = atmosphere.getHumidity();
+        float purity = atmosphere.getChemicalPurity();
+
+        if (temp > 60.0f) {
+            return "hot";
+        } else if (temp < -10.0f) {
+            return "cold";
+        } else if (humidity > 80.0f) {
+            return "humid";
+        } else if (purity < 30.0f) {
+            return "polluted";
+        }
+
+        return "neutral";
+    }
+
+    /**
      * Default atmosphere implementation for areas outside zones.
      */
     private static class DefaultAtmosphere implements IAtmosphere {
+        private float temperature = 20.0f;
+        private float humidity = 50.0f;
+
         @Override
         public float getChemicalPurity() {
             return 100.0f; // Clean air by default
@@ -50,7 +86,22 @@ public class AtmosphereManager {
 
         @Override
         public float getTemperature() {
-            return 20.0f; // Room temperature
+            return temperature;
+        }
+
+        @Override
+        public float getHumidity() {
+            return humidity;
+        }
+
+        @Override
+        public void addHeat(float amount) {
+            temperature += amount;
+        }
+
+        @Override
+        public void addChemicalPollution(float amount) {
+            // Reduce purity (tracked internally would be 100 - pollution)
         }
 
         @Override
@@ -88,21 +139,39 @@ public class AtmosphereManager {
 
         @Override
         public float getTemperature() {
-            // Default room temperature
-            return 20.0f;
+            // Use stored property or default
+            return getProperty("temperature", 20.0f);
+        }
+
+        @Override
+        public float getHumidity() {
+            // Use stored property or default
+            return getProperty("humidity", 50.0f);
+        }
+
+        @Override
+        public void addHeat(float amount) {
+            float current = getTemperature();
+            setProperty("temperature", current + amount);
+        }
+
+        @Override
+        public void addChemicalPollution(float amount) {
+            float current = getProperty("pollution", 0.0f);
+            setProperty("pollution", Math.max(0, current + amount));
         }
 
         @Override
         public void setProperty(String key, float value) {
             // Store as custom data on the zone
             var zoneData = zone.getZoneData();
-            com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.set(zoneData.getId(), "atm_" + key, value);
+            com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.set(zoneData.getRegionId(), "atm_" + key, value);
         }
 
         @Override
         public float getProperty(String key, float defaultValue) {
             var zoneData = zone.getZoneData();
-            Object value = com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.get(zoneData.getId(), "atm_" + key);
+            Object value = com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.get(zoneData.getRegionId(), "atm_" + key);
             if (value instanceof Number) {
                 return ((Number) value).floatValue();
             }

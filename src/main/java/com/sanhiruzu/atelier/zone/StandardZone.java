@@ -29,7 +29,15 @@ public class StandardZone {
     }
 
     public BlockPos getOrigin() {
-        return zoneData.getOrigin();
+        // Return the center of the spatial extent, or the minimum corner
+        if (zoneData.hasSpatialExtent()) {
+            return new BlockPos(
+                (zoneData.getMinX() + zoneData.getMaxX()) / 2,
+                (zoneData.getMinY() + zoneData.getMaxY()) / 2,
+                (zoneData.getMinZ() + zoneData.getMaxZ()) / 2
+            );
+        }
+        return BlockPos.ZERO;
     }
 
     public float getQuality() {
@@ -50,6 +58,15 @@ public class StandardZone {
 
     public boolean isIndoor() {
         return zoneData instanceof RoomData;
+    }
+
+    public boolean contains(BlockPos pos) {
+        return zoneData.contains(pos);
+    }
+
+    public float getZenScore() {
+        // Quality score from 0-100
+        return getQuality() * 100.0f;
     }
 
     @Override

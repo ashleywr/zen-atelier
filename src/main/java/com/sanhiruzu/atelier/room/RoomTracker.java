@@ -2,6 +2,7 @@ package com.sanhiruzu.atelier.room;
 
 import com.sanhiruzu.atelier.zone.StandardZone;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -67,6 +68,8 @@ public class RoomTracker {
     public static class RoomData {
         private final UUID roomId;
         private final Map<String, Object> properties = new HashMap<>();
+        private boolean sealed = true;
+        private BoundingBox interiorBounds = null;
 
         public RoomData(UUID roomId) {
             this.roomId = roomId;
@@ -116,6 +119,35 @@ public class RoomTracker {
          */
         public void removeProperty(String key) {
             properties.remove(key);
+        }
+
+        /**
+         * Check if the room is properly sealed/enclosed.
+         */
+        public boolean isSealed() {
+            return sealed;
+        }
+
+        /**
+         * Set whether the room is sealed.
+         */
+        public void setSealed(boolean sealed) {
+            this.sealed = sealed;
+        }
+
+        /**
+         * Get the interior bounding box of the room.
+         */
+        @Nullable
+        public BoundingBox getInteriorBounds() {
+            return interiorBounds;
+        }
+
+        /**
+         * Set the interior bounding box of the room.
+         */
+        public void setInteriorBounds(@Nullable BoundingBox bounds) {
+            this.interiorBounds = bounds;
         }
     }
 }

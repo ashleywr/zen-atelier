@@ -1,5 +1,6 @@
 package com.sanhiruzu.atelier.synthesis.item;
 
+import com.sanhiruzu.atelier.ZenAtelier;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
@@ -22,17 +23,23 @@ public class GelItem extends Item {
         this.ember = ember;
     }
 
+    // Jump I 80t / Jump I 140t / Jump II 80t / Jump II 140t
+    private static final int[] JUMP_DURATION  = { 80, 140,  80, 140};
+    private static final int[] JUMP_AMPLIFIER = {  0,   0,   1,   1};
+    // Fire resistance for ember gel
+    private static final int[] FIRE_DURATION  = { 40,  80, 120, 200};
+
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (!level.isClientSide) {
-            player.addEffect(new MobEffectInstance(MobEffects.JUMP, 80, 0));
+            SynthesisOutputData data = stack.get(ZenAtelier.SYNTHESIS_OUTPUT_DATA.get());
+            int qt = data != null ? data.qualityTier() : 0;
+            player.addEffect(new MobEffectInstance(MobEffects.JUMP, JUMP_DURATION[qt], JUMP_AMPLIFIER[qt]));
             if (ember) {
-                player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 40, 0));
+                player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, FIRE_DURATION[qt], 0));
             }
-            if (!player.getAbilities().instabuild) {
-                stack.shrink(1);
-            }
+            SynthesisItemEvents.consumeUse(stack, player);
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }

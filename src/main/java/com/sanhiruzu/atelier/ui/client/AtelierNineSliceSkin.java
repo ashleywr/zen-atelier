@@ -52,10 +52,10 @@ final class AtelierNineSliceSkin implements UiSkin {
 
     @Override
     public boolean drawButtonFace(GuiGraphics graphics, ScreenRect rect, int accent, boolean enabled, boolean hovered) {
-        ResourceLocation sprite = enabled && hovered ? AtelierUiSprites.RECIPE_CELL_SELECTED : AtelierUiSprites.RECIPE_CELL;
+        ResourceLocation sprite = enabled && hovered ? AtelierUiSprites.BUTTON_HOVERED : AtelierUiSprites.BUTTON;
         drawFace(graphics, rect, sprite);
         if (!enabled) {
-            graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), 0x88000000);
+            graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), 0x99000000);
         } else if (hovered) {
             UiChrome.frame(graphics, rect, accent);
         }

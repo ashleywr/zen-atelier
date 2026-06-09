@@ -12,6 +12,7 @@ import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisBoardFusionPayload;
+import com.sanhiruzu.atelier.ui.network.SynthesisResultPayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -32,6 +33,8 @@ public class NetworkHandler {
                         NetworkHandler::handleSynthesisCatalogSync)
                 .playToClient(ReagentVaultSyncPayload.TYPE, ReagentVaultSyncPayload.CODEC,
                         NetworkHandler::handleReagentVaultSync)
+                .playToClient(SynthesisResultPayload.TYPE, SynthesisResultPayload.CODEC,
+                        NetworkHandler::handleSynthesisResult)
                 .playToClient(RoomCatalogSyncPayload.TYPE, RoomCatalogSyncPayload.CODEC,
                         NetworkHandler::handleRoomCatalogSync)
                 .playToClient(SyncZoneGridPayload.TYPE, SyncZoneGridPayload.CODEC,
@@ -182,6 +185,20 @@ public class NetworkHandler {
             try {
                 Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
                 handlers.getMethod("handleSynthesisCatalogSync", SynthesisCatalogSyncPayload.class).invoke(null, payload);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+    }
+
+    private static void handleSynthesisResult(SynthesisResultPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleClientSynthesisResult(payload));
+    }
+
+    private static void handleClientSynthesisResult(SynthesisResultPayload payload) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            try {
+                Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
+                handlers.getMethod("handleSynthesisResult", SynthesisResultPayload.class).invoke(null, payload);
             } catch (ReflectiveOperationException ignored) {
             }
         }

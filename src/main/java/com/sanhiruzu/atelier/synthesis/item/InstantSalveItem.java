@@ -1,5 +1,6 @@
 package com.sanhiruzu.atelier.synthesis.item;
 
+import com.sanhiruzu.atelier.ZenAtelier;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
@@ -19,14 +20,18 @@ public class InstantSalveItem extends Item {
         super(properties);
     }
 
+    // Regen II 80t / Regen II 120t / Regen III 80t / Regen III 140t
+    private static final int[] REGEN_DURATION  = {80, 120,  80, 140};
+    private static final int[] REGEN_AMPLIFIER = {1,    1,   2,   2};
+
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (!level.isClientSide) {
-            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 80, 1));
-            if (!player.getAbilities().instabuild) {
-                stack.shrink(1);
-            }
+            SynthesisOutputData data = stack.get(ZenAtelier.SYNTHESIS_OUTPUT_DATA.get());
+            int qt = data != null ? data.qualityTier() : 0;
+            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, REGEN_DURATION[qt], REGEN_AMPLIFIER[qt]));
+            SynthesisItemEvents.consumeUse(stack, player);
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }

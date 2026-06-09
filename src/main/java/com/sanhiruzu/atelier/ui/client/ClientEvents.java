@@ -6,13 +6,16 @@ import com.sanhiruzu.atelier.client.ClientZoneCache;
 import com.sanhiruzu.atelier.client.ZoneVfxManager;
 import com.sanhiruzu.atelier.synthesis.data.SynthesisCatalog;
 import com.sanhiruzu.atelier.synthesis.engine.ExtractionProfile;
+import com.sanhiruzu.atelier.synthesis.item.SynthesisOutputData;
 import com.sanhiruzu.atelier.synthesis.world.ItemSourceSnapshot;
 import com.sanhiruzu.atelier.ui.adapter.ZoneHudAdapter;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -47,7 +50,17 @@ public final class ClientEvents {
     public static void onItemTooltip(ItemTooltipEvent event) {
         Player player = event.getEntity();
         ItemStack stack = event.getItemStack();
-        if (player == null || stack.isEmpty() || isDiscoveryTool(stack) || !hasDiscoveryTool(player)) {
+        if (stack.isEmpty()) {
+            return;
+        }
+
+        SynthesisOutputData outputData = stack.get(ZenAtelier.SYNTHESIS_OUTPUT_DATA.get());
+        if (outputData != null) {
+            addSynthesisOutputTooltip(event.getToolTip(), outputData);
+            return;
+        }
+
+        if (player == null || isDiscoveryTool(stack) || !hasDiscoveryTool(player)) {
             return;
         }
 
@@ -185,6 +198,83 @@ public final class ClientEvents {
 
     private static boolean isDiscoveryTool(ItemStack stack) {
         return stack.is(ZenAtelier.ALCHEMIST_LENS.get()) || stack.is(ZenAtelier.ALCHEMIST_CODEX.get());
+    }
+
+    private static void addSynthesisOutputTooltip(List<Component> tooltip, SynthesisOutputData data) {
+        boolean expanded = Screen.hasShiftDown();
+
+        // Stat line: tier label (+ raw tier in shift) · color-coded quality grade
+        MutableComponent statLine;
+        if (expanded) {
+            statLine = Component.literal(tierLabel(data.tier()) + " (T" + data.tier() + ")")
+                    .withStyle(ChatFormatting.GRAY);
+        } else {
+            statLine = Component.literal(tierLabel(data.tier()))
+                    .withStyle(ChatFormatting.GRAY);
+        }
+        statLine.append(Component.literal("  ·  ").withStyle(ChatFormatting.DARK_GRAY))
+                .append(qualityGrade(data.quality()));
+        tooltip.add(statLine);
+
+        if (data.affixes().isEmpty()) {
+            return;
+        }
+
+        if (expanded) {
+            tooltip.add(Component.literal("──────────────────────").withStyle(ChatFormatting.DARK_GRAY));
+        }
+
+        for (String affix : data.affixes()) {
+            String affixPath = affix.contains(":") ? affix.substring(affix.indexOf(':') + 1) : affix;
+            MutableComponent name = Component.translatable("zen_atelier.affix." + affixPath)
+                    .withStyle(ChatFormatting.GOLD);
+            tooltip.add(Component.literal(" ◆ ").withStyle(ChatFormatting.DARK_GRAY).append(name));
+            if (expanded) {
+                tooltip.add(Component.literal("   ")
+                        .append(Component.translatable("zen_atelier.affix." + affixPath + ".desc")
+                                .withStyle(ChatFormatting.GRAY)));
+            }
+        }
+
+        if (!expanded) {
+            tooltip.add(Component.literal(" Hold Shift for details")
+                    .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+        }
+    }
+
+    private static String tierLabel(int tier) {
+        return switch (tier) {
+            case 1 -> "Crude";
+            case 2 -> "Common";
+            case 3 -> "Refined";
+            case 4 -> "Superior";
+            case 5 -> "Masterwork";
+            case 6 -> "Transcendent";
+            default -> "T" + tier;
+        };
+    }
+
+    private static MutableComponent qualityGrade(int quality) {
+        String label;
+        ChatFormatting color;
+        if (quality >= 81) {
+            label = "Prime";
+            color = ChatFormatting.AQUA;
+        } else if (quality >= 61) {
+            label = "Excellent";
+            color = ChatFormatting.GREEN;
+        } else if (quality >= 41) {
+            label = "Good";
+            color = ChatFormatting.YELLOW;
+        } else if (quality >= 21) {
+            label = "Fair";
+            color = ChatFormatting.GOLD;
+        } else {
+            label = "Poor";
+            color = ChatFormatting.RED;
+        }
+        return Component.literal(label + " (" + quality + ")")
+                .withStyle(color);
     }
 
     private static String formatIds(List<String> ids) {

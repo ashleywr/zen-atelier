@@ -25,8 +25,10 @@ import com.sanhiruzu.atelier.synthesis.engine.SynthesisPlanner;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisProfile;
 import com.sanhiruzu.atelier.synthesis.item.CarriedReagentInventory;
 import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
+import com.sanhiruzu.atelier.synthesis.engine.SynthesisRequirement;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainerSnapshot;
+import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
 import com.sanhiruzu.atelier.synthesis.world.ReagentCabinetSavedData;
 import com.sanhiruzu.atelier.synthesis.world.ItemSourceSnapshot;
 import com.sanhiruzu.atelier.synthesis.world.PlayerExtractionKnowledge;
@@ -178,6 +180,18 @@ public final class SynthesisDebugCommand {
                                         )
                                 )
                         )
+                        .then(Commands.literal("fill_for")
+                                .requires(source -> source.hasPermission(2))
+                                .then(Commands.argument("x", IntegerArgumentType.integer())
+                                        .then(Commands.argument("y", IntegerArgumentType.integer())
+                                                .then(Commands.argument("z", IntegerArgumentType.integer())
+                                                        .then(Commands.argument("profile", StringArgumentType.word())
+                                                                .executes(SynthesisDebugCommand::fillForRecipe)
+                                                        )
+                                                )
+                                        )
+                                )
+                        )
                 )
         );
     }
@@ -295,6 +309,40 @@ public final class SynthesisDebugCommand {
         ReagentCabinetSavedData.get(level).clear(pos);
         source.sendSuccess(() -> Component.literal("Cleared reagent cabinet " + formatPos(pos)), true);
         return 1;
+    }
+
+    private static int fillForRecipe(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerLevel level = source.getLevel();
+        BlockPos pos = position(ctx);
+        if (!requirePlaceholderCabinet(source, level, pos)) {
+            return 0;
+        }
+
+        Optional<SynthesisProfile> profile = parseSynthesisProfile(source, StringArgumentType.getString(ctx, "profile"));
+        if (profile.isEmpty()) {
+            return 0;
+        }
+
+        ReagentCabinetSavedData data = ReagentCabinetSavedData.get(level);
+        ReagentContainer container = data.getContainer(pos);
+        int total = 0;
+        for (SynthesisRequirement req : profile.get().requirements()) {
+            ReagentStack debug = new ReagentStack(
+                    ReagentQuery.DEBUG_UNIVERSAL_REAGENT_ID,
+                    java.util.Set.of(), req.amount(), 1, 0, 0, 0,
+                    java.util.Map.of(), java.util.List.of(),
+                    com.sanhiruzu.atelier.synthesis.core.ReagentShape.SINGLE, java.util.Set.of()
+            );
+            container.insert(debug);
+            total += req.amount();
+        }
+        data.putContainer(pos, container);
+
+        int finalTotal = total;
+        source.sendSuccess(() -> Component.literal("Filled cabinet " + formatPos(pos)
+                + " with " + finalTotal + " debug universal reagents for " + profile.get().id()), true);
+        return total;
     }
 
     private static int extractHeld(CommandContext<CommandSourceStack> ctx, int risk, long seed)

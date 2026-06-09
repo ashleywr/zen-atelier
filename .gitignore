@@ -3,6 +3,9 @@
 !.github/
 !.gitignore
 
+### AI/agent files ###
+CLAUDE.md
+
 ### Gradle ###
 build/
 !gradle/wrapper/gradle-wrapper.jar

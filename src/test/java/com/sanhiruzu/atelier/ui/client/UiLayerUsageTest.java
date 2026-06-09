@@ -12,9 +12,9 @@ import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SynthesisUiLayerUsageTest {
+class UiLayerUsageTest {
     private static final Path UI_CLIENT_ROOT = Path.of("src/main/java/com/sanhiruzu/atelier/ui/client");
-    private static final String LAYER_FILE = "SynthesisUiLayer.java";
+    private static final String LAYER_FILE = "UiLayer.java";
     private static final Pattern TRANSLATE_CALL = Pattern.compile(
             "pose\\s*\\(\\s*\\)\\s*\\.\\s*translate\\s*\\((.*?)\\)",
             Pattern.DOTALL
@@ -22,7 +22,7 @@ class SynthesisUiLayerUsageTest {
     private static final Pattern ZERO_LITERAL = Pattern.compile("[+-]?0+(?:\\.0+)?(?:[fFdDlL])?");
 
     @Test
-    void synthesisUiNonZeroZTranslationsUseNamedLayers() throws IOException {
+    void uiNonZeroZTranslationsUseNamedLayers() throws IOException {
         List<String> violations = new ArrayList<>();
         try (var paths = Files.walk(UI_CLIENT_ROOT)) {
             for (Path path : paths.filter(Files::isRegularFile)
@@ -34,7 +34,7 @@ class SynthesisUiLayerUsageTest {
         }
 
         assertThat(violations)
-                .as("Use SynthesisUiLayer.<layer>.run(...) for nonzero UI z translations. Zero-z 2D transforms are allowed.")
+                .as("Use UiLayer.<layer>.run(...) for nonzero UI z translations. Zero-z 2D transforms are allowed.")
                 .isEmpty();
     }
 

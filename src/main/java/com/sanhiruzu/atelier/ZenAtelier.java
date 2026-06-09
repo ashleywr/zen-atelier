@@ -15,6 +15,10 @@ import com.sanhiruzu.atelier.space.zone.ZoneSignHandler;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import com.sanhiruzu.atelier.synthesis.item.ActiveToolCoating;
 import com.sanhiruzu.atelier.synthesis.item.AlchemicalIgnitionItem;
+import com.sanhiruzu.atelier.synthesis.item.AlchemicalThrowable;
+import com.sanhiruzu.atelier.synthesis.item.AlchemicalThrowableItem;
+import com.sanhiruzu.atelier.synthesis.item.SynthesisItemEvents;
+import com.sanhiruzu.atelier.synthesis.item.SynthesisOutputData;
 import com.sanhiruzu.atelier.synthesis.item.AlchemistCodexItem;
 import com.sanhiruzu.atelier.synthesis.item.AlchemistLensItem;
 import com.sanhiruzu.atelier.synthesis.item.GelItem;
@@ -36,6 +40,8 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -47,6 +53,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.IEventBus;
@@ -74,6 +81,7 @@ public class ZenAtelier {
     public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(Registries.MENU, MODID);
     public static final DeferredRegister.DataComponents DATA_COMPONENTS = DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, MODID);
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS = DeferredRegister.create(Registries.RECIPE_SERIALIZER, MODID);
+    public static final DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(Registries.ENTITY_TYPE, MODID);
 
     public static final DeferredBlock<SynthesisStationBlock> SYNTHESIS_STATION = BLOCKS.registerBlock(
             "synthesis_station",
@@ -88,6 +96,10 @@ public class ZenAtelier {
     public static final DeferredBlock<ReagentStorageBlock> REAGENT_STORAGE = BLOCKS.registerBlock(
             "reagent_storage",
             ReagentStorageBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.BARREL)
+    );
+    public static final DeferredBlock<Block> DEBUG_REAGENT_PROVIDER = BLOCKS.registerSimpleBlock(
+            "debug_reagent_provider",
             BlockBehaviour.Properties.ofFullCopy(Blocks.BARREL)
     );
     public static final DeferredItem<RoomJournalItem> ROOM_JOURNAL = ITEMS.register("room_journal", () -> new RoomJournalItem(new Item.Properties().stacksTo(1)));
@@ -124,8 +136,17 @@ public class ZenAtelier {
     public static final DeferredItem<GelItem> EMBER_GEL = ITEMS.register("ember_gel", () -> new GelItem(new Item.Properties(), true));
     public static final DeferredItem<ReagentItem> REAGENT = ITEMS.register("reagent", () -> new ReagentItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<InstantSalveItem> INSTANT_SALVE = ITEMS.register("instant_salve", () -> new InstantSalveItem(new Item.Properties().stacksTo(16)));
-    public static final DeferredItem<Item> FROST_GLOBE = ITEMS.register("frost_globe", () -> new Item(new Item.Properties().stacksTo(16)));
-    public static final DeferredItem<Item> SPARK_CORE = ITEMS.register("spark_core", () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final DeferredHolder<EntityType<?>, EntityType<AlchemicalThrowable>> ALCHEMICAL_THROWABLE =
+            ENTITY_TYPES.register("alchemical_throwable", () -> EntityType.Builder
+                    .<AlchemicalThrowable>of(AlchemicalThrowable::new, MobCategory.MISC)
+                    .sized(0.25f, 0.25f)
+                    .clientTrackingRange(4)
+                    .updateInterval(10)
+                    .build("zen_atelier:alchemical_throwable"));
+    public static final DeferredItem<AlchemicalThrowableItem> FROST_GLOBE = ITEMS.register("frost_globe",
+            () -> new AlchemicalThrowableItem(new Item.Properties().stacksTo(16), "tooltip.zen_atelier.frost_globe"));
+    public static final DeferredItem<AlchemicalThrowableItem> SPARK_CORE = ITEMS.register("spark_core",
+            () -> new AlchemicalThrowableItem(new Item.Properties().stacksTo(16), "tooltip.zen_atelier.spark_core"));
     public static final DeferredItem<ToolCoatingItem> CRUDE_MINING_COATING = ITEMS.register(
             "crude_mining_coating",
             () -> new ToolCoatingItem(
@@ -173,11 +194,14 @@ public class ZenAtelier {
                     1.25f
             )
     );
-    public static final DeferredItem<Item> VOLATILE_BOMB_CORE = ITEMS.register("volatile_bomb_core", () -> new Item(new Item.Properties().stacksTo(16)));
-    public static final DeferredItem<Item> RESONANT_BOMB_CORE = ITEMS.register("resonant_bomb_core", () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final DeferredItem<AlchemicalThrowableItem> VOLATILE_BOMB_CORE = ITEMS.register("volatile_bomb_core",
+            () -> new AlchemicalThrowableItem(new Item.Properties().stacksTo(16), "tooltip.zen_atelier.volatile_bomb_core"));
+    public static final DeferredItem<AlchemicalThrowableItem> RESONANT_BOMB_CORE = ITEMS.register("resonant_bomb_core",
+            () -> new AlchemicalThrowableItem(new Item.Properties().stacksTo(16), "tooltip.zen_atelier.resonant_bomb_core"));
     public static final DeferredItem<BlockItem> SYNTHESIS_STATION_ITEM = ITEMS.registerSimpleBlockItem(SYNTHESIS_STATION, new Item.Properties());
     public static final DeferredItem<BlockItem> EXTRACTION_CAULDRON_ITEM = ITEMS.registerSimpleBlockItem(EXTRACTION_CAULDRON, new Item.Properties());
     public static final DeferredItem<BlockItem> REAGENT_STORAGE_ITEM = ITEMS.registerSimpleBlockItem(REAGENT_STORAGE, new Item.Properties());
+    public static final DeferredItem<BlockItem> DEBUG_REAGENT_PROVIDER_ITEM = ITEMS.registerSimpleBlockItem(DEBUG_REAGENT_PROVIDER, new Item.Properties());
     public static final DeferredHolder<MenuType<?>, MenuType<SynthesisStationMenu>> SYNTHESIS_STATION_MENU =
             MENUS.register("synthesis_station", () -> IMenuTypeExtension.create(SynthesisStationMenu::new));
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<ReagentStack>> REAGENT_STACK =
@@ -188,6 +212,10 @@ public class ZenAtelier {
             DATA_COMPONENTS.registerComponentType("active_tool_coating", builder -> builder
                     .persistent(ActiveToolCoating.CODEC)
                     .networkSynchronized(ByteBufCodecs.fromCodecTrusted(ActiveToolCoating.CODEC)));
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<SynthesisOutputData>> SYNTHESIS_OUTPUT_DATA =
+            DATA_COMPONENTS.registerComponentType("synthesis_output_data", builder -> builder
+                    .persistent(SynthesisOutputData.CODEC)
+                    .networkSynchronized(ByteBufCodecs.fromCodecTrusted(SynthesisOutputData.CODEC)));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<ToolCoatingApplicationRecipe>> TOOL_COATING_APPLICATION_RECIPE =
             RECIPE_SERIALIZERS.register(
                     "crafting_special_tool_coating_application",
@@ -203,6 +231,7 @@ public class ZenAtelier {
         MENUS.register(modEventBus);
         DATA_COMPONENTS.register(modEventBus);
         RECIPE_SERIALIZERS.register(modEventBus);
+        ENTITY_TYPES.register(modEventBus);
         ChunkClassificationAttachment.ATTACHMENT_TYPES.register(modEventBus);
         ZoneAttachment.ATTACHMENT_TYPES.register(modEventBus);
 
@@ -215,6 +244,7 @@ public class ZenAtelier {
         NeoForge.EVENT_BUS.register(ZoneSignHandler.class);
         NeoForge.EVENT_BUS.register(ToolCoatingEvents.class);
         NeoForge.EVENT_BUS.register(StarterIngredientEvents.class);
+        NeoForge.EVENT_BUS.register(SynthesisItemEvents.class);
 
         UiBootstrap.registerClientIfPresent(modEventBus);
 
@@ -263,6 +293,7 @@ public class ZenAtelier {
             event.accept(SYNTHESIS_STATION_ITEM);
             event.accept(EXTRACTION_CAULDRON_ITEM);
             event.accept(REAGENT_STORAGE_ITEM);
+            event.accept(DEBUG_REAGENT_PROVIDER_ITEM);
         }
     }
 

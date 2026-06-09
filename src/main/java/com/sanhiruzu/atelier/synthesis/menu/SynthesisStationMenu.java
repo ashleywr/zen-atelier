@@ -24,6 +24,7 @@ import com.sanhiruzu.atelier.synthesis.item.CarriedReagentInventory;
 import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
 import com.sanhiruzu.atelier.synthesis.item.SynthesisOutputItemFactory;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
+import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
 import com.sanhiruzu.atelier.synthesis.vfx.AlchemyVfx;
 import com.sanhiruzu.atelier.synthesis.world.PlayerSynthesisKnowledge;
 import com.sanhiruzu.atelier.synthesis.world.RoomReagentStorage;
@@ -392,27 +393,42 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
             return;
         }
 
+        boolean creative = player.getAbilities().instabuild;
         SynthesisPlan plan = new SynthesisPlanner().plan(input);
         if (!plan.canSynthesize()) {
-            return;
+            if (!creative) {
+                return;
+            }
+            for (var status : plan.requirements()) {
+                if (!status.satisfied()) {
+                    input.reagents().insert(ReagentStack.simple(
+                            ReagentQuery.DEBUG_UNIVERSAL_REAGENT_ID, status.missingAmount(), 1));
+                }
+            }
+            plan = new SynthesisPlanner().plan(input);
+            if (!plan.canSynthesize()) {
+                return;
+            }
         }
 
         long seed = player.level().getGameTime() ^ player.getUUID().getLeastSignificantBits();
         SynthesisExecutionResult result = new SynthesisExecutor().execute(input, seed);
 
-        ReagentContainer carried = CarriedReagentInventory.snapshot(player.getInventory());
-        java.util.Map<net.minecraft.core.BlockPos, ReagentContainer> storageContainers = roomStorageContainersAtStation();
-        java.util.Optional<RoomReagentStorage.ConsumptionPlan> consumption = RoomReagentStorage.planConsumption(
-                carried, storageContainers, result.consumedReagents());
-        if (consumption.isEmpty()) {
-            return;
-        }
-        if (!consumption.get().carriedConsumed().isEmpty()
-                && !CarriedReagentInventory.consume(player.getInventory(), consumption.get().carriedConsumed())) {
-            return;
-        }
-        if (!RoomReagentStorage.consumeStorage((ServerLevel) player.level(), consumption.get())) {
-            return;
+        if (!creative) {
+            ReagentContainer carried = CarriedReagentInventory.snapshot(player.getInventory());
+            java.util.Map<net.minecraft.core.BlockPos, ReagentContainer> storageContainers = roomStorageContainersAtStation();
+            java.util.Optional<RoomReagentStorage.ConsumptionPlan> consumption = RoomReagentStorage.planConsumption(
+                    carried, storageContainers, result.consumedReagents());
+            if (consumption.isEmpty()) {
+                return;
+            }
+            if (!consumption.get().carriedConsumed().isEmpty()
+                    && !CarriedReagentInventory.consume(player.getInventory(), consumption.get().carriedConsumed())) {
+                return;
+            }
+            if (!RoomReagentStorage.consumeStorage((ServerLevel) player.level(), consumption.get())) {
+                return;
+            }
         }
 
         ResolvedFusionData fusion = input.fusion();

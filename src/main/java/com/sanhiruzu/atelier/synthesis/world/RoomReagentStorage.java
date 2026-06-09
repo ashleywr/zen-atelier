@@ -3,8 +3,10 @@ package com.sanhiruzu.atelier.synthesis.world;
 import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.space.SpaceQuery;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
+import com.sanhiruzu.atelier.synthesis.core.ReagentShape;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
+import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
@@ -18,13 +20,33 @@ public final class RoomReagentStorage {
     private RoomReagentStorage() {
     }
 
+    private static final int DEBUG_PROVIDER_RADIUS = 8;
+
     public static Map<BlockPos, ReagentContainer> containersInRoom(ServerLevel level, BlockPos origin) {
         Map<BlockPos, ReagentContainer> containers = new LinkedHashMap<>();
         ReagentCabinetSavedData data = ReagentCabinetSavedData.get(level);
         for (BlockPos pos : positionsInRoom(level, origin)) {
             containers.put(pos, data.getContainer(pos));
         }
+        for (BlockPos pos : BlockPos.betweenClosed(
+                origin.offset(-DEBUG_PROVIDER_RADIUS, -DEBUG_PROVIDER_RADIUS, -DEBUG_PROVIDER_RADIUS),
+                origin.offset(DEBUG_PROVIDER_RADIUS, DEBUG_PROVIDER_RADIUS, DEBUG_PROVIDER_RADIUS)
+        )) {
+            if (level.getBlockState(pos).is(ZenAtelier.DEBUG_REAGENT_PROVIDER.get())) {
+                containers.put(pos.immutable(), debugProviderContainer());
+            }
+        }
         return containers;
+    }
+
+    private static ReagentContainer debugProviderContainer() {
+        ReagentContainer container = new ReagentContainer();
+        container.insert(new ReagentStack(
+                ReagentQuery.DEBUG_UNIVERSAL_REAGENT_ID,
+                java.util.Set.of(), 9999, 6, 100, 100, 0,
+                java.util.Map.of(), java.util.List.of(), ReagentShape.SINGLE, java.util.Set.of()
+        ));
+        return container;
     }
 
     public static ReagentContainer aggregateInRoom(ServerLevel level, BlockPos origin) {
@@ -122,7 +144,9 @@ public final class RoomReagentStorage {
         }
 
         for (Map.Entry<BlockPos, ReagentContainer> entry : updated.entrySet()) {
-            data.putContainer(entry.getKey(), entry.getValue());
+            if (!level.getBlockState(entry.getKey()).is(ZenAtelier.DEBUG_REAGENT_PROVIDER.get())) {
+                data.putContainer(entry.getKey(), entry.getValue());
+            }
         }
         return true;
     }

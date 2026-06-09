@@ -9,6 +9,7 @@ import com.sanhiruzu.atelier.ui.network.ExtractionKnowledgeSyncPayload;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
 import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisCatalogSyncPayload;
+import com.sanhiruzu.atelier.ui.network.SynthesisResultPayload;
 import net.minecraft.client.Minecraft;
 
 public final class ClientPayloadHandlers {
@@ -50,6 +51,13 @@ public final class ClientPayloadHandlers {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof SynthesisStationScreen screen) {
             screen.handleReagentVaultSync(payload);
+        }
+    }
+
+    public static void handleSynthesisResult(SynthesisResultPayload payload) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof SynthesisStationScreen screen) {
+            screen.handleSynthesisResult(payload);
         }
     }
 }

@@ -67,7 +67,10 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         super.containerTick();
         boolean hasResult = pendingResult != null;
         if (synthesizeButton != null) {
-            synthesizeButton.active = menu.canSynthesize() && !hasResult;
+            boolean canCraft = menu.canSynthesize()
+                    || (menu.selectedProfile().isPresent() && minecraft != null
+                            && minecraft.player != null && minecraft.player.getAbilities().instabuild);
+            synthesizeButton.active = canCraft && !hasResult;
             synthesizeButton.visible = !hasResult;
         }
         if (confirmButton != null) {
@@ -141,6 +144,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         spatialPrototype.renderOverlay(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY);
         if (pendingResult != null) {
             pendingResult.render(graphics, font, origin());
+            if (confirmButton != null) {
+                confirmButton.render(graphics, mouseX, mouseY, partialTick);
+            }
         }
         UiLayer.TOOLTIP.run(graphics, () -> renderSynthesisTooltips(graphics, mouseX, mouseY));
     }
@@ -171,9 +177,13 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             lines.add(Component.literal("Cannot craft:").withStyle(s -> s.withColor(SynthesisScreenTheme.BAD)));
             for (var status : plan.get().requirements()) {
                 if (!status.satisfied()) {
-                    lines.add(Component.literal(
-                            status.availableAmount() + " / " + status.requirement().amount() + " available"
-                    ).withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
+                    lines.add(Component.literal(SynthesisStationText.requirementLine(status))
+                            .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
+                    String qualifier = SynthesisStationText.queryQualifier(status.requirement().query());
+                    if (!qualifier.isBlank()) {
+                        lines.add(Component.literal("  " + qualifier)
+                                .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
+                    }
                 }
             }
             if (lines.size() == 1) {

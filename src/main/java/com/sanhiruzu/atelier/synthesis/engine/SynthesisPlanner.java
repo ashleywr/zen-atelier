@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class SynthesisPlanner {
+    public SynthesisPlan plan(SynthesisAttemptInput input) {
+        return plan(input.effectiveProfile(), input.reagents(), input.effectiveRisk());
+    }
+
     public SynthesisPlan plan(SynthesisProfile profile, ReagentContainer container, int risk) {
         ReagentContainer remaining = new ReagentContainer();
         for (var entry : container.entries()) {

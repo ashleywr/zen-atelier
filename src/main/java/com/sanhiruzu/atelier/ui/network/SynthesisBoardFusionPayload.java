@@ -1,6 +1,9 @@
 package com.sanhiruzu.atelier.ui.network;
 
 import com.sanhiruzu.atelier.ZenAtelier;
+import com.sanhiruzu.atelier.synthesis.data.TraitFusionRegistry;
+import com.sanhiruzu.atelier.synthesis.data.TraitFusionRule;
+import com.sanhiruzu.atelier.synthesis.engine.ResolvedFusionData;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisBoardEvaluation;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -70,6 +73,17 @@ public record SynthesisBoardFusionPayload(
                 new ArrayList<>(ruleIds),
                 eval.resonantPlacementIds().size()
         );
+    }
+
+    public ResolvedFusionData resolve() {
+        if (activeRuleIds.isEmpty()) {
+            return ResolvedFusionData.EMPTY;
+        }
+        java.util.List<TraitFusionRule> rules = new java.util.ArrayList<>();
+        for (String ruleId : activeRuleIds) {
+            TraitFusionRegistry.findById(ruleId).ifPresent(rules::add);
+        }
+        return ResolvedFusionData.fromRules(rules, resonanceCount);
     }
 
     @Override

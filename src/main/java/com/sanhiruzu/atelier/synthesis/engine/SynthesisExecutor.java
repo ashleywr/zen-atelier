@@ -11,6 +11,10 @@ public final class SynthesisExecutor {
     private final SynthesisEngine engine = new SynthesisEngine();
     private final SynthesisPlanner planner = new SynthesisPlanner();
 
+    public SynthesisExecutionResult execute(SynthesisAttemptInput input, long seed) {
+        return execute(input.effectiveProfile(), input.reagents(), input.context(), input.effectiveRisk(), seed);
+    }
+
     public SynthesisExecutionResult execute(
             SynthesisProfile profile,
             ReagentContainer container,

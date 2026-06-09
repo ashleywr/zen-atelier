@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper for zone data providing a consistent interface for Create Kaizen.
  */
-public class StandardZone {
+public class StandardZone implements com.sanhiruzu.atelier.api.IAtmosphere {
     private final ZoneData zoneData;
 
     public StandardZone(ZoneData zoneData) {
@@ -93,7 +93,7 @@ public class StandardZone {
         return "Unknown Zone";
     }
 
-    private float getProperty(String key, float defaultValue) {
+    public float getProperty(String key, float defaultValue) {
         Object value = zoneData.getRegionId(); // Use region ID for custom data storage
         // Store custom properties in API data store
         Object prop = com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.get(zoneData.getRegionId(), "zone_" + key);
@@ -103,8 +103,20 @@ public class StandardZone {
         return defaultValue;
     }
 
-    private void setProperty(String key, float value) {
+    public void setProperty(String key, float value) {
         com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.set(zoneData.getRegionId(), "zone_" + key, value);
+    }
+
+    public void addHeat(float amount) {
+        // Add heat to the zone
+        float current = getTemperature();
+        setTemperature(current + amount);
+    }
+
+    public void addChemicalPollution(float amount) {
+        // Add chemical pollution to the zone
+        float current = getProperty("chemical_pollution", 0.0f);
+        setProperty("chemical_pollution", current + amount);
     }
 
     public BoundingBox getBounds() {
@@ -133,6 +145,11 @@ public class StandardZone {
     public float getChemicalPurity() {
         // Use quality as purity (0-1 becomes 0-100%)
         return getQuality() * 100.0f;
+    }
+
+    public float getParticulateDensity() {
+        // Return particulate density (inverse of purity)
+        return 100.0f - getChemicalPurity();
     }
 
     public boolean isRenderingWireframe() {

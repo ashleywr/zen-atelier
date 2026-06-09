@@ -9,12 +9,27 @@ import java.util.Map;
  */
 public class AtmosphereRegistry {
     private static final Map<String, AtmosphereType> REGISTRY = new HashMap<>();
+    private static final Map<String, AtmosphereDef> DEF_REGISTRY = new HashMap<>();
 
     /**
      * Register a custom atmosphere type.
      */
     public static void register(String id, AtmosphereType type) {
         REGISTRY.put(id, type);
+    }
+
+    /**
+     * Register a default atmosphere definition.
+     */
+    public static void registerDefault(String id, AtmosphereDef def) {
+        DEF_REGISTRY.put(id, def);
+    }
+
+    /**
+     * Get a registered atmosphere definition.
+     */
+    public static AtmosphereDef getDefault(String id) {
+        return DEF_REGISTRY.getOrDefault(id, new AtmosphereDef("default", 50.0f, 70.0f, 20.0f));
     }
 
     /**
@@ -74,12 +89,22 @@ public class AtmosphereRegistry {
         private final float target_humidity;
         private final float min_purity;
         private final float target_temp;
+        private final String displayName;
 
         public AtmosphereDef(String id, float target_humidity, float min_purity, float target_temp) {
             this.id = id;
             this.target_humidity = target_humidity;
             this.min_purity = min_purity;
             this.target_temp = target_temp;
+            this.displayName = id.replaceAll("_", " ").replaceAll("(?i)atmosphere", "").trim();
+        }
+
+        public AtmosphereDef(String id, float target_humidity, float min_purity, float target_temp, String displayName) {
+            this.id = id;
+            this.target_humidity = target_humidity;
+            this.min_purity = min_purity;
+            this.target_temp = target_temp;
+            this.displayName = displayName;
         }
 
         public String getId() {
@@ -103,7 +128,7 @@ public class AtmosphereRegistry {
         }
 
         public String display_name() {
-            return id.replaceAll("_", " ").replaceAll("(?i)atmosphere", "").trim();
+            return displayName;
         }
     }
 }

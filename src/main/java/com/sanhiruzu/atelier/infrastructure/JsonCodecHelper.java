@@ -118,4 +118,18 @@ public class JsonCodecHelper {
         }
         return defaultValue;
     }
+
+    /**
+     * Load with a fallback supplier if the file doesn't exist or fails to parse.
+     */
+    public static <T> T load(Path path, Codec<T> codec, java.util.function.Supplier<T> defaultSupplier) {
+        try {
+            if (Files.exists(path)) {
+                return load(path, codec);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to load from {}, using default supplier", path, e);
+        }
+        return defaultSupplier.get();
+    }
 }

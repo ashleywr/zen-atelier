@@ -88,9 +88,8 @@ public class ZoneManager {
                 }
             });
         }
-        zoneData.setProperty("display_name", displayName);
-        zoneData.setProperty("atmosphere_id", atmosphereId);
-        zoneData.setProperty("identifier", identifier);
+        // Update the zone's spatial bounds
+        updateZoneBoundsAuthoritatively(zoneData, bounds);
         return zoneData;
     }
 }

@@ -65,4 +65,45 @@ public class AtmosphereRegistry {
             return temperature;
         }
     }
+
+    /**
+     * Atmosphere definition with requirements and properties.
+     */
+    public static class AtmosphereDef {
+        private final String id;
+        private final float target_humidity;
+        private final float min_purity;
+        private final float target_temp;
+
+        public AtmosphereDef(String id, float target_humidity, float min_purity, float target_temp) {
+            this.id = id;
+            this.target_humidity = target_humidity;
+            this.min_purity = min_purity;
+            this.target_temp = target_temp;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public float target_humidity() {
+            return target_humidity;
+        }
+
+        public float min_purity() {
+            return min_purity;
+        }
+
+        public float target_temp() {
+            return target_temp;
+        }
+
+        public float target_temperature() {
+            return target_temp;
+        }
+
+        public String display_name() {
+            return id.replaceAll("_", " ").replaceAll("(?i)atmosphere", "").trim();
+        }
+    }
 }

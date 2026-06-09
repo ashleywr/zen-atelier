@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.zone;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
 import com.sanhiruzu.atelier.space.zone.RoomData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -106,9 +107,18 @@ public class StandardZone {
         com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.set(zoneData.getRegionId(), "zone_" + key, value);
     }
 
-    public BlockPos getBounds() {
-        // Return origin as a simple bounds reference
-        return getOrigin();
+    public BoundingBox getBounds() {
+        // Return the spatial extent as a bounding box
+        if (zoneData.hasSpatialExtent()) {
+            return new BoundingBox(
+                zoneData.getMinX(), zoneData.getMinY(), zoneData.getMinZ(),
+                zoneData.getMaxX(), zoneData.getMaxY(), zoneData.getMaxZ()
+            );
+        }
+        // Return a default 1x1x1 box at origin if no extent
+        BlockPos origin = getOrigin();
+        return new BoundingBox(origin.getX(), origin.getY(), origin.getZ(),
+                               origin.getX(), origin.getY(), origin.getZ());
     }
 
     public float getHumidity() {
@@ -131,6 +141,18 @@ public class StandardZone {
 
     public void setRenderingWireframe(boolean rendering) {
         setProperty("render_wireframe", rendering ? 1.0f : 0.0f);
+    }
+
+    public java.util.UUID getId() {
+        return zoneData.getRegionId();
+    }
+
+    public void setZenScore(int score) {
+        setProperty("zen_score", (float) score);
+    }
+
+    public void setSealed(boolean sealed) {
+        setProperty("sealed", sealed ? 1.0f : 0.0f);
     }
 
     @Override

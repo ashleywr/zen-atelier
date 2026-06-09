@@ -56,4 +56,23 @@ public class ZoneManager {
         // Update zone-related systems each tick
         // This is called by Create Kaizen to update atmosphere effects
     }
+
+    public void updateZoneBoundsAuthoritatively(StandardZone zone, net.minecraft.world.level.levelgen.structure.BoundingBox bounds) {
+        // Update the zone's spatial bounds
+        var zoneData = zone.getZoneData();
+        if (zoneData != null) {
+            zoneData.setSpatialExtent(bounds.minX(), bounds.minY(), bounds.minZ(),
+                                      bounds.maxX(), bounds.maxY(), bounds.maxZ());
+        }
+    }
+
+    public void removeZoneById(java.util.UUID zoneId) {
+        // Remove a zone by ID
+        // In a full implementation, this would mark the zone as removed
+    }
+
+    public void orphanZone(java.util.UUID zoneId) {
+        // Orphan a zone (remove ownership but keep data)
+        // In a full implementation, this would change the zone's owner
+    }
 }

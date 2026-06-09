@@ -178,4 +178,14 @@ public class AtmosphereManager {
             return defaultValue;
         }
     }
+
+    /**
+     * Get atmosphere definition by ID.
+     */
+    public static com.sanhiruzu.atelier.api.AtmosphereRegistry.AtmosphereDef getAtmosphere(String atmosphereId) {
+        // Return a default atmosphere definition
+        return new com.sanhiruzu.atelier.api.AtmosphereRegistry.AtmosphereDef(
+            atmosphereId, 50.0f, 80.0f, 20.0f
+        );
+    }
 }

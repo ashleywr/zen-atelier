@@ -63,6 +63,40 @@ public class RoomTracker {
     }
 
     /**
+     * Check if a room is sealed.
+     */
+    public boolean isSealed() {
+        // Default true, can be overridden by room data
+        return trackedRooms.values().stream().allMatch(RoomData::isSealed);
+    }
+
+    /**
+     * Get the leak point of a room.
+     */
+    @Nullable
+    public BlockPos getLeakPoint() {
+        // Return the leak point from the first tracked room that has one
+        return trackedRooms.values().stream()
+            .map(RoomData::getLeakPoint)
+            .filter(java.util.Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
+     * Get the interior bounds of a room.
+     */
+    @Nullable
+    public BoundingBox getInteriorBounds() {
+        // Return bounds from the first tracked room that has them
+        return trackedRooms.values().stream()
+            .map(RoomData::getInteriorBounds)
+            .filter(java.util.Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
      * Data associated with a tracked room.
      */
     public static class RoomData {

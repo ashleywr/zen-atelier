@@ -25,6 +25,7 @@ import com.sanhiruzu.atelier.synthesis.item.GelItem;
 import com.sanhiruzu.atelier.synthesis.item.InstantSalveItem;
 import com.sanhiruzu.atelier.synthesis.item.PhlogistonPebbleItem;
 import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
+import com.sanhiruzu.atelier.synthesis.item.StructureCharmItem;
 import com.sanhiruzu.atelier.synthesis.item.ToolCoatingApplicationRecipe;
 import com.sanhiruzu.atelier.synthesis.item.ToolCoatingEvents;
 import com.sanhiruzu.atelier.synthesis.item.ToolCoatingItem;
@@ -136,6 +137,7 @@ public class ZenAtelier {
     public static final DeferredItem<GelItem> EMBER_GEL = ITEMS.register("ember_gel", () -> new GelItem(new Item.Properties(), true));
     public static final DeferredItem<ReagentItem> REAGENT = ITEMS.register("reagent", () -> new ReagentItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<InstantSalveItem> INSTANT_SALVE = ITEMS.register("instant_salve", () -> new InstantSalveItem(new Item.Properties().stacksTo(16)));
+    public static final DeferredItem<StructureCharmItem> STRUCTURE_CHARM = ITEMS.register("structure_charm", () -> new StructureCharmItem(new Item.Properties().stacksTo(1)));
     public static final DeferredHolder<EntityType<?>, EntityType<AlchemicalThrowable>> ALCHEMICAL_THROWABLE =
             ENTITY_TYPES.register("alchemical_throwable", () -> EntityType.Builder
                     .<AlchemicalThrowable>of(AlchemicalThrowable::new, MobCategory.MISC)

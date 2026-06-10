@@ -123,36 +123,10 @@ public class ClassificationEventHandler {
                 // + door, so removing any block at that level deletes the room.
                 boolean breachesMinimumEnclosure = pos.getY() == zone.getMinY();
 
-                // Expand into the newly exposed position. tryExpand no longer requires
-                // the block to already be air — BreakEvent fires before removal.
-                Zone.ExpansionResult result = zone.tryExpand(pos, serverLevel);
-
-                // Multi-block structure (e.g. bed): BreakEvent fires before Minecraft
-                // removes the other half, so the BFS only found one block. Retry
-                // one tick later when both halves are air.
-                if (result == Zone.ExpansionResult.DEFER) {
-                    zoneRegistry.scheduleDeferredExpansion(zone, pos);
-                }
-
-                // If expansion absorbed another zone, the combined zone is larger — fragility
-                // checks computed before tryExpand (isCoreBlock, breachesMinimumEnclosure) used
-                // stale geometry and must be skipped. Evaluate directly; the eval decides grace period.
-                boolean mergeOccurred = !result.mergedZones().isEmpty();
-
-                if (mergeOccurred) {
-                    zoneRegistry.evaluateRoomAndSync(zone, serverLevel);
-                } else if (zoneRegistry.isInGracePeriod(zone.getId())) {
-                    // Already in grace period — any further break accelerates the timer.
-                    zoneRegistry.enterGracePeriod(zone.getId(), serverLevel);
-                } else if (isCoreBlock) {
-                    zoneRegistry.enterGracePeriod(zone.getId(), serverLevel);
-                } else if (breachesMinimumEnclosure) {
-                    zoneRegistry.enterGracePeriod(zone.getId(), serverLevel);
-                } else if (!zone.hasLiveEntry(serverLevel, pos)) {
-                    zoneRegistry.enterGracePeriod(zone.getId(), serverLevel);
-                } else {
-                    zoneRegistry.evaluateRoomAndSync(zone, serverLevel);
-                }
+                // Defer the BFS + consequence logic to next tick so the BreakEvent handler
+                // returns immediately. The deferred processor runs tryExpand and decides
+                // grace period vs. evaluate once the block is actually removed.
+                zoneRegistry.scheduleDeferredBlockBreak(zone, pos, isCoreBlock, breachesMinimumEnclosure);
             }
         }
     }

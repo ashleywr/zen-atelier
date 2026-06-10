@@ -38,6 +38,9 @@ public class ZoneRegistry {
     // Deferred expansions for multi-block structures (beds, etc.) where BreakEvent
     // fires before Minecraft removes all blocks. Processed on the next tick.
     private final List<DeferredExpansion> deferredExpansions = new ArrayList<>();
+    // All block-break zone reactions are deferred one tick so the BFS doesn't run
+    // synchronously inside the BreakEvent handler.
+    private final List<DeferredBlockBreak> deferredBlockBreaks = new ArrayList<>();
     private final Map<Long, Long> dirtyZoneRecheckChunks = new HashMap<>();
     private final RoomChangeScheduler roomChangeScheduler = new RoomChangeScheduler();
     @Nullable
@@ -699,43 +702,26 @@ public class ZoneRegistry {
 
     /**
      * Re-runs zone geometry checks after a dirty chunk has been classified.
-     * This catches rooms whose enclosure became valid only after the latest block
-     * updates were placed into the chunk snapshot, while preserving delayed
-     * player-facing room interpretation for already-known rooms.
+     * Uses the spatial index in SpaceRegionRegistry for O(1) zone lookup instead of
+     * iterating all zone blocks.
      */
     private void recheckZonesTouchingChunk(ChunkAccess chunk, ServerLevel level) {
-        int chunkX = chunk.getPos().x;
-        int chunkZ = chunk.getPos().z;
-        List<Zone> affected = new ArrayList<>();
+        SpaceRegionRegistry regionRegistry = SpaceRegionRegistry.get(level);
+        Set<UUID> regionIds = regionRegistry.getRegionsInChunk(chunk.getPos().x, chunk.getPos().z);
+        if (regionIds.isEmpty()) return;
 
-        for (Zone zone : new ArrayList<>(getAllZones())) {
-            if (zone.isDissolved()) continue;
-            if (touchesChunk(zone, chunkX, chunkZ)) {
-                affected.add(zone);
-            }
-        }
+        for (UUID regionId : regionIds) {
+            Zone zone = getZoneById(regionId);
+            if (zone == null || zone.isDissolved()) continue;
 
-        for (Zone zone : affected) {
-            Zone liveZone = getZoneById(zone.getId());
-            if (liveZone == null || liveZone.isDissolved()) continue;
-
-            liveZone.refreshOpeningArea(level);
-            liveZone.updateBoundaryRows(level);
-            liveZone.checkAndSealCeiling(level);
-            evaluateRoomAndSync(liveZone, level);
+            zone.refreshOpeningArea(level);
+            zone.updateBoundaryRows(level);
+            zone.checkAndSealCeiling(level);
+            evaluateRoomAndSync(zone, level);
         }
     }
 
     // ---- Zone restoration from saved data ----
-
-    private boolean touchesChunk(Zone zone, int chunkX, int chunkZ) {
-        for (BlockPos pos : zone.getAllOwnedBlocks()) {
-            if ((pos.getX() >> 4) == chunkX && (pos.getZ() >> 4) == chunkZ) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private void mergeAdjacentZonesAtBoundaries(ChunkAccess chunk, ServerLevel level) {
         SpaceRegionRegistry registry = SpaceRegionRegistry.get(level);
@@ -884,6 +870,43 @@ public class ZoneRegistry {
         }
     }
 
+    public void scheduleDeferredBlockBreak(Zone zone, BlockPos pos,
+                                           boolean isCoreBlock, boolean breachesMinimumEnclosure) {
+        deferredBlockBreaks.add(new DeferredBlockBreak(zone, pos, isCoreBlock, breachesMinimumEnclosure));
+    }
+
+    public void processDeferredBlockBreaks(ServerLevel level) {
+        if (deferredBlockBreaks.isEmpty()) return;
+        List<DeferredBlockBreak> batch = List.copyOf(deferredBlockBreaks);
+        deferredBlockBreaks.clear();
+        for (DeferredBlockBreak brk : batch) {
+            Zone zone = getZoneById(brk.zone().getId());
+            if (zone == null || zone.isDissolved()) continue;
+
+            Zone.ExpansionResult result = zone.tryExpand(brk.pos(), level);
+
+            if (result == Zone.ExpansionResult.DEFER) {
+                deferredBlockBreaks.add(brk); // retry next tick (multi-block structure)
+                continue;
+            }
+
+            boolean mergeOccurred = !result.mergedZones().isEmpty();
+            if (mergeOccurred) {
+                evaluateRoomAndSync(zone, level);
+            } else if (isInGracePeriod(zone.getId())) {
+                enterGracePeriod(zone.getId(), level);
+            } else if (brk.isCoreBlock()) {
+                enterGracePeriod(zone.getId(), level);
+            } else if (brk.breachesMinimumEnclosure()) {
+                enterGracePeriod(zone.getId(), level);
+            } else if (!zone.hasLiveEntry(level)) {
+                enterGracePeriod(zone.getId(), level);
+            } else {
+                evaluateRoomAndSync(zone, level);
+            }
+        }
+    }
+
     /**
      * Re-evaluates a zone's quality, type, and volume from current world state,
      * then updates the cache. Preserves the spatial extent from the previous
@@ -935,6 +958,7 @@ public class ZoneRegistry {
         restoredZoneIds.clear();
         restoredByChunk.clear();
         deferredExpansions.clear();
+        deferredBlockBreaks.clear();
         dirtyZoneRecheckChunks.clear();
     }
 
@@ -1079,5 +1103,9 @@ public class ZoneRegistry {
     }
 
     private record DeferredExpansion(Zone zone, BlockPos pos) {
+    }
+
+    private record DeferredBlockBreak(Zone zone, BlockPos pos,
+                                      boolean isCoreBlock, boolean breachesMinimumEnclosure) {
     }
 }

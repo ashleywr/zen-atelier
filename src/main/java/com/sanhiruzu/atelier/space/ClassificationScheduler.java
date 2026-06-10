@@ -52,6 +52,7 @@ public class ClassificationScheduler {
 
         ZoneRegistry zoneRegistry = ZoneRegistry.get(level);
         zoneRegistry.processDeferredExpansions(level);
+        zoneRegistry.processDeferredBlockBreaks(level);
         zoneRegistry.expireDisabledZones(level);
         zoneRegistry.processRestoredZones(level);
         zoneRegistry.processDirtyZoneRechecks(level);

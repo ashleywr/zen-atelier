@@ -4,6 +4,8 @@
   "mixins": [
     "BrewingStandBlockEntityMixin"
   ],
-  "client": [],
+  "client": [
+    "client.ColorfulHeartsIntegrationMixin"
+  ],
   "server": []
 }

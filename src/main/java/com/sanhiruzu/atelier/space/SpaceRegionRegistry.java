@@ -1,6 +1,7 @@
 package com.sanhiruzu.atelier.space;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
@@ -12,6 +13,8 @@ public class SpaceRegionRegistry {
     private final Map<UUID, SpaceRegion> regions = new HashMap<>();
     private final Map<BlockPos, UUID> blockToRegion = new HashMap<>();
     private final Map<UUID, Set<BlockPos>> regionToBlocks = new HashMap<>();
+    // chunk key → (region UUID → block count in that chunk); used for O(1) zone-by-chunk lookup
+    private final Map<Long, Map<UUID, Integer>> chunkRegionCounts = new HashMap<>();
 
     public static SpaceRegionRegistry get(Level level) {
         String key = level.dimension().location().toString();
@@ -31,6 +34,7 @@ public class SpaceRegionRegistry {
         regions.clear();
         blockToRegion.clear();
         regionToBlocks.clear();
+        chunkRegionCounts.clear();
     }
 
     public void registerRegion(SpaceRegion region) {
@@ -38,6 +42,7 @@ public class SpaceRegionRegistry {
     }
 
     public void mapBlockToRegion(BlockPos pos, UUID regionId) {
+        long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
         UUID oldRegionId = blockToRegion.put(pos, regionId);
         if (oldRegionId != null && !oldRegionId.equals(regionId)) {
             Set<BlockPos> oldSet = regionToBlocks.get(oldRegionId);
@@ -45,13 +50,23 @@ public class SpaceRegionRegistry {
                 SpaceRegion oldRegion = regions.get(oldRegionId);
                 if (oldRegion != null) oldRegion.adjustVolume(-1);
                 if (oldSet.isEmpty()) regionToBlocks.remove(oldRegionId);
+                decrementChunkCount(chunkKey, oldRegionId);
             }
         }
         Set<BlockPos> newSet = regionToBlocks.computeIfAbsent(regionId, id -> new HashSet<>());
         if (newSet.add(pos)) {
             SpaceRegion newRegion = regions.get(regionId);
             if (newRegion != null) newRegion.adjustVolume(1);
+            chunkRegionCounts.computeIfAbsent(chunkKey, k -> new HashMap<>())
+                    .merge(regionId, 1, Integer::sum);
         }
+    }
+
+    private void decrementChunkCount(long chunkKey, UUID regionId) {
+        Map<UUID, Integer> counts = chunkRegionCounts.get(chunkKey);
+        if (counts == null) return;
+        counts.computeIfPresent(regionId, (k, v) -> v <= 1 ? null : v - 1);
+        if (counts.isEmpty()) chunkRegionCounts.remove(chunkKey);
     }
 
     public SpaceRegion getRegion(UUID id) {
@@ -110,8 +125,15 @@ public class SpaceRegionRegistry {
         if (blocks != null) {
             for (BlockPos pos : blocks) {
                 blockToRegion.remove(pos);
+                decrementChunkCount(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4), regionId);
             }
         }
+    }
+
+    public Set<UUID> getRegionsInChunk(int chunkX, int chunkZ) {
+        Map<UUID, Integer> counts = chunkRegionCounts.get(ChunkPos.asLong(chunkX, chunkZ));
+        if (counts == null || counts.isEmpty()) return Set.of();
+        return Set.copyOf(counts.keySet());
     }
 
     public void unmapBlock(BlockPos pos) {
@@ -123,6 +145,7 @@ public class SpaceRegionRegistry {
                 if (region != null) region.adjustVolume(-1);
                 if (set.isEmpty()) regionToBlocks.remove(regionId);
             }
+            decrementChunkCount(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4), regionId);
         }
     }
 
@@ -138,6 +161,10 @@ public class SpaceRegionRegistry {
             if (region2Blocks != null) {
                 for (BlockPos pos : region2Blocks) {
                     blockToRegion.put(pos, region1Id);
+                    long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
+                    decrementChunkCount(chunkKey, region2Id);
+                    chunkRegionCounts.computeIfAbsent(chunkKey, k -> new HashMap<>())
+                            .merge(region1Id, 1, Integer::sum);
                 }
                 regionToBlocks.computeIfAbsent(region1Id, id -> new HashSet<>()).addAll(region2Blocks);
             }

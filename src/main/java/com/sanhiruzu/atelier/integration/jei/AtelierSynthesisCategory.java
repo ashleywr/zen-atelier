@@ -2,6 +2,8 @@ package com.sanhiruzu.atelier.integration.jei;
 
 import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.synthesis.core.SynthesisRecipeCategory;
+import com.sanhiruzu.atelier.synthesis.engine.SynthesisProfile;
+import com.sanhiruzu.atelier.synthesis.menu.SynthesisStationMenu;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -107,11 +109,24 @@ final class AtelierSynthesisCategory implements IRecipeCategory<JeiSynthesisReci
             int y = 27 + (i / 2) * 28;
             graphics.drawString(font, "x" + recipe.requirements().get(i).requirement().amount(), x, y, 0xFF806F56, false);
         }
+
+        int pctIndoor  = successPct(recipe.profile(), SynthesisStationMenu.ROOM_CONTEXT_INDOOR);
+        int pctAtelier = successPct(recipe.profile(), SynthesisStationMenu.ROOM_CONTEXT_ATELIER);
+        int pctFine    = successPct(recipe.profile(), SynthesisStationMenu.ROOM_CONTEXT_FINE_ATELIER);
+        graphics.drawString(font, Component.literal(pctIndoor + "% / " + pctAtelier + "% / " + pctFine + "%"), 7, 74, 0xFF806F56, false);
+        graphics.drawString(font, Component.literal("indoor / atelier / fine"), 7, 83, 0xFF4A3C2C, false);
     }
 
     @Override
     public @Nullable ResourceLocation getRegistryName(JeiSynthesisRecipe recipe) {
         return recipe.id();
+    }
+
+    private static int successPct(SynthesisProfile profile, int context) {
+        SynthesisProfile effective = SynthesisStationMenu.effectiveProfile(profile, context);
+        int total = effective.outcomes().stream().mapToInt(o -> o.weight()).sum();
+        int success = effective.outcomes().stream().filter(o -> o.outcomeClass().successful()).mapToInt(o -> o.weight()).sum();
+        return total > 0 ? (int) Math.round(100.0 * success / total) : 0;
     }
 
     private static Component requirementTooltip(JeiSynthesisRecipe.RequirementDisplay display) {

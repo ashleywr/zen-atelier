@@ -14,6 +14,7 @@ import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
 import com.sanhiruzu.atelier.ui.network.SynthesisBoardFusionPayload;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -595,11 +596,22 @@ final class SynthesisSpatialPrototype {
         if (layout.fusionsHeader().isPresent()) {
             int totalQuality = 0;
             int totalSuccess = 0;
+            LinkedHashSet<String> outputAffixes = new LinkedHashSet<>();
             for (FusionResult fr : spatial.fusionResults()) {
                 totalQuality += fr.rule().qualityBonus();
                 totalSuccess += fr.rule().successWeightBonus();
+                fr.rule().outputAffix().ifPresent(outputAffixes::add);
             }
             MutableComponent fusionsHeader = Component.literal("Fusions").withStyle(s -> s.withColor(SynthesisScreenTheme.ACCENT));
+            if (!outputAffixes.isEmpty()) {
+                fusionsHeader.append(Component.literal("  →").withStyle(ChatFormatting.DARK_GRAY));
+                int ai = 0;
+                for (String affix : outputAffixes) {
+                    if (ai++ > 0) fusionsHeader.append(Component.literal(" ·").withStyle(ChatFormatting.DARK_GRAY));
+                    fusionsHeader.append(Component.literal(" "));
+                    fusionsHeader.append(Component.translatable(affix.replace(":", ".affix.")).withStyle(ChatFormatting.AQUA));
+                }
+            }
             if (totalQuality > 0 || totalSuccess > 0) {
                 fusionsHeader.append(Component.literal("  " + fusionTotals(totalQuality, totalSuccess)).withStyle(s -> s.withColor(SynthesisScreenTheme.GOOD)));
             }

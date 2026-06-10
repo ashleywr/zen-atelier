@@ -62,10 +62,10 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
     public static final int BUTTON_CATEGORY_BASE = 20;
     public static final int BUTTON_PROFILE_BASE = 100;
     private static final int CRAFTED_MASK_SLOTS = 16;
-    static final int ROOM_CONTEXT_OUTSIDE = 0;
-    static final int ROOM_CONTEXT_INDOOR = 1;
-    static final int ROOM_CONTEXT_ATELIER = 2;
-    static final int ROOM_CONTEXT_FINE_ATELIER = 3;
+    public static final int ROOM_CONTEXT_OUTSIDE = 0;
+    public static final int ROOM_CONTEXT_INDOOR = 1;
+    public static final int ROOM_CONTEXT_ATELIER = 2;
+    public static final int ROOM_CONTEXT_FINE_ATELIER = 3;
     private static final int OUTSIDE_FAILURE_WEIGHT = 1200;
     private static final ResourceLocation ATELIER_ROOM_ID = ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "atelier");
     private static final int VAULT_X = 16;
@@ -697,7 +697,7 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         return effectiveProfile(profile, roomContext);
     }
 
-    static SynthesisProfile effectiveProfile(SynthesisProfile profile, int context) {
+    public static SynthesisProfile effectiveProfile(SynthesisProfile profile, int context) {
         if (context == ROOM_CONTEXT_INDOOR) {
             return profile;
         }

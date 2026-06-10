@@ -5,6 +5,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -21,16 +23,21 @@ import java.util.Set;
  * tasks still run regardless.
  */
 public class ClassificationScheduler {
+    private static final Logger LOGGER = LoggerFactory.getLogger("ZenAtelier/Scheduler");
     private static final int CHUNKS_PER_TICK = 2;
     private static final int NEARBY_CHUNK_RADIUS = 6;
     private static final int DEFERRED_CHECK_INTERVAL = 20;
     private static final int QUEUE_BACKLOG_THRESHOLD = 20;
+    private static final int QUEUE_CRITICAL_THRESHOLD = 50;
+    private static final long BOOTSTRAP_TIME_WARN_MS = 50L;
 
     private final ServerLevel level;
     private final PriorityQueue<ChunkWork> workQueue;
     private final Set<Long> queuedChunks = new HashSet<>();
     private final Set<Long> deferredChunks = new HashSet<>();
     private int deferredTickCounter = 0;
+    private long lastBacklogWarning = 0;
+    private int lastLoggedQueueSize = 0;
 
     public ClassificationScheduler(ServerLevel level) {
         this.level = level;
@@ -57,11 +64,24 @@ public class ClassificationScheduler {
         int processed = 0;
         while (!workQueue.isEmpty() && processed < CHUNKS_PER_TICK) {
             ChunkWork work = workQueue.poll();
-            queuedChunks.remove(ChunkPos.asLong(work.chunkX, work.chunkZ));
+            long chunkKey = ChunkPos.asLong(work.chunkX, work.chunkZ);
+            queuedChunks.remove(chunkKey);
             if (work.isExpired()) continue;
 
-            ChunkAccess chunk = level.getChunk(work.chunkX, work.chunkZ);
+            ChunkAccess chunk = level.getChunkSource().getChunkNow(work.chunkX, work.chunkZ);
+            if (chunk == null) {
+                deferredChunks.add(chunkKey);
+                continue;
+            }
+
+            long startTime = System.nanoTime();
             zoneRegistry.bootstrapChunk(chunk, level);
+            long elapsedMs = (System.nanoTime() - startTime) / 1_000_000L;
+
+            if (elapsedMs > BOOTSTRAP_TIME_WARN_MS) {
+                LOGGER.warn("Chunk classification took {}ms for [{},{}]", elapsedMs, work.chunkX, work.chunkZ);
+            }
+
             scheduleLoadedDirtyNeighbors(work.chunkX, work.chunkZ);
             processed++;
         }
@@ -82,6 +102,14 @@ public class ClassificationScheduler {
 
     public boolean isNearAnyPlayer(int chunkX, int chunkZ) {
         return getPlayerDistance(chunkX, chunkZ) <= NEARBY_CHUNK_RADIUS;
+    }
+
+    public int getQueueSize() {
+        return workQueue.size();
+    }
+
+    public int getDeferredCount() {
+        return deferredChunks.size();
     }
 
     private void scheduleLoadedDirtyNeighbors(int chunkX, int chunkZ) {
@@ -128,7 +156,26 @@ public class ClassificationScheduler {
     }
 
     private boolean isServerUnderLoad() {
-        return workQueue.size() > QUEUE_BACKLOG_THRESHOLD;
+        int queueSize = workQueue.size();
+
+        if (queueSize > QUEUE_CRITICAL_THRESHOLD) {
+            long now = System.currentTimeMillis();
+            if (now - lastBacklogWarning > 5000) {
+                LOGGER.warn("Zone classification queue critical: {} chunks queued ({}+ deferred). "
+                        + "Possible incompatibility with chunk management mod or excessive structures.",
+                        queueSize, deferredChunks.size());
+                lastBacklogWarning = now;
+            }
+        } else if (queueSize > QUEUE_BACKLOG_THRESHOLD && queueSize != lastLoggedQueueSize) {
+            if (queueSize % 10 == 0) {
+                LOGGER.debug("Zone classification queue backlog: {} chunks", queueSize);
+            }
+            lastLoggedQueueSize = queueSize;
+        } else if (queueSize < QUEUE_BACKLOG_THRESHOLD) {
+            lastLoggedQueueSize = 0;
+        }
+
+        return queueSize > QUEUE_BACKLOG_THRESHOLD;
     }
 
     private static class ChunkWork implements Comparable<ChunkWork> {

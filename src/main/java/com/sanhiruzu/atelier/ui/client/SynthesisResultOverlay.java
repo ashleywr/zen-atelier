@@ -70,9 +70,14 @@ final class SynthesisResultOverlay {
                         : output.quality() >= 75 ? ChatFormatting.AQUA
                         : output.quality() >= 50 ? ChatFormatting.GRAY
                         : ChatFormatting.DARK_GRAY;
+                String qualityTierKey = output.quality() >= 100 ? "tooltip.zen_atelier.quality.masterwork"
+                        : output.quality() >= 75 ? "tooltip.zen_atelier.quality.superior"
+                        : output.quality() >= 50 ? "tooltip.zen_atelier.quality.fine"
+                        : "tooltip.zen_atelier.quality.crude";
                 MutableComponent statsComp = Component.literal(output.count() + "x  T" + output.tier() + "  ")
                         .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED))
-                        .append(Component.literal(output.quality() + "Q").withStyle(qualityFmt));
+                        .append(Component.translatable(qualityTierKey).withStyle(qualityFmt))
+                        .append(Component.literal(" " + output.quality()).withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
                 if (item != Items.AIR) {
                     graphics.renderFakeItem(item.getDefaultInstance(), px + 12, listY);
                 }
@@ -86,9 +91,9 @@ final class SynthesisResultOverlay {
                         if (i > 0) {
                             affixLine.append(Component.literal("  ·  ").withStyle(ChatFormatting.DARK_GRAY));
                         }
-                        String affixPath = output.affixes().get(i);
-                        affixPath = affixPath.contains(":") ? affixPath.substring(affixPath.indexOf(':') + 1) : affixPath;
-                        affixLine.append(Component.translatable("zen_atelier.affix." + affixPath)
+                        String affixId = output.affixes().get(i);
+                        String affixKey = affixId.contains(":") ? affixId.replace(":", ".affix.") : "zen_atelier.affix." + affixId;
+                        affixLine.append(Component.translatable(affixKey)
                                 .withStyle(ChatFormatting.GOLD));
                     }
                     graphics.drawString(font, affixLine, px + 32, listY, SynthesisScreenTheme.TEXT, false);

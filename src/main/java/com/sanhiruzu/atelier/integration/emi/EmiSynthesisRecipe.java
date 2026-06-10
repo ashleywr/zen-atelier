@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.integration.emi;
 import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import com.sanhiruzu.atelier.synthesis.core.SynthesisRecipeCategory;
+import com.sanhiruzu.atelier.synthesis.menu.SynthesisStationMenu;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisOutcome;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisProfile;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisRequirement;
@@ -69,6 +70,12 @@ final class EmiSynthesisRecipe extends BasicEmiRecipe {
         for (int i = 0; i < visibleOutputs; i++) {
             widgets.addSlot(outputs.get(i), 118 + (i % 2) * 24, 18 + (i / 2) * 24).recipeContext(this);
         }
+
+        int pctIndoor  = successPct(profile, SynthesisStationMenu.ROOM_CONTEXT_INDOOR);
+        int pctAtelier = successPct(profile, SynthesisStationMenu.ROOM_CONTEXT_ATELIER);
+        int pctFine    = successPct(profile, SynthesisStationMenu.ROOM_CONTEXT_FINE_ATELIER);
+        widgets.addText(Component.literal(pctIndoor + "% / " + pctAtelier + "% / " + pctFine + "%"), 7, 74, 0xFF806F56, false);
+        widgets.addText(Component.literal("indoor / atelier / fine"), 7, 83, 0xFF4A3C2C, false);
     }
 
     private static List<EmiStack> distinctOutputs(List<SynthesisOutcome> outcomes) {
@@ -88,6 +95,13 @@ final class EmiSynthesisRecipe extends BasicEmiRecipe {
 
     private static String stackKey(EmiStack stack) {
         return stack.getId() + "|" + stack.getComponentChanges();
+    }
+
+    private static int successPct(SynthesisProfile profile, int context) {
+        SynthesisProfile effective = SynthesisStationMenu.effectiveProfile(profile, context);
+        int total = effective.outcomes().stream().mapToInt(o -> o.weight()).sum();
+        int success = effective.outcomes().stream().filter(o -> o.outcomeClass().successful()).mapToInt(o -> o.weight()).sum();
+        return total > 0 ? (int) Math.round(100.0 * success / total) : 0;
     }
 
     private record RequirementDisplay(SynthesisRequirement requirement, EmiIngredient ingredient, Component tooltip) {

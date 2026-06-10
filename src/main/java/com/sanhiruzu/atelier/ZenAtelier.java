@@ -283,6 +283,7 @@ public class ZenAtelier {
             event.accept(EMBER_GEL);
             event.accept(REAGENT);
             event.accept(INSTANT_SALVE);
+            event.accept(STRUCTURE_CHARM);
             event.accept(FROST_GLOBE);
             event.accept(SPARK_CORE);
             event.accept(CRUDE_MINING_COATING);

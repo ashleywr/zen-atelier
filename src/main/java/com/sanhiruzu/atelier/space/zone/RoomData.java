@@ -32,6 +32,8 @@ public class RoomData extends ZoneData {
     @Nullable
     private ZoneGeometryProfile geometryProfile;
     private float spaciousness = 1f;
+    @Nullable
+    private ZoneAtmosphere atmosphere;
 
     public RoomData(UUID regionId, int volume, float enclosureScore, Map<String, Integer> furnitureCounts, float quality) {
         this(regionId, volume, enclosureScore, furnitureCounts, Map.of(), Map.of(), quality);
@@ -150,5 +152,14 @@ public class RoomData extends ZoneData {
 
     public void setGeometryProfile(@Nullable ZoneGeometryProfile geometryProfile) {
         this.geometryProfile = geometryProfile;
+    }
+
+    @Nullable
+    public ZoneAtmosphere getAtmosphere() {
+        return atmosphere;
+    }
+
+    public void setAtmosphere(@Nullable ZoneAtmosphere atmosphere) {
+        this.atmosphere = atmosphere;
     }
 }

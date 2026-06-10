@@ -102,6 +102,7 @@ public class ZoneEvaluator {
         room.setSpaciousness(spaciousness);
         room.setGeometryProfile(ZoneGeometryProfile.compute(airBlocks, level,
                 zone != null ? Optional.ofNullable(zone.getMainEntry()) : Optional.empty()));
+        room.setAtmosphere(ZoneAtmosphere.fromSignals(signalCounts, enclosureScore));
         return room;
     }
 

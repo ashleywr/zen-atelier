@@ -1,6 +1,8 @@
 package com.sanhiruzu.atelier.zone;
 
 import com.sanhiruzu.atelier.api.IAtmosphere;
+import com.sanhiruzu.atelier.space.zone.RoomData;
+import com.sanhiruzu.atelier.space.zone.ZoneAtmosphere;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -33,7 +35,7 @@ public class AtmosphereManager {
         if (zone == null) {
             return new DefaultAtmosphere();
         }
-        return new ZoneAtmosphere(zone);
+        return new ZoneAtmosphereAdapter(zone);
     }
 
     /**
@@ -116,36 +118,43 @@ public class AtmosphereManager {
     }
 
     /**
-     * Atmosphere data tied to a zone.
+     * IAtmosphere adapter backed by a zone's computed ZoneAtmosphere.
+     * Reads temperature, humidity, and air quality from ZoneAtmosphere when available,
+     * falling back to the ZoneDataStore for any values set explicitly by other mods.
      */
-    private static class ZoneAtmosphere implements IAtmosphere {
+    private static class ZoneAtmosphereAdapter implements IAtmosphere {
         private final StandardZone zone;
 
-        public ZoneAtmosphere(StandardZone zone) {
+        public ZoneAtmosphereAdapter(StandardZone zone) {
             this.zone = zone;
+        }
+
+        private @Nullable ZoneAtmosphere atmosphere() {
+            return zone.getZoneData() instanceof RoomData room ? room.getAtmosphere() : null;
         }
 
         @Override
         public float getChemicalPurity() {
-            // Use zone quality as a proxy for chemical purity
-            return zone.getQuality() * 100.0f;
+            ZoneAtmosphere atm = atmosphere();
+            return atm != null ? atm.airQuality() * 100.0f : zone.getQuality() * 100.0f;
         }
 
         @Override
         public float getParticulateDensity() {
-            // Inverse relationship: better quality zones have fewer particles
-            return Math.max(0, 100.0f - (zone.getQuality() * 100.0f));
+            return Math.max(0, 100.0f - getChemicalPurity());
         }
 
         @Override
         public float getTemperature() {
-            // Use stored property or default
+            ZoneAtmosphere atm = atmosphere();
+            if (atm != null) return 20.0f + atm.temperatureOffset() * 0.5f;
             return getProperty("temperature", 20.0f);
         }
 
         @Override
         public float getHumidity() {
-            // Use stored property or default
+            ZoneAtmosphere atm = atmosphere();
+            if (atm != null) return atm.humidity() * 100.0f;
             return getProperty("humidity", 50.0f);
         }
 
@@ -163,7 +172,6 @@ public class AtmosphereManager {
 
         @Override
         public void setProperty(String key, float value) {
-            // Store as custom data on the zone
             var zoneData = zone.getZoneData();
             com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.set(zoneData.getRegionId(), "atm_" + key, value);
         }
@@ -172,8 +180,8 @@ public class AtmosphereManager {
         public float getProperty(String key, float defaultValue) {
             var zoneData = zone.getZoneData();
             Object value = com.sanhiruzu.atelier.api.ZoneAPI.ZoneDataStore.get(zoneData.getRegionId(), "atm_" + key);
-            if (value instanceof Number) {
-                return ((Number) value).floatValue();
+            if (value instanceof Number n) {
+                return n.floatValue();
             }
             return defaultValue;
         }

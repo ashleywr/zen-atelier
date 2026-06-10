@@ -76,7 +76,10 @@ public class StandardZone implements com.sanhiruzu.atelier.api.IAtmosphere {
     }
 
     public float getTemperature() {
-        // Default room temperature, can be customized per zone
+        if (zoneData instanceof RoomData room) {
+            var atm = room.getAtmosphere();
+            if (atm != null) return 20.0f + atm.temperatureOffset() * 0.5f;
+        }
         return getProperty("temperature", 20.0f);
     }
 
@@ -134,7 +137,10 @@ public class StandardZone implements com.sanhiruzu.atelier.api.IAtmosphere {
     }
 
     public float getHumidity() {
-        // Default humidity level
+        if (zoneData instanceof RoomData room) {
+            var atm = room.getAtmosphere();
+            if (atm != null) return atm.humidity() * 100.0f;
+        }
         return getProperty("humidity", 50.0f);
     }
 
@@ -143,12 +149,14 @@ public class StandardZone implements com.sanhiruzu.atelier.api.IAtmosphere {
     }
 
     public float getChemicalPurity() {
-        // Use quality as purity (0-1 becomes 0-100%)
+        if (zoneData instanceof RoomData room) {
+            var atm = room.getAtmosphere();
+            if (atm != null) return atm.airQuality() * 100.0f;
+        }
         return getQuality() * 100.0f;
     }
 
     public float getParticulateDensity() {
-        // Return particulate density (inverse of purity)
         return 100.0f - getChemicalPurity();
     }
 

@@ -563,7 +563,16 @@ public class ZoneRegistry {
     }
 
     /**
+     * Returns true if zone restoration data for this chunk is pending. Used by
+     * the chunk-load path to skip scheduling entirely for chunks with no zones.
+     */
+    public boolean hasRestoredDataForChunk(int chunkX, int chunkZ) {
+        return restoredByChunk.containsKey(ChunkPos.asLong(chunkX, chunkZ));
+    }
+
+    /**
      * One-time bootstrap classification for a newly loaded chunk.
+     * Only runs for chunks near a player or chunks with saved zone data to restore.
      * Flood-fills OUTSIDE/INSIDE, creates Zone entities from discovered regions,
      * merges touching zones at chunk boundaries, and syncs to players.
      */
@@ -1065,6 +1074,7 @@ public class ZoneRegistry {
                 if (room.isDegraded()) roomData.setDegraded(true);
                 if (room.getEpithetName() != null) roomData.setEpithetName(room.getEpithetName());
                 if (room.getGeneratedName() != null) roomData.setGeneratedName(room.getGeneratedName());
+                if (room.getAtmosphere() != null) roomData.setAtmosphere(room.getAtmosphere());
                 result = roomData;
             }
         }

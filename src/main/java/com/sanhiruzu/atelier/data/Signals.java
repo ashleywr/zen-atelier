@@ -214,6 +214,17 @@ public class Signals {
         PREDICATES.put("candlelight_table", s -> s.is(CANDLELIGHT_TABLE));
         PREDICATES.put("seating",           s -> s.is(SEATING));
         PREDICATES.put("vinery_barrel",     s -> s.is(VINERY_BARREL));
+
+        // Atmosphere signals — used by ZoneAtmosphere to compute temperature and air quality
+        PREDICATES.put("heat_source", s ->
+                s.is(Blocks.FIRE) || s.is(Blocks.SOUL_FIRE) || s.is(Blocks.MAGMA_BLOCK)
+                || s.is(Blocks.LAVA_CAULDRON)
+                || s.is(CAMPFIRES) || s.is(Blocks.CAMPFIRE) || s.is(Blocks.SOUL_CAMPFIRE)
+                || s.is(FURNACES) || s.is(Blocks.FURNACE)
+                || s.is(BLAST_FURNACES) || s.is(Blocks.BLAST_FURNACE));
+        PREDICATES.put("ice_block", s ->
+                s.is(Blocks.ICE) || s.is(Blocks.PACKED_ICE) || s.is(Blocks.BLUE_ICE)
+                || s.is(Blocks.SNOW_BLOCK) || s.is(Blocks.POWDER_SNOW));
     }
 
     public static void register(String signal, Predicate<BlockState> predicate) {

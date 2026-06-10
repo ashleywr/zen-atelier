@@ -2,6 +2,7 @@ package com.sanhiruzu.atelier.api;
 
 import com.sanhiruzu.atelier.space.SpaceQuery;
 import com.sanhiruzu.atelier.space.zone.RoomData;
+import com.sanhiruzu.atelier.space.zone.ZoneAtmosphere;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
 import net.minecraft.core.BlockPos;
@@ -95,6 +96,22 @@ public class ZoneAPI {
         if (!(zone instanceof com.sanhiruzu.atelier.space.zone.RoomData room)) return false;
         var typeId = room.getZoneTypeId();
         return typeId != null && typeId.toString().toLowerCase().contains(typeNamePart.toLowerCase());
+    }
+
+    /**
+     * Get the computed atmosphere for a zone.
+     * Returns {@link ZoneAtmosphere#NEUTRAL} for outdoor zones and indoor zones not yet evaluated.
+     * Returns null only when {@code zone} is null.
+     * <p>
+     * The atmosphere is derived from signal counts (heat sources, ice, water, plants) and enclosure
+     * score at zone evaluation time. It refreshes automatically whenever the zone re-evaluates.
+     */
+    @Nullable
+    public static ZoneAtmosphere getAtmosphere(@Nullable ZoneData zone) {
+        if (zone == null) return null;
+        if (!(zone instanceof RoomData room)) return ZoneAtmosphere.NEUTRAL;
+        ZoneAtmosphere atm = room.getAtmosphere();
+        return atm != null ? atm : ZoneAtmosphere.NEUTRAL;
     }
 
     /**

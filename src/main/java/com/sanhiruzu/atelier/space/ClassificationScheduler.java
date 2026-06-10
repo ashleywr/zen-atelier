@@ -1,5 +1,6 @@
 package com.sanhiruzu.atelier.space;
 
+import com.sanhiruzu.atelier.Config;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -45,6 +46,8 @@ public class ClassificationScheduler {
     }
 
     public void tick() {
+        if (Config.DISABLE_ZONE_SCANNING.get()) return;
+
         if (++deferredTickCounter >= DEFERRED_CHECK_INTERVAL) {
             deferredTickCounter = 0;
             promoteDeferredChunks();
@@ -99,6 +102,14 @@ public class ClassificationScheduler {
 
     public void deferChunk(int chunkX, int chunkZ) {
         deferredChunks.add(ChunkPos.asLong(chunkX, chunkZ));
+    }
+
+    public void removeChunk(int chunkX, int chunkZ) {
+        long key = ChunkPos.asLong(chunkX, chunkZ);
+        if (queuedChunks.remove(key)) {
+            workQueue.removeIf(w -> ChunkPos.asLong(w.chunkX, w.chunkZ) == key);
+        }
+        deferredChunks.remove(key);
     }
 
     public boolean isNearAnyPlayer(int chunkX, int chunkZ) {
@@ -161,7 +172,7 @@ public class ClassificationScheduler {
 
         if (queueSize > QUEUE_CRITICAL_THRESHOLD) {
             long now = System.currentTimeMillis();
-            if (now - lastBacklogWarning > 5000) {
+            if (now - lastBacklogWarning > 30000) {
                 LOGGER.warn("Zone classification queue critical: {} chunks queued ({}+ deferred). "
                         + "Possible incompatibility with chunk management mod or excessive structures.",
                         queueSize, deferredChunks.size());
@@ -176,7 +187,11 @@ public class ClassificationScheduler {
             lastLoggedQueueSize = 0;
         }
 
-        return queueSize > QUEUE_BACKLOG_THRESHOLD;
+        // Pause only when the server is actually running slow (>45ms/tick).
+        // Queue size alone is not a valid signal — c2me's parallel chunk generation
+        // can flood the queue at world load while MSPT stays low. Using queue size
+        // caused a feedback loop: queue > 20 → pause → queue grows → critical warning.
+        return level.getServer().getCurrentSmoothedTickTime() > 45.0f;
     }
 
     private static class ChunkWork implements Comparable<ChunkWork> {

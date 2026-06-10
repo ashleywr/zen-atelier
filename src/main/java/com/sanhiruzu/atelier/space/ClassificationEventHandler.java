@@ -1,5 +1,6 @@
 package com.sanhiruzu.atelier.space;
 
+import com.sanhiruzu.atelier.Config;
 import com.sanhiruzu.atelier.network.SyncChunkClassificationPayload;
 import com.sanhiruzu.atelier.space.zone.Zone;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
@@ -26,21 +27,37 @@ public class ClassificationEventHandler {
     @SubscribeEvent
     public static void onChunkLoad(ChunkEvent.Load event) {
         if (event.getLevel().isClientSide()) return;
-        boolean hadSavedClassification = event.getChunk().hasData(ChunkClassificationAttachment.CHUNK_CLASSIFICATION.get());
-        ChunkClassificationData data = ChunkClassificationAttachment.get(event.getChunk());
-        data.setDirty(true);
-        if (hadSavedClassification) {
-            event.getChunk().setUnsaved(true);
-        }
+        // Only classify fully-loaded LevelChunks. C2ME and other async chunk managers
+        // fire ChunkEvent.Load for ProtoChunks at intermediate generation stages —
+        // those are not playable and don't need classification.
+        if (!(event.getChunk() instanceof LevelChunk)) return;
+        if (!(event.getLevel() instanceof ServerLevel serverLevel)) return;
 
-        if (event.getLevel() instanceof ServerLevel serverLevel) {
-            ClassificationScheduler scheduler = ClassificationTickHandler.getScheduler(serverLevel);
-            ChunkPos pos = event.getChunk().getPos();
-            if (scheduler.isNearAnyPlayer(pos.x, pos.z)) {
-                scheduler.scheduleChunk(pos.x, pos.z);
-            } else {
-                scheduler.deferChunk(pos.x, pos.z);
-            }
+        ChunkPos pos = event.getChunk().getPos();
+        // C2ME fires chunk events from worker threads. Marshal all scheduler and
+        // chunk-data mutations to the main thread to prevent data races.
+        if (!serverLevel.getServer().isSameThread()) {
+            serverLevel.getServer().execute(() -> scheduleChunkLoad(serverLevel, pos));
+            return;
+        }
+        scheduleChunkLoad(serverLevel, pos);
+    }
+
+    private static void scheduleChunkLoad(ServerLevel serverLevel, ChunkPos pos) {
+        if (Config.DISABLE_ZONE_SCANNING.get()) return;
+        LevelChunk chunk = serverLevel.getChunkSource().getChunkNow(pos.x, pos.z);
+        if (chunk == null) return; // may have unloaded between event and main-thread execution
+
+        boolean hadSavedClassification = chunk.hasData(ChunkClassificationAttachment.CHUNK_CLASSIFICATION.get());
+        ChunkClassificationData data = ChunkClassificationAttachment.get(chunk);
+        data.setDirty(true);
+        if (hadSavedClassification) chunk.setUnsaved(true);
+
+        ClassificationScheduler scheduler = ClassificationTickHandler.getScheduler(serverLevel);
+        if (scheduler.isNearAnyPlayer(pos.x, pos.z)) {
+            scheduler.scheduleChunk(pos.x, pos.z);
+        } else {
+            scheduler.deferChunk(pos.x, pos.z);
         }
     }
 
@@ -75,7 +92,17 @@ public class ClassificationEventHandler {
 
     @SubscribeEvent
     public static void onChunkUnload(ChunkEvent.Unload event) {
-        // ChunkClassificationData is persisted via NBT attachment automatically.
+        if (event.getLevel().isClientSide()) return;
+        if (!(event.getLevel() instanceof ServerLevel serverLevel)) return;
+        ChunkPos pos = event.getChunk().getPos();
+        // Remove from scheduler queues so C2ME's background-generated chunks
+        // don't accumulate in deferredChunks after unloading.
+        if (!serverLevel.getServer().isSameThread()) {
+            serverLevel.getServer().execute(() ->
+                    ClassificationTickHandler.getScheduler(serverLevel).removeChunk(pos.x, pos.z));
+            return;
+        }
+        ClassificationTickHandler.getScheduler(serverLevel).removeChunk(pos.x, pos.z);
     }
 
     // ==========================================================================

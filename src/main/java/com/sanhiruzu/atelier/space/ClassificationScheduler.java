@@ -15,11 +15,16 @@ import java.util.Set;
  * Priority work queue for chunk classification. Player-nearby chunks are processed
  * first. All zone lifecycle logic lives in {@link ZoneRegistry}; this class only
  * owns scheduling — what to classify and when.
+ *
+ * Adaptive scheduling: pauses classification when server tick time exceeds threshold
+ * to avoid compounding lag during heavy chunk generation. Zone registry lifecycle
+ * tasks still run regardless.
  */
 public class ClassificationScheduler {
     private static final int CHUNKS_PER_TICK = 2;
     private static final int NEARBY_CHUNK_RADIUS = 6;
     private static final int DEFERRED_CHECK_INTERVAL = 20;
+    private static final int QUEUE_BACKLOG_THRESHOLD = 20;
 
     private final ServerLevel level;
     private final PriorityQueue<ChunkWork> workQueue;
@@ -44,6 +49,10 @@ public class ClassificationScheduler {
         zoneRegistry.processRestoredZones(level);
         zoneRegistry.processDirtyZoneRechecks(level);
         zoneRegistry.tickRoomChanges(level);
+
+        if (isServerUnderLoad()) {
+            return;
+        }
 
         int processed = 0;
         while (!workQueue.isEmpty() && processed < CHUNKS_PER_TICK) {
@@ -116,6 +125,10 @@ public class ClassificationScheduler {
             minDist = Math.min(minDist, dist);
         }
         return minDist;
+    }
+
+    private boolean isServerUnderLoad() {
+        return workQueue.size() > QUEUE_BACKLOG_THRESHOLD;
     }
 
     private static class ChunkWork implements Comparable<ChunkWork> {

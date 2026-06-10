@@ -3,6 +3,7 @@
   "package": "com.sanhiruzu.atelier.mixin",
   "mixins": [
     "BrewingStandBlockEntityMixin",
+    "compat.CCPluginMixin",
     "compat.JERMobEntryMixin",
     "compat.SpawnAnimalVariantManagerMixin"
   ],

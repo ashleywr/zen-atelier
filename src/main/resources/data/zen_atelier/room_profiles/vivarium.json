@@ -1,0 +1,21 @@
+{
+  "id": "zen_atelier:vivarium",
+  "display_name": "room_type.zen_atelier.vivarium",
+  "zone_definition": "zen_atelier:vivarium_zone",
+  "required_features": [
+    {
+      "signal": "terrarium_block",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "terrarium_block",
+    "frog_plant",
+    "water_coverage",
+    "plant_diversity",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "industrial_blocks"
+  ]
+}

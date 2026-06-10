@@ -1,0 +1,7 @@
+{
+  "id": "zen_atelier:dining_room_zone",
+  "display_name": "zone.zen_atelier.dining_room",
+  "sealed": true,
+  "base_temperature": 22.0,
+  "base_humidity": 45.0
+}

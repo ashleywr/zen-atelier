@@ -1,0 +1,20 @@
+{
+  "id": "zen_atelier:winery",
+  "display_name": "room_type.zen_atelier.winery",
+  "zone_definition": "zen_atelier:winery_zone",
+  "required_features": [
+    {
+      "signal": "vinery_barrel",
+      "minimum": 2
+    }
+  ],
+  "quality_signals": [
+    "wine_variety",
+    "storage",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "excess_heat"
+  ]
+}

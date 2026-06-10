@@ -1,0 +1,21 @@
+{
+  "id": "zen_atelier:aquarium",
+  "display_name": "room_type.zen_atelier.aquarium",
+  "zone_definition": "zen_atelier:aquarium_zone",
+  "required_features": [
+    {
+      "signal": "fish_tank",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "fish_tank",
+    "water_coverage",
+    "glass",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "sleep_blocks"
+  ]
+}

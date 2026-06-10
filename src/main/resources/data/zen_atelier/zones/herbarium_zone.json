@@ -1,0 +1,7 @@
+{
+  "id": "zen_atelier:herbarium_zone",
+  "display_name": "zone.zen_atelier.herbarium",
+  "sealed": true,
+  "base_temperature": 22.0,
+  "base_humidity": 70.0
+}

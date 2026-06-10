@@ -1,0 +1,28 @@
+{
+  "id": "zen_atelier:stable",
+  "display_name": "room_type.zen_atelier.stable",
+  "zone_definition": "zen_atelier:stable_zone",
+  "anchors": [
+    "minecraft:hay_block"
+  ],
+  "required_features": [
+    {
+      "signal": "hay_bale",
+      "minimum": 4
+    },
+    {
+      "signal": "swem_tack",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "hay_coverage",
+    "swem_tack",
+    "storage",
+    "lighting"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "sleep_blocks"
+  ]
+}

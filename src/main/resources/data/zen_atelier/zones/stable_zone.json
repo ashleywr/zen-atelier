@@ -1,0 +1,7 @@
+{
+  "id": "zen_atelier:stable_zone",
+  "display_name": "zone.zen_atelier.stable",
+  "sealed": true,
+  "base_temperature": 18.0,
+  "base_humidity": 60.0
+}

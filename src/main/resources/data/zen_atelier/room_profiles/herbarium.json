@@ -1,0 +1,25 @@
+{
+  "id": "zen_atelier:herbarium",
+  "display_name": "room_type.zen_atelier.herbarium",
+  "zone_definition": "zen_atelier:herbarium_zone",
+  "anchors": [
+    "#minecraft:flowers",
+    "#minecraft:crops"
+  ],
+  "required_features": [
+    {
+      "signal": "flower_pots",
+      "minimum": 4
+    }
+  ],
+  "quality_signals": [
+    "plant_diversity",
+    "flower_pots",
+    "sunlight",
+    "water_access"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "sleep_blocks"
+  ]
+}

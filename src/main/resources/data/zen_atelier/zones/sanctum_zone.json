@@ -1,0 +1,8 @@
+{
+  "id": "zen_atelier:sanctum_zone",
+  "display_name": "zone.zen_atelier.sanctum",
+  "sealed": true,
+  "base_temperature": 18.0,
+  "base_humidity": 40.0,
+  "requires_ceiling": true
+}

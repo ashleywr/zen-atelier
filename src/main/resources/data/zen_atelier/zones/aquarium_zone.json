@@ -1,0 +1,7 @@
+{
+  "id": "zen_atelier:aquarium_zone",
+  "display_name": "zone.zen_atelier.aquarium",
+  "sealed": true,
+  "base_temperature": 22.0,
+  "base_humidity": 80.0
+}

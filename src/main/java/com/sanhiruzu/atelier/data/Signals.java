@@ -111,6 +111,19 @@ public class Signals {
             minecoloniesBlocks("blockhutconcretemixer", "blockhutmechanic", "blockhutcrusher")
     );
 
+    // Zone-type signature block tags — backed by data/zen_atelier/tags/block/*.json
+    private static final TagKey<Block> SYNTHESIS_STATION_BLOCKS = atelierBlockTag("synthesis_station");
+    private static final TagKey<Block> CREATE_ROTATIONAL       = atelierBlockTag("create_rotational");
+    private static final TagKey<Block> MALUM_SOUL              = atelierBlockTag("malum_soul_block");
+    private static final TagKey<Block> TERRARIUM_BLOCK         = atelierBlockTag("terrarium_block");
+    private static final TagKey<Block> TELESCOPE               = atelierBlockTag("telescope");
+    private static final TagKey<Block> SPECTRUM_CRYSTAL        = atelierBlockTag("spectrum_crystal");
+    private static final TagKey<Block> SWEM_TACK               = atelierBlockTag("swem_tack");
+    private static final TagKey<Block> FISH_TANK               = atelierBlockTag("fish_tank");
+    private static final TagKey<Block> CANDLELIGHT_TABLE       = atelierBlockTag("candlelight_table");
+    private static final TagKey<Block> SEATING                 = atelierBlockTag("seating");
+    private static final TagKey<Block> VINERY_BARREL           = atelierBlockTag("vinery_barrel");
+
     static {
         PREDICATES.put("bed", s -> s.is(BEDS) || s.is(BlockTags.BEDS) || isMineColoniesResidence(s));
         PREDICATES.put("bookshelf", s ->
@@ -186,6 +199,21 @@ public class Signals {
         PREDICATES.put("minecolonies_workshop", s -> isAny(s, MINECOLONIES_WORKSHOP_BLOCKS));
         PREDICATES.put("minecolonies_guard", s -> isAny(s, MINECOLONIES_GUARD_BLOCKS));
         PREDICATES.put("minecolonies_civic", s -> isAny(s, MINECOLONIES_CIVIC_BLOCKS));
+
+        // Zone-type signature signals — tag-backed, extend via zen_atelier/tags/block/*.json
+        PREDICATES.put("synthesis_station", s -> s.is(SYNTHESIS_STATION_BLOCKS));
+        PREDICATES.put("hay_bale",          s -> s.is(Blocks.HAY_BLOCK));
+        PREDICATES.put("candle",            s -> s.is(BlockTags.CANDLES));
+        PREDICATES.put("create_rotational", s -> s.is(CREATE_ROTATIONAL));
+        PREDICATES.put("malum_soul_block",  s -> s.is(MALUM_SOUL));
+        PREDICATES.put("terrarium_block",   s -> s.is(TERRARIUM_BLOCK));
+        PREDICATES.put("telescope",         s -> s.is(TELESCOPE));
+        PREDICATES.put("spectrum_crystal",  s -> s.is(SPECTRUM_CRYSTAL));
+        PREDICATES.put("swem_tack",         s -> s.is(SWEM_TACK));
+        PREDICATES.put("fish_tank",         s -> s.is(FISH_TANK));
+        PREDICATES.put("candlelight_table", s -> s.is(CANDLELIGHT_TABLE));
+        PREDICATES.put("seating",           s -> s.is(SEATING));
+        PREDICATES.put("vinery_barrel",     s -> s.is(VINERY_BARREL));
     }
 
     public static void register(String signal, Predicate<BlockState> predicate) {
@@ -203,6 +231,10 @@ public class Signals {
 
     private static TagKey<Block> commonBlockTag(String path) {
         return TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath("c", path));
+    }
+
+    private static TagKey<Block> atelierBlockTag(String path) {
+        return TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath("zen_atelier", path));
     }
 
     private static Set<ResourceLocation> minecoloniesBlocks(String... paths) {

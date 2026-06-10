@@ -1,29 +1,24 @@
 {
   "id": "zen_atelier:workshop",
   "display_name": "room_type.zen_atelier.workshop",
-  "zone_definition": "zen_zones:utility_zone",
+  "zone_definition": "zen_atelier:workshop_zone",
   "anchors": [
-    "minecraft:crafting_table",
-    "minecolonies:blockhutbuilder",
-    "minecolonies:blockhutlumberjack",
-    "minecolonies:blockhutsawmill"
+    "zen_atelier:synthesis_station"
   ],
   "required_features": [
     {
-      "signal": "crafting_table",
+      "signal": "synthesis_station",
       "minimum": 1
     }
   ],
   "quality_signals": [
+    "bookshelf",
     "storage",
-    "tool_blocks",
-    "work_surfaces",
     "lighting",
-    "clear_floor_space"
+    "enclosure"
   ],
   "penalty_signals": [
-    "sleep_blocks",
-    "plant_overgrowth",
-    "low_storage"
+    "industrial_blocks",
+    "sleep_blocks"
   ]
 }

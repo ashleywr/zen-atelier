@@ -44,6 +44,14 @@ public class QualityEvaluator {
         SIGNAL_ALIASES.put("stone_materials",    "stone_or_metal_materials");
         SIGNAL_ALIASES.put("quiet_materials",    "stone_or_metal_materials");
         SIGNAL_ALIASES.put("wet_blocks",         "water_coverage");
+        // Zone-type quality aliases
+        SIGNAL_ALIASES.put("plant_diversity",    "plant");
+        SIGNAL_ALIASES.put("hay_coverage",       "hay_bale");
+        SIGNAL_ALIASES.put("wine_variety",       "vinery_barrel");
+        SIGNAL_ALIASES.put("candles",            "candle");
+        SIGNAL_ALIASES.put("terrarium_blocks",   "terrarium_block");
+        SIGNAL_ALIASES.put("rotation_blocks",    "create_rotational");
+        SIGNAL_ALIASES.put("arcane_focus",       "spectrum_crystal");
     }
 
     // --- Public API ---

@@ -1,0 +1,21 @@
+{
+  "id": "zen_atelier:sanctum",
+  "display_name": "room_type.zen_atelier.sanctum",
+  "zone_definition": "zen_atelier:sanctum_zone",
+  "required_features": [
+    {
+      "signal": "malum_soul_block",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "malum_soul_block",
+    "candle",
+    "enclosure"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "utility_heat",
+    "sleep_blocks"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "zen_atelier:dining_room",
+  "display_name": "room_type.zen_atelier.dining_room",
+  "zone_definition": "zen_atelier:dining_room_zone",
+  "required_features": [
+    {
+      "signal": "candlelight_table",
+      "minimum": 1
+    },
+    {
+      "signal": "seating",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "candlelight_table",
+    "seating",
+    "candle",
+    "lighting",
+    "carpet"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "sleep_blocks"
+  ]
+}

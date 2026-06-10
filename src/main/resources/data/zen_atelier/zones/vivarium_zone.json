@@ -1,0 +1,7 @@
+{
+  "id": "zen_atelier:vivarium_zone",
+  "display_name": "zone.zen_atelier.vivarium",
+  "sealed": true,
+  "base_temperature": 22.0,
+  "base_humidity": 85.0
+}

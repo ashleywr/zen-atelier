@@ -1,0 +1,25 @@
+{
+  "id": "zen_atelier:observatory",
+  "display_name": "room_type.zen_atelier.observatory",
+  "zone_definition": "zen_atelier:observatory_zone",
+  "required_features": [
+    {
+      "signal": "telescope",
+      "minimum": 1
+    },
+    {
+      "signal": "spectrum_crystal",
+      "minimum": 1
+    }
+  ],
+  "quality_signals": [
+    "spectrum_crystal",
+    "telescope",
+    "glass",
+    "enclosure"
+  ],
+  "penalty_signals": [
+    "industrial_blocks",
+    "sleep_blocks"
+  ]
+}

@@ -60,10 +60,12 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -73,6 +75,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
+import top.theillusivec4.curios.api.CuriosCapability;
 
 @Mod(ZenAtelier.MODID)
 public class ZenAtelier {
@@ -227,6 +230,7 @@ public class ZenAtelier {
 
     public ZenAtelier(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::registerCapabilities);
         modEventBus.addListener(NetworkHandler::registerPayloadHandlers);
 
         BLOCKS.register(modEventBus);
@@ -254,6 +258,14 @@ public class ZenAtelier {
         modEventBus.addListener(this::addCreative);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+    }
+
+    private void registerCapabilities(RegisterCapabilitiesEvent event) {
+        if (!ModList.get().isLoaded("curios")) {
+            return;
+        }
+
+        event.registerItem(CuriosCapability.ITEM, (stack, context) -> () -> stack, STRUCTURE_CHARM.get());
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

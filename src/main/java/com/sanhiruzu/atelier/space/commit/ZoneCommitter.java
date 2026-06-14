@@ -15,6 +15,9 @@ import java.util.function.BiConsumer;
 
 public final class ZoneCommitter {
 
+    private static final int CHUNK_SIZE = 16;
+    private static final int CHUNK_COORD_MASK = CHUNK_SIZE - 1;
+
     private final ZoneStore store;
     private final SpaceRegionIndex index;
     private final BiConsumer<ChunkPos, ChunkClassificationData> syncFn;
@@ -26,11 +29,6 @@ public final class ZoneCommitter {
         this.syncFn = syncFn;
     }
 
-    /**
-     * Commits an accepted ZoneCandidate to the store and marks INSIDE cells in chunkData.
-     *
-     * @return the UUID of the committed zone, or null if decision is not an ACCEPT variant
-     */
     @Nullable
     public UUID commitAccepted(ZoneCandidate candidate,
                                CandidateDecision decision,
@@ -70,24 +68,7 @@ public final class ZoneCommitter {
         store.commit(zone);
         index.register(zone);
 
-        // Mark INSIDE in each chunk's classification data
-        for (long packed : walkablePositions) {
-            BlockPos pos = BlockPos.of(packed);
-            int worldX = pos.getX();
-            int worldY = pos.getY();
-            int worldZ = pos.getZ();
-
-            int chunkX = Math.floorDiv(worldX, 16);
-            int chunkZ = Math.floorDiv(worldZ, 16);
-            ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
-
-            ChunkClassificationData data = chunkData.get(chunkPos);
-            if (data != null) {
-                int localX = worldX & 15;
-                int localZ = worldZ & 15;
-                data.setBlockState(localX, worldY, localZ, ClassificationState.INSIDE);
-            }
-        }
+        applyStateToChunks(walkablePositions, ClassificationState.INSIDE, chunkData);
 
         // Sync all chunks that are in both candidate.chunkPositions and chunkData
         for (ChunkPos pos : candidate.chunkPositions()) {
@@ -100,9 +81,6 @@ public final class ZoneCommitter {
         return uuid;
     }
 
-    /**
-     * Dissolves a committed zone: clears INSIDE cells back to SOLID, removes from store and index.
-     */
     public void dissolve(UUID id, Set<ChunkPos> chunkPositions,
                          Map<ChunkPos, ChunkClassificationData> chunkData) {
         CommittedZone zone = store.get(id);
@@ -110,24 +88,7 @@ public final class ZoneCommitter {
             return;
         }
 
-        // Clear INSIDE -> SOLID for each walkable position
-        for (long packed : zone.walkablePositions()) {
-            BlockPos pos = BlockPos.of(packed);
-            int worldX = pos.getX();
-            int worldY = pos.getY();
-            int worldZ = pos.getZ();
-
-            int chunkX = Math.floorDiv(worldX, 16);
-            int chunkZ = Math.floorDiv(worldZ, 16);
-            ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
-
-            ChunkClassificationData data = chunkData.get(chunkPos);
-            if (data != null) {
-                int localX = worldX & 15;
-                int localZ = worldZ & 15;
-                data.setBlockState(localX, worldY, localZ, ClassificationState.SOLID);
-            }
-        }
+        applyStateToChunks(zone.walkablePositions(), ClassificationState.SOLID, chunkData);
 
         store.remove(id);
         index.remove(id, chunkPositions);
@@ -137,6 +98,27 @@ public final class ZoneCommitter {
             ChunkClassificationData data = chunkData.get(pos);
             if (data != null) {
                 syncFn.accept(pos, data);
+            }
+        }
+    }
+
+    private void applyStateToChunks(long[] positions, ClassificationState state,
+                                    Map<ChunkPos, ChunkClassificationData> chunkData) {
+        for (long packed : positions) {
+            BlockPos pos = BlockPos.of(packed);
+            int worldX = pos.getX();
+            int worldY = pos.getY();
+            int worldZ = pos.getZ();
+
+            int chunkX = Math.floorDiv(worldX, CHUNK_SIZE);
+            int chunkZ = Math.floorDiv(worldZ, CHUNK_SIZE);
+            ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
+
+            ChunkClassificationData data = chunkData.get(chunkPos);
+            if (data != null) {
+                int localX = worldX & CHUNK_COORD_MASK;
+                int localZ = worldZ & CHUNK_COORD_MASK;
+                data.setBlockState(localX, worldY, localZ, state);
             }
         }
     }

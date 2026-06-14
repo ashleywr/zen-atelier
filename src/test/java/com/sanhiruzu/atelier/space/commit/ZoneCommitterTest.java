@@ -61,10 +61,8 @@ class ZoneCommitterTest {
         index.register(existing);
     }
 
-    // --- Test 1 ---
-
     @Test
-    void commitAccepted_rejectDecision_returnsNull() {
+    void commitAccepted_rejectLowConfidence_returnsNull() {
         ZoneCandidate c = candidate(1L);
         Map<ChunkPos, ChunkClassificationData> chunkData = new HashMap<>();
         chunkData.put(new ChunkPos(0, 0), new ChunkClassificationData());
@@ -74,19 +72,20 @@ class ZoneCommitterTest {
         assertThat(result).isNull();
         assertThat(store.all()).isEmpty();
         assertThat(synced).isEmpty();
+    }
 
-        // Test another rejection variant
-        synced.clear();
-        chunkData.clear();
+    @Test
+    void commitAccepted_rejectTooLargeOpenAir_returnsNull() {
+        ZoneCandidate c = candidate(1L);
+        Map<ChunkPos, ChunkClassificationData> chunkData = new HashMap<>();
         chunkData.put(new ChunkPos(0, 0), new ChunkClassificationData());
-        UUID result2 = committer.commitAccepted(c, CandidateDecision.REJECT_TOO_LARGE_OPEN_AIR, null, walkableAt5_64_5(), chunkData);
 
-        assertThat(result2).isNull();
+        UUID result = committer.commitAccepted(c, CandidateDecision.REJECT_TOO_LARGE_OPEN_AIR, null, walkableAt5_64_5(), chunkData);
+
+        assertThat(result).isNull();
         assertThat(store.all()).isEmpty();
         assertThat(synced).isEmpty();
     }
-
-    // --- Test 2 ---
 
     @Test
     void commitAccepted_newZone_createsAndMarksInside() {
@@ -108,8 +107,6 @@ class ZoneCommitterTest {
         assertThat(index.getZoneIds(new ChunkPos(0, 0))).contains(result);
     }
 
-    // --- Test 3 ---
-
     @Test
     void commitAccepted_sameHash_preservesUUID() {
         UUID existingId = UUID.randomUUID();
@@ -130,8 +127,6 @@ class ZoneCommitterTest {
         assertThat(store.get(result).customName()).isEqualTo("My Room");
     }
 
-    // --- Test 4 ---
-
     @Test
     void commitAccepted_differentHash_newUUID() {
         UUID existingId = UUID.randomUUID();
@@ -150,8 +145,6 @@ class ZoneCommitterTest {
         assertThat(result).isNotEqualTo(existingId);
         assertThat(store.get(result)).isNotNull();
     }
-
-    // --- Test 5 ---
 
     @Test
     void dissolve_removesZoneAndClearsCells() {
@@ -175,8 +168,6 @@ class ZoneCommitterTest {
         assertThat(data.getBlockState(5, 64, 5)).isEqualTo(ClassificationState.SOLID);
         assertThat(synced).containsExactly(new ChunkPos(0, 0));
     }
-
-    // --- Test 6 ---
 
     @Test
     void dissolve_nullZone_doesNothing() {

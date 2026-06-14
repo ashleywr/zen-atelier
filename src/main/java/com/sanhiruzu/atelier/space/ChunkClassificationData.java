@@ -4,9 +4,11 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.LongArrayTag;
+import net.minecraft.core.BlockPos;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,6 +35,7 @@ public class ChunkClassificationData {
     private final long[] bitfield;
     private final List<ClassifiedRegion> regions;
     private boolean isDirty;
+    private long snapshotVersion = 0L;
 
     public ChunkClassificationData() {
         int totalBlocks = CHUNK_WIDTH * CHUNK_WIDTH * CHUNK_HEIGHT;
@@ -89,6 +92,12 @@ public class ChunkClassificationData {
         regions.clear();
     }
 
+    public void clearWorldBlocks(int chunkMinX, int chunkMinZ, Collection<BlockPos> blocks) {
+        for (BlockPos pos : blocks) {
+            setBlockState(pos.getX() - chunkMinX, pos.getY(), pos.getZ() - chunkMinZ, ClassificationState.SOLID);
+        }
+    }
+
     public List<ClassifiedRegion> getRegions() {
         return new ArrayList<>(regions);
     }
@@ -103,11 +112,24 @@ public class ChunkClassificationData {
         return false;
     }
 
+    /**
+     * Applies the result of an async off-thread classification.
+     * Called on the server thread after the async task completes.
+     */
+    public void copyFromOutput(ClassificationOutput output) {
+        System.arraycopy(output.bitfield(), 0, bitfield, 0, Math.min(output.bitfield().length, bitfield.length));
+        regions.clear();
+        regions.addAll(output.regions());
+    }
+
+    public long getSnapshotVersion() { return snapshotVersion; }
+
     public boolean isDirty() {
         return isDirty;
     }
 
     public void setDirty(boolean dirty) {
+        if (dirty) snapshotVersion++;
         this.isDirty = dirty;
     }
 

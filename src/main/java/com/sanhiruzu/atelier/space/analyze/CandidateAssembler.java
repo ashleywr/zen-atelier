@@ -82,7 +82,7 @@ public final class CandidateAssembler {
             Collections.sort(sortedKeys);
             long hash = 0L;
             for (long k : sortedKeys) {
-                hash ^= Long.hashCode(k) * 0x9e3779b97f4a7c15L;
+                hash ^= k * 0x9e3779b97f4a7c15L;
             }
 
             candidates.add(new ZoneCandidate(

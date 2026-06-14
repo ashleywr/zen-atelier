@@ -252,17 +252,6 @@ public class ZoneRegistry {
         return expired;
     }
 
-    /**
-     * Called each tick by the scheduler. Expires any zones whose grace period
-     * has elapsed and dissolves them.
-     */
-    public void expireDisabledZones(ServerLevel level) {
-        List<UUID> expired = expireGracePeriods(level.getGameTime());
-        for (UUID zoneId : expired) {
-            dissolveGracePeriodZone(zoneId, level);
-        }
-    }
-
     // ---- Zone evaluation + sync ----
 
     /**
@@ -359,36 +348,10 @@ public class ZoneRegistry {
         roomChangeScheduler.markDirty(zone, level, this);
     }
 
-    public void tickRoomChanges(ServerLevel level) {
-        roomChangeScheduler.tick(level, this);
-    }
-
     public void markChunkForZoneRecheck(int chunkX, int chunkZ, ServerLevel level) {
         long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
         long readyAt = level.getGameTime() + DIRTY_ZONE_RECHECK_DELAY_TICKS;
         dirtyZoneRecheckChunks.put(chunkKey, readyAt);
-    }
-
-    public void processDirtyZoneRechecks(ServerLevel level) {
-        if (dirtyZoneRecheckChunks.isEmpty()) return;
-
-        long now = level.getGameTime();
-        List<Long> readyChunks = new ArrayList<>();
-        for (Map.Entry<Long, Long> entry : dirtyZoneRecheckChunks.entrySet()) {
-            if (entry.getValue() <= now) {
-                readyChunks.add(entry.getKey());
-            }
-        }
-        if (readyChunks.isEmpty()) return;
-
-        for (long chunkKey : readyChunks) {
-            dirtyZoneRecheckChunks.remove(chunkKey);
-            net.minecraft.world.level.chunk.LevelChunk chunk =
-                    level.getChunkSource().getChunkNow(ChunkPos.getX(chunkKey), ChunkPos.getZ(chunkKey));
-            if (chunk == null) continue;
-
-            recheckZonesTouchingChunk(chunk, level);
-        }
     }
 
     public void evaluateRoomAndSyncNow(Zone zone, ServerLevel level) {
@@ -697,131 +660,10 @@ public class ZoneRegistry {
     }
 
     /**
-     * Applies the result of an off-thread chunk classification to world state.
-     * Called on the server thread after the async task completes.
-     * This is the "apply" half of the old {@link #bootstrapChunk} pipeline; the
-     * "classify" half now runs off-thread as {@link com.sanhiruzu.atelier.space.ChunkClassifier#classifyAsync}.
-     *
-     * @param chunkKey  {@code ChunkPos.asLong(x, z)} — used to consume any restored-zone data
-     */
-    public void applyBootstrap(ChunkAccess chunk, ClassificationOutput output,
-                                long chunkKey, ServerLevel level) {
-        SpaceRegionRegistry regionRegistry = SpaceRegionRegistry.get(level);
-        ChunkClassificationData data = ChunkClassificationAttachment.get(chunk);
-
-        // Apply the bitfield + region list from the async classifier
-        data.copyFromOutput(output);
-        data.setDirty(false);
-
-        // Consume restored-zone data so it isn't re-applied on reclassification
-        Map<UUID, Set<BlockPos>> restoredInChunk = consumeRestoredDataForChunk(chunkKey);
-
-        // ---- Create Zone entities from classified regions ----
-        Set<UUID> createdZoneIds = new HashSet<>();
-        for (ClassifiedRegion cr : output.regions()) {
-            Set<BlockPos> blocks = output.regionBlocks().get(cr.id());
-            if (blocks == null || blocks.isEmpty()) continue;
-
-            boolean alreadyClaimed = blocks.stream()
-                    .anyMatch(p -> regionRegistry.getRegionIdAt(p) != null);
-            if (alreadyClaimed) continue;
-
-            List<Set<BlockPos>> partitions = RoomPartitioner.partitionBlocks(blocks, RoomConnectivity.forLevel(level));
-            for (int i = 0; i < partitions.size(); i++) {
-                Set<BlockPos> partition = partitions.get(i);
-                UUID zoneId = i == 0 ? cr.id() : UUID.randomUUID();
-                Zone zone = Zone.createFromBootstrap(zoneId, partition,
-                        Zone.computeOpeningAreaFor(partition, level), level);
-                if (zone != null) {
-                    createdZoneIds.add(zone.getId());
-                } else {
-                    data.clearWorldBlocks(chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), partition);
-                }
-            }
-        }
-
-        data.clearRegions();
-
-        // ---- Merge touching zones across chunk boundaries ----
-        mergeAdjacentZonesAtBoundaries(chunk, level);
-
-        // ---- Clean up orphaned zones ----
-        List<UUID> orphanedZones = new ArrayList<>();
-        for (Zone zone : new ArrayList<>(getAllZones())) {
-            if (zone.isDissolved()) continue;
-            if (regionRegistry.getBlocksInRegion(zone.getId()).isEmpty()) {
-                orphanedZones.add(zone.getId());
-            }
-        }
-        for (UUID orphanId : orphanedZones) {
-            Zone orphan = getZoneById(orphanId);
-            if (orphan != null && !orphan.isDissolved()) {
-                orphan.dissolve(level);
-            }
-        }
-
-        // ---- Evaluate new zones + sync ----
-        SettlementDetector settlementDetector = new SettlementDetector(level);
-        settlementDetector.scanChunk(chunk);
-
-        for (UUID zoneId : createdZoneIds) {
-            Zone zone = getZoneById(zoneId);
-            if (zone == null || zone.isDissolved()) continue;
-            evaluateRoomAndSyncNow(zone, level);
-        }
-
-        // ---- Evaluate restored zones whose blocks are in this chunk ----
-        if (restoredInChunk != null) {
-            for (UUID zoneId : restoredInChunk.keySet()) {
-                Zone zone = getZoneById(zoneId);
-                if (zone != null && !zone.isDissolved() && getRoom(zoneId) == null) {
-                    evaluateRoomAndSyncNow(zone, level);
-                }
-            }
-        }
-
-        recheckZonesTouchingChunk(chunk, level);
-        syncToPlayers(chunk, data, level);
-        checkAllPlayerZones(level);
-    }
-
-    /**
      * Removes pre-cached restored-zone data for the given chunk so it won't be re-marked INSIDE.
      */
     public void clearRestoredDataForChunk(int chunkX, int chunkZ) {
         restoredByChunk.remove(ChunkPos.asLong(chunkX, chunkZ));
-    }
-
-    /**
-     * Ensures saved zones regain player-facing RoomData after world load.
-     * Runs from the scheduler, never from chunk load callbacks. Evaluation is
-     * skipped until players exist and every chunk the evaluator may touch is
-     * already loaded, avoiding load-time chunk recursion.
-     */
-    public void processRestoredZones(ServerLevel level) {
-        if (restoredZoneIds.isEmpty() || level.players().isEmpty()) return;
-
-        List<UUID> finished = new ArrayList<>();
-        for (UUID zoneId : new ArrayList<>(restoredZoneIds)) {
-            Zone zone = getZoneById(zoneId);
-            if (zone == null || zone.isDissolved()) {
-                finished.add(zoneId);
-                continue;
-            }
-            if (getRoom(zoneId) != null) {
-                finished.add(zoneId);
-                continue;
-            }
-            if (!isRestoredZoneLoadedForEvaluation(zone, level)) continue;
-            if (!savedInteriorStillAir(zone, level)) continue;
-
-            premarkRestoredInterior(zone, level);
-            evaluateRoomAndSyncNow(zone, level);
-            if (getRoom(zoneId) != null) {
-                finished.add(zoneId);
-            }
-        }
-        finished.forEach(restoredZoneIds::remove);
     }
 
     /**
@@ -975,55 +817,9 @@ public class ZoneRegistry {
         deferredExpansions.add(new DeferredExpansion(zone, pos));
     }
 
-    public void processDeferredExpansions(ServerLevel level) {
-        if (deferredExpansions.isEmpty()) return;
-        List<DeferredExpansion> batch = List.copyOf(deferredExpansions);
-        deferredExpansions.clear();
-        for (DeferredExpansion exp : batch) {
-            Zone zone = getZoneById(exp.zone.getId());
-            if (zone == null || zone.isDissolved()) continue;
-            zone.tryExpand(exp.pos, level);
-            if (!isInGracePeriod(zone.getId())) {
-                evaluateRoomAndSync(zone, level);
-            }
-        }
-    }
-
     public void scheduleDeferredBlockBreak(Zone zone, BlockPos pos,
                                            boolean isCoreBlock, boolean breachesMinimumEnclosure) {
         deferredBlockBreaks.add(new DeferredBlockBreak(zone, pos, isCoreBlock, breachesMinimumEnclosure));
-    }
-
-    public void processDeferredBlockBreaks(ServerLevel level) {
-        if (deferredBlockBreaks.isEmpty()) return;
-        List<DeferredBlockBreak> batch = List.copyOf(deferredBlockBreaks);
-        deferredBlockBreaks.clear();
-        for (DeferredBlockBreak brk : batch) {
-            Zone zone = getZoneById(brk.zone().getId());
-            if (zone == null || zone.isDissolved()) continue;
-
-            Zone.ExpansionResult result = zone.tryExpand(brk.pos(), level);
-
-            if (result == Zone.ExpansionResult.DEFER) {
-                deferredBlockBreaks.add(brk); // retry next tick (multi-block structure)
-                continue;
-            }
-
-            boolean mergeOccurred = !result.mergedZones().isEmpty();
-            if (mergeOccurred) {
-                evaluateRoomAndSync(zone, level);
-            } else if (isInGracePeriod(zone.getId())) {
-                enterGracePeriod(zone.getId(), level);
-            } else if (brk.isCoreBlock()) {
-                enterGracePeriod(zone.getId(), level);
-            } else if (brk.breachesMinimumEnclosure()) {
-                enterGracePeriod(zone.getId(), level);
-            } else if (!zone.hasLiveEntry(level)) {
-                enterGracePeriod(zone.getId(), level);
-            } else {
-                evaluateRoomAndSync(zone, level);
-            }
-        }
     }
 
     /**

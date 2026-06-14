@@ -13,8 +13,6 @@ import com.sanhiruzu.atelier.space.analyze.MicroRegion;
 import com.sanhiruzu.atelier.space.analyze.ZoneCandidate;
 import com.sanhiruzu.atelier.space.commit.ZoneCommitter;
 import com.sanhiruzu.atelier.space.commit.ZoneStore;
-import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -23,27 +21,27 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
  * Priority work queue for chunk classification.  Player-nearby chunks are
- * processed first.  All zone lifecycle logic lives in {@link ZoneRegistry};
- * this class only owns scheduling — what to classify and when.
+ * processed first.  All zone lifecycle logic lives in the new pipeline
+ * ({@link ZoneCommitter} / {@link ZoneStore}); this class only owns scheduling —
+ * what to classify and when.
  *
  * <h3>Async pipeline</h3>
  * <ol>
  *   <li>Snapshot chunk block data on the server thread (fast, ~1 ms).</li>
- *   <li>Submit the flood-fill to a single background thread; it runs on a
- *       {@link ChunkSnapshot} and produces a {@link ClassificationOutput} with
- *       no Minecraft state access.</li>
- *   <li>On the next server tick, drain completed results and call
- *       {@link ZoneRegistry#applyBootstrap} on the server thread.</li>
+ *   <li>Submit the flood-fill to a background thread via {@code analyzePool};
+ *       it runs on a {@link ChunkSnapshotBundle} and produces a
+ *       {@link AnalysisResult} with no Minecraft state access.</li>
+ *   <li>On the next server tick, drain completed results and commit via
+ *       {@link ZoneCommitter} on the server thread.</li>
  * </ol>
  *
  * If a chunk is re-dirtied while its async task is in-flight the result is
- * discarded and the chunk is re-queued.
+ * discarded (snapshot version mismatch) and the chunk is re-queued.
  */
 public class ClassificationScheduler {
     private static final Logger LOGGER = LoggerFactory.getLogger("ZenAtelier/Scheduler");
@@ -55,15 +53,12 @@ public class ClassificationScheduler {
     private static final int DEFERRED_CHECK_INTERVAL = 20;
     private static final int QUEUE_BACKLOG_THRESHOLD = 20;
     private static final int QUEUE_CRITICAL_THRESHOLD = 50;
-    private static final long BOOTSTRAP_TIME_WARN_MS = 20L;
 
     private final ServerLevel level;
     private final PriorityQueue<ChunkWork> workQueue;
     private final Set<Long> queuedChunks = new HashSet<>();
     private final Set<Long> deferredChunks = new HashSet<>();
     private final Set<Long> inFlightChunks = new HashSet<>();
-    private final ConcurrentLinkedQueue<PendingResult> pendingResults = new ConcurrentLinkedQueue<>();
-    private final ExecutorService asyncPool;
     private final ExecutorService analyzePool;
     private final ConcurrentLinkedQueue<PendingAnalysis> pendingAnalyses = new ConcurrentLinkedQueue<>();
     private final Map<Long, AnalysisResult> analysisCache = new HashMap<>();
@@ -75,11 +70,6 @@ public class ClassificationScheduler {
     public ClassificationScheduler(ServerLevel level) {
         this.level = level;
         this.workQueue = new PriorityQueue<>();
-        this.asyncPool = Executors.newFixedThreadPool(2, r -> {
-            Thread t = new Thread(r, "ZenAtelier-ChunkClassifier");
-            t.setDaemon(true);
-            return t;
-        });
         this.analyzePool = Executors.newFixedThreadPool(2, r -> {
             Thread t = new Thread(r, "ZenAtelier-ZoneAnalyzer");
             t.setDaemon(true);
@@ -95,21 +85,12 @@ public class ClassificationScheduler {
             promoteDeferredChunks();
         }
 
-        ZoneRegistry zoneRegistry = ZoneRegistry.get(level);
-        zoneRegistry.processDeferredExpansions(level);
-        zoneRegistry.processDeferredBlockBreaks(level);
-        zoneRegistry.expireDisabledZones(level);
-        zoneRegistry.processRestoredZones(level);
-        zoneRegistry.processDirtyZoneRechecks(level);
-        zoneRegistry.tickRoomChanges(level);
-
         // Always drain completed async results regardless of server load
-        drainPendingResults(zoneRegistry);
         drainPendingAnalyses();
 
         if (isServerUnderLoad()) return;
 
-        // Submit new async classification tasks
+        // Submit new async analysis tasks
         int submitted = 0;
         while (!workQueue.isEmpty()
                 && submitted < CHUNKS_PER_TICK
@@ -129,27 +110,15 @@ public class ClassificationScheduler {
             ChunkClassificationData data = ChunkClassificationAttachment.get(chunk);
             if (!data.isDirty()) continue;
 
-            submitAsyncClassification(work, chunk, chunkKey, data, zoneRegistry);
+            submitAnalysis(work, chunk, chunkKey, data);
             submitted++;
         }
     }
 
-    private void submitAsyncClassification(ChunkWork work, ChunkAccess chunk, long chunkKey,
-                                            ChunkClassificationData data, ZoneRegistry zoneRegistry) {
-        // Snapshot chunk data on the server thread (reads block states + collision shapes)
-        Map<UUID, Set<BlockPos>> restoredInChunk = zoneRegistry.getRestoredDataForChunk(chunkKey);
-        ChunkSnapshot snapshot = ChunkSnapshot.of(chunk, restoredInChunk);
-
-        // Optimistically mark as not dirty: if a block change occurs before the result is
-        // applied, setDirty(true) will be called again and we'll detect + discard the stale result.
+    private void submitAnalysis(ChunkWork work, ChunkAccess chunk, long chunkKey,
+                                ChunkClassificationData data) {
         data.setDirty(false);
         inFlightChunks.add(chunkKey);
-
-        asyncPool.submit(() -> {
-            ClassificationOutput output = new ChunkClassifier().classifyAsync(snapshot);
-            pendingResults.offer(new PendingResult(work.chunkX, work.chunkZ, chunkKey, output));
-        });
-
         long snapVersion = data.getSnapshotVersion();
         ChunkSnapshotBundle bundle = ChunkSnapshotBundle.of(chunk, snapVersion);
         analyzePool.submit(() -> {
@@ -157,36 +126,6 @@ public class ClassificationScheduler {
             AnalysisResult result = new AnalysisResult(work.chunkX, work.chunkZ, bundle.snapshotVersion, regions);
             pendingAnalyses.offer(new PendingAnalysis(work.chunkX, work.chunkZ, chunkKey, result));
         });
-    }
-
-    private void drainPendingResults(ZoneRegistry zoneRegistry) {
-        int applied = 0;
-        PendingResult pr;
-        while ((pr = pendingResults.poll()) != null) {
-            inFlightChunks.remove(pr.chunkKey());
-
-            LevelChunk chunk = level.getChunkSource().getChunkNow(pr.chunkX(), pr.chunkZ());
-            if (chunk == null) continue; // unloaded — discard
-
-            ChunkClassificationData data = ChunkClassificationAttachment.get(chunk);
-            if (data.isDirty()) {
-                // Chunk was re-dirtied while the async task was running; discard and reschedule
-                scheduleChunk(pr.chunkX(), pr.chunkZ());
-                continue;
-            }
-
-            long startTime = System.nanoTime();
-            zoneRegistry.applyBootstrap(chunk, pr.output(), pr.chunkKey(), level);
-            long elapsedMs = (System.nanoTime() - startTime) / 1_000_000L;
-
-            if (elapsedMs > BOOTSTRAP_TIME_WARN_MS) {
-                LOGGER.warn("Bootstrap apply took {}ms for [{},{}]", elapsedMs, pr.chunkX(), pr.chunkZ());
-            }
-
-            scheduleLoadedDirtyNeighbors(pr.chunkX(), pr.chunkZ());
-
-            if (++applied >= APPLY_PER_TICK) break;
-        }
     }
 
     public void scheduleChunk(int chunkX, int chunkZ) {
@@ -222,7 +161,6 @@ public class ClassificationScheduler {
     }
 
     public void shutdown() {
-        asyncPool.shutdownNow();
         analyzePool.shutdownNow();
     }
 
@@ -299,6 +237,8 @@ public class ClassificationScheduler {
             PendingAnalysis pa = pendingAnalyses.poll();
             if (pa == null) break;
 
+            inFlightChunks.remove(pa.chunkKey());
+
             LevelChunk chunk = level.getChunkSource().getChunkNow(pa.chunkX(), pa.chunkZ());
             if (chunk == null) continue;
 
@@ -326,6 +266,8 @@ public class ClassificationScheduler {
 
                 committer.commitAccepted(candidate, decision, existingId, walkablePositions, chunkData);
             }
+
+            scheduleLoadedDirtyNeighbors(pa.chunkX(), pa.chunkZ());
             applied++;
         }
     }
@@ -368,8 +310,6 @@ public class ClassificationScheduler {
     }
 
     private record PendingAnalysis(int chunkX, int chunkZ, long chunkKey, AnalysisResult result) {}
-
-    private record PendingResult(int chunkX, int chunkZ, long chunkKey, ClassificationOutput output) {}
 
     private static class ChunkWork implements Comparable<ChunkWork> {
         final int chunkX;

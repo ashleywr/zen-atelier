@@ -1,13 +1,18 @@
 package com.sanhiruzu.atelier.space;
 
+import com.sanhiruzu.atelier.space.analyze.CandidateDecision;
+import com.sanhiruzu.atelier.space.commit.CommittedZone;
+import com.sanhiruzu.atelier.space.zone.OutdoorZoneData;
 import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.ZoneData;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -129,13 +134,32 @@ public class SpaceQuery {
      * Returns the room containing {@code pos}, including when {@code pos} is a solid block placed in
      * the room. This is the right lookup for furniture, workstations, storage, beds, and item/block
      * positions that occupy room space instead of being air cells.
+     *
+     * Falls back to the new candidate pipeline when the old SpaceRegionRegistry has no entry.
      */
     @Nullable
     public static ZoneData getRoomContaining(Level level, BlockPos pos) {
         if (level.isClientSide()) return null;
         SpaceRegion region = getRegionContaining(level, pos);
-        if (region == null) return null;
-        return ZoneRegistry.get(level).getOrEvaluateRoom(region.getId(), level);
+        if (region != null) return ZoneRegistry.get(level).getOrEvaluateRoom(region.getId(), level);
+
+        if (level instanceof ServerLevel serverLevel) {
+            CommittedZone committed = ZoneRegistry.get(level).getCommittedZoneAt(pos, serverLevel);
+            if (committed != null) return zoneDataFromCommitted(committed, pos);
+        }
+        return null;
+    }
+
+    private static ZoneData zoneDataFromCommitted(CommittedZone zone, BlockPos pos) {
+        int volume = zone.walkablePositions().length;
+        if (zone.kind() == CandidateDecision.ACCEPT_OUTDOOR_FUNCTIONAL) {
+            OutdoorZoneData outdoor = new OutdoorZoneData(zone.uuid(), volume, 0.5f, pos);
+            outdoor.setSpatialExtent(zone.minX(), zone.minY(), zone.minZ(), zone.maxX(), zone.maxY(), zone.maxZ());
+            return outdoor;
+        }
+        RoomData room = new RoomData(zone.uuid(), volume, 0.8f, Map.of(), 0.5f);
+        room.setSpatialExtent(zone.minX(), zone.minY(), zone.minZ(), zone.maxX(), zone.maxY(), zone.maxZ());
+        return room;
     }
 
     @Nullable

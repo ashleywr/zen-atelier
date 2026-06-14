@@ -2,6 +2,7 @@ package com.sanhiruzu.atelier.space.zone;
 
 import com.sanhiruzu.atelier.network.*;
 import com.sanhiruzu.atelier.space.*;
+import com.sanhiruzu.atelier.space.analyze.CandidateDecision;
 import com.sanhiruzu.atelier.space.commit.CommittedZone;
 import com.sanhiruzu.atelier.space.commit.SpaceRegionIndex;
 import com.sanhiruzu.atelier.space.commit.ZoneStore;
@@ -14,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
@@ -515,14 +517,8 @@ public class ZoneRegistry {
     }
 
     private void updatePlayerZone(ServerPlayer player, ServerLevel level) {
-        ZoneData zoneData = SpaceQuery.getRoomAt(level, player.blockPosition());
-        UUID newId = zoneData != null ? zoneData.getRegionId() : null;
-
         CommittedZone committed = getCommittedZoneAt(player.blockPosition(), level);
-        if (committed != null) {
-            LOGGER.trace("[NewPipeline] Player {} in zone {} ({})",
-                    player.getName().getString(), committed.uuid(), committed.kind());
-        }
+        UUID newId = committed != null ? committed.uuid() : null;
 
         ZoneAttachment att = player.getData(ZoneAttachment.ZONE.get());
         Zone current = att.getCurrentZone();
@@ -530,8 +526,24 @@ public class ZoneRegistry {
 
         if (!Objects.equals(newId, currentId)) {
             att.setCurrentZone(newId != null ? new Zone(newId) : null);
+            if (committed != null) {
+                PacketDistributor.sendToPlayer(player, buildZoneGridPayload(committed, player.blockPosition(), level));
+            }
             PacketDistributor.sendToPlayer(player, new SyncPlayerZonePayload(newId));
         }
+    }
+
+    private static SyncZoneGridPayload buildZoneGridPayload(CommittedZone zone, BlockPos playerPos, ServerLevel level) {
+        boolean isOutdoor = zone.kind() == CandidateDecision.ACCEPT_OUTDOOR_FUNCTIONAL;
+        int volume = zone.walkablePositions().length;
+        int lightLevel = level.getBrightness(LightLayer.BLOCK, playerPos);
+        return new SyncZoneGridPayload(
+                zone.uuid(), isOutdoor, volume, 0.8f, 0.5f, lightLevel,
+                null, false, null, null,
+                zone.minX(), zone.minY(), zone.minZ(),
+                zone.maxX(), zone.maxY(), zone.maxZ(),
+                1.0f, null
+        );
     }
 
     /**

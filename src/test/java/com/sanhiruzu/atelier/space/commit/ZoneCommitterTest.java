@@ -55,7 +55,7 @@ class ZoneCommitterTest {
                 Set.of(new ChunkPos(0, 0)),
                 walkableAt5_64_5(),
                 0, 64, 0, 15, 70, 15,
-                null
+                "My Room"
         );
         store.commit(existing);
         index.register(existing);
@@ -72,6 +72,16 @@ class ZoneCommitterTest {
         UUID result = committer.commitAccepted(c, CandidateDecision.REJECT_LOW_CONFIDENCE, null, walkableAt5_64_5(), chunkData);
 
         assertThat(result).isNull();
+        assertThat(store.all()).isEmpty();
+        assertThat(synced).isEmpty();
+
+        // Test another rejection variant
+        synced.clear();
+        chunkData.clear();
+        chunkData.put(new ChunkPos(0, 0), new ChunkClassificationData());
+        UUID result2 = committer.commitAccepted(c, CandidateDecision.REJECT_TOO_LARGE_OPEN_AIR, null, walkableAt5_64_5(), chunkData);
+
+        assertThat(result2).isNull();
         assertThat(store.all()).isEmpty();
         assertThat(synced).isEmpty();
     }
@@ -116,6 +126,8 @@ class ZoneCommitterTest {
 
         assertThat(result).isEqualTo(existingId);
         assertThat(store.get(existingId)).isNotNull();
+        // Verify custom name is preserved
+        assertThat(store.get(result).customName()).isEqualTo("My Room");
     }
 
     // --- Test 4 ---

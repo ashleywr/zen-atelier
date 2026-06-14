@@ -557,7 +557,7 @@ public class ZoneRegistry {
 
         CommittedZone committed = getCommittedZoneAt(player.blockPosition(), level);
         if (committed != null) {
-            LOGGER.debug("[NewPipeline] Player {} in zone {} ({})",
+            LOGGER.trace("[NewPipeline] Player {} in zone {} ({})",
                     player.getName().getString(), committed.uuid(), committed.kind());
         }
 

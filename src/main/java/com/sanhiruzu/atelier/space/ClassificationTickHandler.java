@@ -6,8 +6,6 @@ import com.sanhiruzu.atelier.space.commit.ZoneCommitter;
 import com.sanhiruzu.atelier.space.commit.ZoneStore;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -69,10 +67,6 @@ public class ClassificationTickHandler {
 
     private static void sendChunkClassificationSync(ServerLevel level, ChunkPos pos, ChunkClassificationData data) {
         SyncChunkClassificationPayload payload = new SyncChunkClassificationPayload(pos.x, pos.z, data);
-        for (Player player : level.players()) {
-            if (player instanceof ServerPlayer serverPlayer) {
-                PacketDistributor.sendToPlayer(serverPlayer, payload);
-            }
-        }
+        PacketDistributor.sendToPlayersTrackingChunk(level, pos, payload);
     }
 }

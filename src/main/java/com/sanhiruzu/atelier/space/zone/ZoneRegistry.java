@@ -2,6 +2,9 @@ package com.sanhiruzu.atelier.space.zone;
 
 import com.sanhiruzu.atelier.network.*;
 import com.sanhiruzu.atelier.space.*;
+import com.sanhiruzu.atelier.space.commit.CommittedZone;
+import com.sanhiruzu.atelier.space.commit.SpaceRegionIndex;
+import com.sanhiruzu.atelier.space.commit.ZoneStore;
 import com.sanhiruzu.atelier.space.settlement.SettlementDetector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -552,6 +555,12 @@ public class ZoneRegistry {
         ZoneData zoneData = SpaceQuery.getRoomAt(level, player.blockPosition());
         UUID newId = zoneData != null ? zoneData.getRegionId() : null;
 
+        CommittedZone committed = getCommittedZoneAt(player.blockPosition(), level);
+        if (committed != null) {
+            LOGGER.debug("[NewPipeline] Player {} in zone {} ({})",
+                    player.getName().getString(), committed.uuid(), committed.kind());
+        }
+
         ZoneAttachment att = player.getData(ZoneAttachment.ZONE.get());
         Zone current = att.getCurrentZone();
         UUID currentId = current != null ? current.getId() : null;
@@ -568,6 +577,23 @@ public class ZoneRegistry {
      */
     public boolean hasRestoredDataForChunk(int chunkX, int chunkZ) {
         return restoredByChunk.containsKey(ChunkPos.asLong(chunkX, chunkZ));
+    }
+
+    /**
+     * Returns the restored-zone block data for this chunk without consuming it.
+     * The data remains in the map so that if the async classification is discarded
+     * (chunk re-dirtied) it is still available for the retry.
+     * Call {@link #consumeRestoredDataForChunk(long)} once the result is applied.
+     */
+    @Nullable
+    public Map<UUID, Set<BlockPos>> getRestoredDataForChunk(long chunkKey) {
+        return restoredByChunk.get(chunkKey);
+    }
+
+    /** Removes and returns the restored-zone block data for a chunk. Called when bootstrap is applied. */
+    @Nullable
+    public Map<UUID, Set<BlockPos>> consumeRestoredDataForChunk(long chunkKey) {
+        return restoredByChunk.remove(chunkKey);
     }
 
     /**
@@ -656,6 +682,95 @@ public class ZoneRegistry {
         }
 
         // ---- 4b. Evaluate restored zones whose blocks are in this chunk ----
+        if (restoredInChunk != null) {
+            for (UUID zoneId : restoredInChunk.keySet()) {
+                Zone zone = getZoneById(zoneId);
+                if (zone != null && !zone.isDissolved() && getRoom(zoneId) == null) {
+                    evaluateRoomAndSyncNow(zone, level);
+                }
+            }
+        }
+
+        recheckZonesTouchingChunk(chunk, level);
+        syncToPlayers(chunk, data, level);
+        checkAllPlayerZones(level);
+    }
+
+    /**
+     * Applies the result of an off-thread chunk classification to world state.
+     * Called on the server thread after the async task completes.
+     * This is the "apply" half of the old {@link #bootstrapChunk} pipeline; the
+     * "classify" half now runs off-thread as {@link com.sanhiruzu.atelier.space.ChunkClassifier#classifyAsync}.
+     *
+     * @param chunkKey  {@code ChunkPos.asLong(x, z)} — used to consume any restored-zone data
+     */
+    public void applyBootstrap(ChunkAccess chunk, ClassificationOutput output,
+                                long chunkKey, ServerLevel level) {
+        SpaceRegionRegistry regionRegistry = SpaceRegionRegistry.get(level);
+        ChunkClassificationData data = ChunkClassificationAttachment.get(chunk);
+
+        // Apply the bitfield + region list from the async classifier
+        data.copyFromOutput(output);
+        data.setDirty(false);
+
+        // Consume restored-zone data so it isn't re-applied on reclassification
+        Map<UUID, Set<BlockPos>> restoredInChunk = consumeRestoredDataForChunk(chunkKey);
+
+        // ---- Create Zone entities from classified regions ----
+        Set<UUID> createdZoneIds = new HashSet<>();
+        for (ClassifiedRegion cr : output.regions()) {
+            Set<BlockPos> blocks = output.regionBlocks().get(cr.id());
+            if (blocks == null || blocks.isEmpty()) continue;
+
+            boolean alreadyClaimed = blocks.stream()
+                    .anyMatch(p -> regionRegistry.getRegionIdAt(p) != null);
+            if (alreadyClaimed) continue;
+
+            List<Set<BlockPos>> partitions = RoomPartitioner.partitionBlocks(blocks, RoomConnectivity.forLevel(level));
+            for (int i = 0; i < partitions.size(); i++) {
+                Set<BlockPos> partition = partitions.get(i);
+                UUID zoneId = i == 0 ? cr.id() : UUID.randomUUID();
+                Zone zone = Zone.createFromBootstrap(zoneId, partition,
+                        Zone.computeOpeningAreaFor(partition, level), level);
+                if (zone != null) {
+                    createdZoneIds.add(zone.getId());
+                } else {
+                    data.clearWorldBlocks(chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), partition);
+                }
+            }
+        }
+
+        data.clearRegions();
+
+        // ---- Merge touching zones across chunk boundaries ----
+        mergeAdjacentZonesAtBoundaries(chunk, level);
+
+        // ---- Clean up orphaned zones ----
+        List<UUID> orphanedZones = new ArrayList<>();
+        for (Zone zone : new ArrayList<>(getAllZones())) {
+            if (zone.isDissolved()) continue;
+            if (regionRegistry.getBlocksInRegion(zone.getId()).isEmpty()) {
+                orphanedZones.add(zone.getId());
+            }
+        }
+        for (UUID orphanId : orphanedZones) {
+            Zone orphan = getZoneById(orphanId);
+            if (orphan != null && !orphan.isDissolved()) {
+                orphan.dissolve(level);
+            }
+        }
+
+        // ---- Evaluate new zones + sync ----
+        SettlementDetector settlementDetector = new SettlementDetector(level);
+        settlementDetector.scanChunk(chunk);
+
+        for (UUID zoneId : createdZoneIds) {
+            Zone zone = getZoneById(zoneId);
+            if (zone == null || zone.isDissolved()) continue;
+            evaluateRoomAndSyncNow(zone, level);
+        }
+
+        // ---- Evaluate restored zones whose blocks are in this chunk ----
         if (restoredInChunk != null) {
             for (UUID zoneId : restoredInChunk.keySet()) {
                 Zone zone = getZoneById(zoneId);
@@ -785,38 +900,33 @@ public class ZoneRegistry {
             ZoneSavedData.ZoneRecord record = entry.getValue();
             if (record.blocks().isEmpty()) continue;
 
-            SpaceRegion region = new SpaceRegion(id, ClassificationState.INSIDE, 0, record.openingArea());
-            regionRegistry.registerRegion(region);
-            for (BlockPos pos : record.blocks()) {
-                regionRegistry.mapBlockToRegion(pos, id);
-                long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
-                restoredByChunk
-                        .computeIfAbsent(chunkKey, k -> new HashMap<>())
-                        .computeIfAbsent(id, k -> new HashSet<>())
-                        .add(pos);
-            }
-
-            Set<BlockPos> restoredInterior = new HashSet<>();
-            Set<BlockPos> restoredEntries = new HashSet<>();
-            for (BlockPos pos : record.blocks()) {
-                var state = level.getBlockState(pos);
-                if (Zone.isEntryBlock(state)) {
-                    restoredEntries.add(pos);
-                } else {
-                    restoredInterior.add(pos);
-                }
-            }
-            Zone zone = new Zone(id, restoredInterior, record.openingArea());
-            zone.addOwnedEntryBlocks(restoredEntries);
-            registerZone(zone);
-            restoredZoneIds.add(id);
-
-            if (record.customName() != null) {
-                restoreCustomName(id, record.customName());
-            }
+            restoreZoneRecord(id, record, regionRegistry);
         }
 
         LOGGER.info("[ZONE] Restored {} zone(s) from saved data", savedData.getZones().size());
+    }
+
+    void restoreZoneRecord(UUID id,
+                           ZoneSavedData.ZoneRecord record,
+                           SpaceRegionRegistry regionRegistry) {
+        SpaceRegion region = new SpaceRegion(id, ClassificationState.INSIDE, 0, record.openingArea());
+        regionRegistry.registerRegion(region);
+        for (BlockPos pos : record.blocks()) {
+            regionRegistry.mapBlockToRegion(pos, id);
+            long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
+            restoredByChunk
+                    .computeIfAbsent(chunkKey, k -> new HashMap<>())
+                    .computeIfAbsent(id, k -> new HashSet<>())
+                    .add(pos);
+        }
+
+        Zone zone = new Zone(id, record.blocks(), record.openingArea());
+        registerZone(zone);
+        restoredZoneIds.add(id);
+
+        if (record.customName() != null) {
+            restoreCustomName(id, record.customName());
+        }
     }
 
     // ---- Deferred expansion ----
@@ -1009,6 +1119,27 @@ public class ZoneRegistry {
             }
         }
         return outdoor;
+    }
+
+    /**
+     * Looks up committed zones from the new ZoneStore/SpaceRegionIndex pipeline.
+     * Used for smoke-testing the new pipeline alongside the old ZoneRegistry.
+     */
+    @Nullable
+    public CommittedZone getCommittedZoneAt(BlockPos pos, ServerLevel level) {
+        SpaceRegionIndex regionIndex = ClassificationTickHandler.getRegionIndex(level);
+        ZoneStore zoneStore = ClassificationTickHandler.getZoneStore(level);
+        ChunkPos cp = new ChunkPos(pos);
+        for (UUID id : regionIndex.getZoneIds(cp)) {
+            CommittedZone zone = zoneStore.get(id);
+            if (zone == null) continue;
+            if (pos.getX() >= zone.minX() && pos.getX() <= zone.maxX()
+                    && pos.getY() >= zone.minY() && pos.getY() <= zone.maxY()
+                    && pos.getZ() >= zone.minZ() && pos.getZ() <= zone.maxZ()) {
+                return zone;
+            }
+        }
+        return null;
     }
 
     /**

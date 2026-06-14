@@ -11,8 +11,10 @@ import com.sanhiruzu.atelier.space.analyze.EvidenceScore;
 import com.sanhiruzu.atelier.space.analyze.EvidenceScorer;
 import com.sanhiruzu.atelier.space.analyze.MicroRegion;
 import com.sanhiruzu.atelier.space.analyze.ZoneCandidate;
+import com.sanhiruzu.atelier.space.commit.CommittedZone;
 import com.sanhiruzu.atelier.space.commit.ZoneCommitter;
 import com.sanhiruzu.atelier.space.commit.ZoneStore;
+import com.sanhiruzu.atelier.space.zone.RoomData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -265,7 +267,14 @@ public class ClassificationScheduler {
                 Map<ChunkPos, ChunkClassificationData> chunkData = collectChunkData(candidate.chunkPositions());
                 UUID existingId = zoneStore.getByHash(candidate.candidateHash());
 
-                committer.commitAccepted(candidate, decision, score, existingId, walkablePositions, chunkData);
+                UUID committedId = committer.commitAccepted(candidate, decision, score, existingId, walkablePositions, chunkData);
+                if (committedId != null) {
+                    CommittedZone committed = ClassificationTickHandler.getZoneStore(level).get(committedId);
+                    if (committed != null) {
+                        RoomData evaluated = CommittedZoneEvaluator.evaluate(committed, level);
+                        ClassificationTickHandler.getEvalCache(level).put(committedId, evaluated);
+                    }
+                }
             }
 
             scheduleLoadedDirtyNeighbors(pa.chunkX(), pa.chunkZ());

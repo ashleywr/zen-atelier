@@ -536,6 +536,20 @@ public class ZoneRegistry {
     private static SyncZoneGridPayload buildZoneGridPayload(CommittedZone zone, BlockPos playerPos, ServerLevel level) {
         boolean isOutdoor = zone.kind() == CandidateDecision.ACCEPT_OUTDOOR_FUNCTIONAL;
         int volume = zone.walkablePositions().length;
+
+        RoomData evaluated = ClassificationTickHandler.getEvalCache(level).get(zone.uuid());
+        if (evaluated != null) {
+            return new SyncZoneGridPayload(
+                    zone.uuid(), isOutdoor, volume,
+                    evaluated.getEnclosureScore(), evaluated.getQuality(),
+                    evaluated.getLightLevel(), evaluated.getZoneTypeId(), evaluated.isDegraded(),
+                    null, null,
+                    zone.minX(), zone.minY(), zone.minZ(),
+                    zone.maxX(), zone.maxY(), zone.maxZ(),
+                    1.0f, null
+            );
+        }
+
         int lightLevel = level.getBrightness(LightLayer.BLOCK, playerPos);
         return new SyncZoneGridPayload(
                 zone.uuid(), isOutdoor, volume, zone.enclosureScore(), zone.quality(), lightLevel,

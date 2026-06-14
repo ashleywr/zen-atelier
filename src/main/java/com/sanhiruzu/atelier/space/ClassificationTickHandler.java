@@ -4,6 +4,7 @@ import com.sanhiruzu.atelier.network.SyncChunkClassificationPayload;
 import com.sanhiruzu.atelier.space.commit.SpaceRegionIndex;
 import com.sanhiruzu.atelier.space.commit.ZoneCommitter;
 import com.sanhiruzu.atelier.space.commit.ZoneStore;
+import com.sanhiruzu.atelier.space.zone.RoomData;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -19,6 +20,7 @@ public class ClassificationTickHandler {
     private static final Map<String, ZoneStore> ZONE_STORES = new HashMap<>();
     private static final Map<String, SpaceRegionIndex> REGION_INDICES = new HashMap<>();
     private static final Map<String, ZoneCommitter> COMMITTERS = new HashMap<>();
+    private static final Map<String, Map<java.util.UUID, RoomData>> EVAL_CACHES = new HashMap<>();
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
@@ -43,6 +45,11 @@ public class ClassificationTickHandler {
         ZONE_STORES.remove(key);
         REGION_INDICES.remove(key);
         COMMITTERS.remove(key);
+        EVAL_CACHES.remove(key);
+    }
+
+    public static Map<java.util.UUID, RoomData> getEvalCache(ServerLevel level) {
+        return EVAL_CACHES.computeIfAbsent(dimensionKey(level), k -> new HashMap<>());
     }
 
     public static ZoneStore getZoneStore(ServerLevel level) {

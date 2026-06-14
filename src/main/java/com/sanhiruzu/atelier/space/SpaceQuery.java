@@ -145,12 +145,17 @@ public class SpaceQuery {
 
         if (level instanceof ServerLevel serverLevel) {
             CommittedZone committed = ZoneRegistry.get(level).getCommittedZoneAt(pos, serverLevel);
-            if (committed != null) return zoneDataFromCommitted(committed, pos);
+            if (committed != null) return zoneDataFromCommitted(committed, pos, serverLevel);
         }
         return null;
     }
 
-    private static ZoneData zoneDataFromCommitted(CommittedZone zone, BlockPos pos) {
+    private static ZoneData zoneDataFromCommitted(CommittedZone zone, BlockPos pos, ServerLevel level) {
+        // Prefer fully-evaluated RoomData from the eval cache
+        RoomData evaluated = ClassificationTickHandler.getEvalCache(level).get(zone.uuid());
+        if (evaluated != null) return evaluated;
+
+        // Fallback: minimal stub until evaluation runs
         int volume = zone.walkablePositions().length;
         if (zone.kind() == CandidateDecision.ACCEPT_OUTDOOR_FUNCTIONAL) {
             OutdoorZoneData outdoor = new OutdoorZoneData(zone.uuid(), volume, zone.enclosureScore(), pos);

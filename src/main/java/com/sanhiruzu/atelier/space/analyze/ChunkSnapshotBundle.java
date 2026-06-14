@@ -41,8 +41,8 @@ public final class ChunkSnapshotBundle {
     /** Crafting table, chest, furnace, bed, etc. */
     public static final byte FLAG_FURNITURE = 16;
 
-    static final int W = 16;
-    static final int H = 384; // y from -64 to 319 inclusive
+    public static final int W = 16;
+    public static final int H = 384; // y from -64 to 319 inclusive
     /** Total number of cells: 16 * 16 * 384. */
     public static final int SIZE = W * W * H;
 

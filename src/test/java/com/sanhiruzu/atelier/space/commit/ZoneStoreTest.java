@@ -1,6 +1,7 @@
 package com.sanhiruzu.atelier.space.commit;
 
 import com.sanhiruzu.atelier.space.analyze.CandidateDecision;
+import com.sanhiruzu.atelier.space.analyze.EvidenceScore;
 import net.minecraft.world.level.ChunkPos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,10 +20,12 @@ class ZoneStoreTest {
         index = new SpaceRegionIndex();
     }
 
+    private static final EvidenceScore TEST_SCORE = new EvidenceScore(2.0, 2.5, 1.2, 2.0, 2.0, 1.5, 0, 0, "test");
+
     private CommittedZone zone(UUID id, ChunkPos... chunks) {
         Set<ChunkPos> chunkSet = new LinkedHashSet<>(Arrays.asList(chunks));
         return new CommittedZone(id, CandidateDecision.ACCEPT_INDOOR, 12345L,
-                Set.of(1L), chunkSet, new long[]{},
+                TEST_SCORE, Set.of(1L), chunkSet, new long[]{},
                 0, 64, 0, 15, 70, 15, null);
     }
 

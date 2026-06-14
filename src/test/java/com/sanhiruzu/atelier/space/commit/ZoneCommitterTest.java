@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.space.commit;
 import com.sanhiruzu.atelier.space.ChunkClassificationData;
 import com.sanhiruzu.atelier.space.ClassificationState;
 import com.sanhiruzu.atelier.space.analyze.CandidateDecision;
+import com.sanhiruzu.atelier.space.analyze.EvidenceScore;
 import com.sanhiruzu.atelier.space.analyze.ZoneCandidate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
@@ -47,10 +48,14 @@ class ZoneCommitterTest {
         return new long[]{ BlockPos.asLong(5, 64, 5) };
     }
 
+    private static EvidenceScore testScore() {
+        return new EvidenceScore(2.0, 2.5, 1.2, 2.0, 2.0, 1.5, 0, 0, "test");
+    }
+
     /** Build a CommittedZone already in the store with the given UUID and candidateHash. */
     private void preCommit(UUID id, long hash) {
         CommittedZone existing = new CommittedZone(
-                id, CandidateDecision.ACCEPT_INDOOR, hash,
+                id, CandidateDecision.ACCEPT_INDOOR, hash, testScore(),
                 Set.of(BlockPos.asLong(5, 64, 5)),
                 Set.of(new ChunkPos(0, 0)),
                 walkableAt5_64_5(),
@@ -67,7 +72,7 @@ class ZoneCommitterTest {
         Map<ChunkPos, ChunkClassificationData> chunkData = new HashMap<>();
         chunkData.put(new ChunkPos(0, 0), new ChunkClassificationData());
 
-        UUID result = committer.commitAccepted(c, CandidateDecision.REJECT_LOW_CONFIDENCE, null, walkableAt5_64_5(), chunkData);
+        UUID result = committer.commitAccepted(c, CandidateDecision.REJECT_LOW_CONFIDENCE, testScore(), null, walkableAt5_64_5(), chunkData);
 
         assertThat(result).isNull();
         assertThat(store.all()).isEmpty();
@@ -80,7 +85,7 @@ class ZoneCommitterTest {
         Map<ChunkPos, ChunkClassificationData> chunkData = new HashMap<>();
         chunkData.put(new ChunkPos(0, 0), new ChunkClassificationData());
 
-        UUID result = committer.commitAccepted(c, CandidateDecision.REJECT_TOO_LARGE_OPEN_AIR, null, walkableAt5_64_5(), chunkData);
+        UUID result = committer.commitAccepted(c, CandidateDecision.REJECT_TOO_LARGE_OPEN_AIR, testScore(), null, walkableAt5_64_5(), chunkData);
 
         assertThat(result).isNull();
         assertThat(store.all()).isEmpty();
@@ -94,7 +99,7 @@ class ZoneCommitterTest {
         Map<ChunkPos, ChunkClassificationData> chunkData = new HashMap<>();
         chunkData.put(new ChunkPos(0, 0), data);
 
-        UUID result = committer.commitAccepted(c, CandidateDecision.ACCEPT_INDOOR, null, walkableAt5_64_5(), chunkData);
+        UUID result = committer.commitAccepted(c, CandidateDecision.ACCEPT_INDOOR, testScore(), null, walkableAt5_64_5(), chunkData);
 
         assertThat(result).isNotNull();
         assertThat(store.get(result)).isNotNull();
@@ -119,7 +124,7 @@ class ZoneCommitterTest {
 
         synced.clear(); // reset after preCommit
 
-        UUID result = committer.commitAccepted(c, CandidateDecision.ACCEPT_INDOOR, existingId, walkableAt5_64_5(), chunkData);
+        UUID result = committer.commitAccepted(c, CandidateDecision.ACCEPT_INDOOR, testScore(), existingId, walkableAt5_64_5(), chunkData);
 
         assertThat(result).isEqualTo(existingId);
         assertThat(store.get(existingId)).isNotNull();
@@ -139,7 +144,7 @@ class ZoneCommitterTest {
 
         synced.clear();
 
-        UUID result = committer.commitAccepted(c, CandidateDecision.ACCEPT_INDOOR, existingId, walkableAt5_64_5(), chunkData);
+        UUID result = committer.commitAccepted(c, CandidateDecision.ACCEPT_INDOOR, testScore(), existingId, walkableAt5_64_5(), chunkData);
 
         assertThat(result).isNotNull();
         assertThat(result).isNotEqualTo(existingId);
@@ -154,7 +159,7 @@ class ZoneCommitterTest {
         Map<ChunkPos, ChunkClassificationData> chunkData = new HashMap<>();
         chunkData.put(new ChunkPos(0, 0), data);
 
-        UUID id = committer.commitAccepted(c, CandidateDecision.ACCEPT_INDOOR, null, walkableAt5_64_5(), chunkData);
+        UUID id = committer.commitAccepted(c, CandidateDecision.ACCEPT_INDOOR, testScore(), null, walkableAt5_64_5(), chunkData);
         assertThat(id).isNotNull();
         assertThat(data.getBlockState(5, 64, 5)).isEqualTo(ClassificationState.INSIDE);
 

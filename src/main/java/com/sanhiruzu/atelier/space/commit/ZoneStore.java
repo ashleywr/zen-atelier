@@ -14,8 +14,8 @@ public final class ZoneStore {
         CommittedZone toStore;
         if (existingName != null && zone.customName() == null) {
             toStore = new CommittedZone(
-                zone.uuid(), zone.kind(), zone.candidateHash(), zone.memberKeys(),
-                zone.chunkPositions(), zone.walkablePositions(),
+                zone.uuid(), zone.kind(), zone.candidateHash(), zone.score(),
+                zone.memberKeys(), zone.chunkPositions(), zone.walkablePositions(),
                 zone.minX(), zone.minY(), zone.minZ(),
                 zone.maxX(), zone.maxY(), zone.maxZ(),
                 existingName);

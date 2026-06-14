@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.space.commit;
 import com.sanhiruzu.atelier.space.ChunkClassificationData;
 import com.sanhiruzu.atelier.space.ClassificationState;
 import com.sanhiruzu.atelier.space.analyze.CandidateDecision;
+import com.sanhiruzu.atelier.space.analyze.EvidenceScore;
 import com.sanhiruzu.atelier.space.analyze.ZoneCandidate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
@@ -32,6 +33,7 @@ public final class ZoneCommitter {
     @Nullable
     public UUID commitAccepted(ZoneCandidate candidate,
                                CandidateDecision decision,
+                               EvidenceScore score,
                                @Nullable UUID existingId,
                                long[] walkablePositions,
                                Map<ChunkPos, ChunkClassificationData> chunkData) {
@@ -57,7 +59,7 @@ public final class ZoneCommitter {
         }
 
         CommittedZone zone = new CommittedZone(
-                uuid, decision, candidate.candidateHash(),
+                uuid, decision, candidate.candidateHash(), score,
                 candidate.memberKeys(), candidate.chunkPositions(),
                 walkablePositions,
                 candidate.minX(), candidate.minY(), candidate.minZ(),

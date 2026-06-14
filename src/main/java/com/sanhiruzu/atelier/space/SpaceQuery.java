@@ -153,11 +153,11 @@ public class SpaceQuery {
     private static ZoneData zoneDataFromCommitted(CommittedZone zone, BlockPos pos) {
         int volume = zone.walkablePositions().length;
         if (zone.kind() == CandidateDecision.ACCEPT_OUTDOOR_FUNCTIONAL) {
-            OutdoorZoneData outdoor = new OutdoorZoneData(zone.uuid(), volume, 0.5f, pos);
+            OutdoorZoneData outdoor = new OutdoorZoneData(zone.uuid(), volume, zone.enclosureScore(), pos);
             outdoor.setSpatialExtent(zone.minX(), zone.minY(), zone.minZ(), zone.maxX(), zone.maxY(), zone.maxZ());
             return outdoor;
         }
-        RoomData room = new RoomData(zone.uuid(), volume, 0.8f, Map.of(), 0.5f);
+        RoomData room = new RoomData(zone.uuid(), volume, zone.enclosureScore(), Map.of(), zone.quality());
         room.setSpatialExtent(zone.minX(), zone.minY(), zone.minZ(), zone.maxX(), zone.maxY(), zone.maxZ());
         return room;
     }

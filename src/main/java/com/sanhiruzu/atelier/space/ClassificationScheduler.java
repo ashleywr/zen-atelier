@@ -265,7 +265,7 @@ public class ClassificationScheduler {
                 Map<ChunkPos, ChunkClassificationData> chunkData = collectChunkData(candidate.chunkPositions());
                 UUID existingId = zoneStore.getByHash(candidate.candidateHash());
 
-                committer.commitAccepted(candidate, decision, existingId, walkablePositions, chunkData);
+                committer.commitAccepted(candidate, decision, score, existingId, walkablePositions, chunkData);
             }
 
             scheduleLoadedDirtyNeighbors(pa.chunkX(), pa.chunkZ());

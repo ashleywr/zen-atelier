@@ -538,7 +538,7 @@ public class ZoneRegistry {
         int volume = zone.walkablePositions().length;
         int lightLevel = level.getBrightness(LightLayer.BLOCK, playerPos);
         return new SyncZoneGridPayload(
-                zone.uuid(), isOutdoor, volume, 0.8f, 0.5f, lightLevel,
+                zone.uuid(), isOutdoor, volume, zone.enclosureScore(), zone.quality(), lightLevel,
                 null, false, null, null,
                 zone.minX(), zone.minY(), zone.minZ(),
                 zone.maxX(), zone.maxY(), zone.maxZ(),

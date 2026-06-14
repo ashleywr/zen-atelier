@@ -11,7 +11,6 @@ import com.sanhiruzu.atelier.space.analyze.EvidenceScore;
 import com.sanhiruzu.atelier.space.analyze.EvidenceScorer;
 import com.sanhiruzu.atelier.space.analyze.MicroRegion;
 import com.sanhiruzu.atelier.space.analyze.ZoneCandidate;
-import com.sanhiruzu.atelier.space.commit.CommittedZone;
 import com.sanhiruzu.atelier.space.commit.ZoneCommitter;
 import com.sanhiruzu.atelier.space.commit.ZoneStore;
 import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
@@ -296,8 +295,10 @@ public class ClassificationScheduler {
         ZoneCommitter committer = ClassificationTickHandler.getCommitter(level);
         ZoneStore zoneStore = ClassificationTickHandler.getZoneStore(level);
         int applied = 0;
-        PendingAnalysis pa;
-        while ((pa = pendingAnalyses.poll()) != null && applied < APPLY_PER_TICK) {
+        while (applied < APPLY_PER_TICK) {
+            PendingAnalysis pa = pendingAnalyses.poll();
+            if (pa == null) break;
+
             LevelChunk chunk = level.getChunkSource().getChunkNow(pa.chunkX(), pa.chunkZ());
             if (chunk == null) continue;
 
@@ -321,7 +322,7 @@ public class ClassificationScheduler {
 
                 long[] walkablePositions = collectWalkablePositions(candidate, inputs);
                 Map<ChunkPos, ChunkClassificationData> chunkData = collectChunkData(candidate.chunkPositions());
-                UUID existingId = findExistingByHash(zoneStore, candidate.candidateHash());
+                UUID existingId = zoneStore.getByHash(candidate.candidateHash());
 
                 committer.commitAccepted(candidate, decision, existingId, walkablePositions, chunkData);
             }
@@ -364,13 +365,6 @@ public class ClassificationScheduler {
             if (chunk != null) result.put(pos, ChunkClassificationAttachment.get(chunk));
         }
         return result;
-    }
-
-    private static UUID findExistingByHash(ZoneStore store, long candidateHash) {
-        for (CommittedZone z : store.all()) {
-            if (z.candidateHash() == candidateHash) return z.uuid();
-        }
-        return null;
     }
 
     private record PendingAnalysis(int chunkX, int chunkZ, long chunkKey, AnalysisResult result) {}

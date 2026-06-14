@@ -6,26 +6,36 @@ import java.util.*;
 public final class ZoneStore {
     private final Map<UUID, CommittedZone> zones = new HashMap<>();
     private final Map<UUID, String> customNames = new HashMap<>();
+    private final Map<Long, UUID> hashToUUID = new HashMap<>();
 
     public void commit(CommittedZone zone) {
         // Preserve existing custom name when updating a zone that already has one
         String existingName = customNames.get(zone.uuid());
+        CommittedZone toStore;
         if (existingName != null && zone.customName() == null) {
-            zones.put(zone.uuid(), new CommittedZone(
+            toStore = new CommittedZone(
                 zone.uuid(), zone.kind(), zone.candidateHash(), zone.memberKeys(),
                 zone.chunkPositions(), zone.walkablePositions(),
                 zone.minX(), zone.minY(), zone.minZ(),
                 zone.maxX(), zone.maxY(), zone.maxZ(),
-                existingName));
+                existingName);
         } else {
-            zones.put(zone.uuid(), zone);
+            toStore = zone;
             if (zone.customName() != null) customNames.put(zone.uuid(), zone.customName());
         }
+        zones.put(toStore.uuid(), toStore);
+        hashToUUID.put(toStore.candidateHash(), toStore.uuid());
     }
 
     public void remove(UUID id) {
-        zones.remove(id);
+        CommittedZone existing = zones.remove(id);
+        if (existing != null) hashToUUID.remove(existing.candidateHash());
         customNames.remove(id);
+    }
+
+    @Nullable
+    public UUID getByHash(long candidateHash) {
+        return hashToUUID.get(candidateHash);
     }
 
     @Nullable

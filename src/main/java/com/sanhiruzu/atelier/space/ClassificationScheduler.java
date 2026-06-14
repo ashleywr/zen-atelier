@@ -49,7 +49,7 @@ public class ClassificationScheduler {
     private static final int CHUNKS_PER_TICK = 2;
     private static final int APPLY_PER_TICK = 2;
     private static final int MAX_CONCURRENT_ASYNC = 8;
-    private static final int NEARBY_CHUNK_RADIUS = 1;
+    private static final int NEARBY_CHUNK_RADIUS = 4;
     private static final int DEFERRED_CHECK_INTERVAL = 20;
     private static final int QUEUE_BACKLOG_THRESHOLD = 20;
     private static final int QUEUE_CRITICAL_THRESHOLD = 50;
@@ -172,6 +172,7 @@ public class ClassificationScheduler {
     }
 
     private void scheduleLoadedDirtyChunk(int chunkX, int chunkZ) {
+        if (!isNearAnyPlayer(chunkX, chunkZ)) return;
         ChunkAccess neighbor = level.getChunkSource().getChunkNow(chunkX, chunkZ);
         if (neighbor == null) return;
         ChunkClassificationData data = ChunkClassificationAttachment.get(neighbor);
@@ -211,8 +212,9 @@ public class ClassificationScheduler {
         if (queueSize > QUEUE_CRITICAL_THRESHOLD) {
             long now = System.currentTimeMillis();
             if (now - lastBacklogWarning > 30000) {
-                LOGGER.warn("Zone classification queue critical: {} chunks queued ({}+ deferred). "
-                        + "Possible incompatibility with chunk management mod or excessive structures.",
+                LOGGER.warn("Zone classification queue critical: {} chunks queued, {} deferred. "
+                        + "This is normal during world load; if it persists during normal play, "
+                        + "check for a chunk management mod conflict or very large structures.",
                         queueSize, deferredChunks.size());
                 lastBacklogWarning = now;
             }
@@ -225,7 +227,6 @@ public class ClassificationScheduler {
             lastLoggedQueueSize = 0;
         }
 
-        // Pause only when the server is actually running slow (>45ms/tick).
         return level.getServer().getCurrentSmoothedTickTime() > 45.0f;
     }
 

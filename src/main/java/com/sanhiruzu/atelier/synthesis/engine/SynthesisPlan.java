@@ -5,7 +5,8 @@ import java.util.List;
 public record SynthesisPlan(
         SynthesisProfile profile,
         List<RequirementStatus> requirements,
-        OutcomePreview preview
+        OutcomePreview preview,
+        boolean elementBudgetSatisfied
 ) {
     public SynthesisPlan {
         if (profile == null) {
@@ -18,6 +19,6 @@ public record SynthesisPlan(
     }
 
     public boolean canSynthesize() {
-        return requirements.stream().allMatch(RequirementStatus::satisfied);
+        return elementBudgetSatisfied && requirements.stream().allMatch(RequirementStatus::satisfied);
     }
 }

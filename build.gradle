@@ -401,6 +401,7 @@ tasks.withType(ProcessResources).configureEach {
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
+            artifactId = mod_id
             from components.java
         }
     }
@@ -430,3 +431,6 @@ idea {
         downloadJavadoc = true
     }
 }
+
+ext.synesthesiaLocalModKey = 'zen_atelier'
+apply from: 'C:/WorkDir/synesthesia/tools/synesthesia-sync.gradle'

@@ -1,5 +1,8 @@
 {
   "values": [
-    "furniture:telescope"
+    {
+      "id": "furniture:telescope",
+      "required": false
+    }
   ]
 }

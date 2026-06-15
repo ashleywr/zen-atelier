@@ -1,28 +1,100 @@
 {
   "values": [
-    "candlelight:table",
-    "candlelight:side_table",
-    "candlelight:oak_table",
-    "candlelight:oak_big_table",
-    "candlelight:birch_table",
-    "candlelight:birch_big_table",
-    "candlelight:spruce_table",
-    "candlelight:spruce_big_table",
-    "candlelight:dark_oak_table",
-    "candlelight:dark_oak_big_table",
-    "candlelight:acacia_table",
-    "candlelight:acacia_big_table",
-    "candlelight:jungle_table",
-    "candlelight:jungle_big_table",
-    "candlelight:mangrove_table",
-    "candlelight:mangrove_big_table",
-    "candlelight:warped_table",
-    "candlelight:warped_big_table",
-    "candlelight:crimson_table",
-    "candlelight:crimson_big_table",
-    "candlelight:cherry_table",
-    "candlelight:cherry_big_table",
-    "candlelight:bamboo_table",
-    "candlelight:bamboo_big_table"
+    {
+      "id": "candlelight:table",
+      "required": false
+    },
+    {
+      "id": "candlelight:side_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:oak_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:oak_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:birch_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:birch_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:spruce_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:spruce_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:dark_oak_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:dark_oak_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:acacia_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:acacia_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:jungle_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:jungle_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:mangrove_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:mangrove_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:warped_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:warped_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:crimson_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:crimson_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:cherry_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:cherry_big_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:bamboo_table",
+      "required": false
+    },
+    {
+      "id": "candlelight:bamboo_big_table",
+      "required": false
+    }
   ]
 }

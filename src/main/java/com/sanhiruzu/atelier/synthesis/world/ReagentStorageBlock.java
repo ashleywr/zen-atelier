@@ -2,6 +2,7 @@ package com.sanhiruzu.atelier.synthesis.world;
 
 import com.mojang.serialization.MapCodec;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
+import com.sanhiruzu.atelier.synthesis.gathering.GatheringBasketItem;
 import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainerSnapshot;
@@ -19,6 +20,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+
+import java.util.List;
 
 public class ReagentStorageBlock extends Block {
     public static final MapCodec<ReagentStorageBlock> CODEC = simpleCodec(ReagentStorageBlock::new);
@@ -44,7 +47,38 @@ public class ReagentStorageBlock extends Block {
     ) {
         ReagentStack reagent = ReagentItem.getReagent(stack);
         if (reagent == null) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            if (!GatheringBasketItem.isBasket(stack)) {
+                return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            }
+
+            ReagentContainer basket = GatheringBasketItem.getContents(stack);
+            List<ReagentStack> basketEntries = basket.entries();
+            if (basketEntries.isEmpty()) {
+                return ItemInteractionResult.CONSUME;
+            }
+
+            if (level.isClientSide) {
+                return ItemInteractionResult.SUCCESS;
+            }
+
+            ReagentCabinetSavedData data = ReagentCabinetSavedData.get((ServerLevel) level);
+            ReagentContainer container = data.getContainer(pos);
+            for (ReagentStack entry : basketEntries) {
+                container.insert(entry);
+            }
+            data.putContainer(pos, container);
+            if (!player.getAbilities().instabuild) {
+                GatheringBasketItem.setContents(stack, new ReagentContainer());
+            }
+
+            int stacks = basketEntries.size();
+            int units = basketEntries.stream().mapToInt(ReagentStack::amount).sum();
+            player.displayClientMessage(Component.translatable(
+                    "message.zen_atelier.reagent_storage.basket_deposited",
+                    stacks,
+                    units
+            ), true);
+            return ItemInteractionResult.CONSUME;
         }
         if (level.isClientSide) {
             return ItemInteractionResult.SUCCESS;

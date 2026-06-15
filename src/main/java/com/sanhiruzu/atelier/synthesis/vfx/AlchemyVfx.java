@@ -83,6 +83,13 @@ public final class AlchemyVfx {
         dustBurst(level, pos, styleForReagentId(reagent.reagentId()), 8, 1.22D, 0.12D, 0.05D, 0.12D, 0.04D);
     }
 
+    public static void gatheringCollected(ServerLevel level, Vec3 center, ReagentStack reagent) {
+        AlchemyVfxStyle style = styleForReagentId(reagent.reagentId());
+        particleBurst(level, center.add(0.0D, 0.92D, 0.0D), ParticleTypes.GLOW, 4, 0.16D, 0.1D, 0.16D, 0.02D);
+        dustBurst(level, center.add(0.0D, 0.78D, 0.0D), style, 7, 0.2D, 0.1D, 0.2D, 0.025D);
+        particleBurst(level, center.add(0.0D, 0.08D, 0.0D), ParticleTypes.POOF, 2, 0.1D, 0.03D, 0.1D, 0.005D);
+    }
+
     public static void extractionRejected(ServerLevel level, BlockPos pos, int particleCount) {
         dustBurst(level, pos, REJECT, particleCount, 1.0D, 0.28D, 0.08D, 0.28D, 0.04D);
         particleBurst(level, pos, ParticleTypes.SMOKE, Math.max(3, particleCount / 2), 1.0D, 0.22D, 0.08D, 0.22D, 0.03D);
@@ -97,6 +104,11 @@ public final class AlchemyVfx {
         particleBurst(level, center, categoryStyle.accent(), Math.max(6, richness / 3), 0.35D, 0.22D, 0.35D, 0.05D);
         dustBurst(level, center, categoryStyle, richness, 0.36D, 0.18D, 0.36D, 0.05D);
         dustBurst(level, center, reagentStyle, Math.max(8, richness / 2), 0.28D, 0.12D, 0.28D, 0.035D);
+        if (!result.result().successful()) {
+            particleBurst(level, center.add(0.0D, 0.06D, 0.0D), ParticleTypes.SMOKE, 30, 0.5D, 0.18D, 0.5D, 0.035D);
+            particleBurst(level, center.add(0.0D, -0.08D, 0.0D), ParticleTypes.CLOUD, 18, 0.62D, 0.12D, 0.62D, 0.012D);
+            dustBurst(level, center.add(0.0D, 0.03D, 0.0D), REJECT, 26, 0.46D, 0.2D, 0.46D, 0.055D);
+        }
         emitSynthesisAfterglow(level, center, categoryStyle, result.result().successful());
     }
 

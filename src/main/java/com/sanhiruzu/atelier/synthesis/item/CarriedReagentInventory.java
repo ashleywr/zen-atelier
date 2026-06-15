@@ -1,6 +1,7 @@
 package com.sanhiruzu.atelier.synthesis.item;
 
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
+import com.sanhiruzu.atelier.synthesis.gathering.GatheringBasketItem;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
@@ -19,6 +20,12 @@ public final class CarriedReagentInventory {
             ReagentStack reagent = ReagentItem.getReagent(inventory.getItem(slot));
             if (reagent != null) {
                 container.insert(reagent);
+                continue;
+            }
+            if (GatheringBasketItem.isBasket(inventory.getItem(slot))) {
+                for (ReagentStack entry : GatheringBasketItem.entries(inventory.getItem(slot))) {
+                    container.insert(entry);
+                }
             }
         }
         return container;
@@ -32,6 +39,13 @@ public final class CarriedReagentInventory {
             if (reagent != null) {
                 slots.add(slot);
                 carried.add(reagent);
+                continue;
+            }
+            if (GatheringBasketItem.isBasket(inventory.getItem(slot))) {
+                for (ReagentStack entry : GatheringBasketItem.entries(inventory.getItem(slot))) {
+                    slots.add(slot);
+                    carried.add(entry);
+                }
             }
         }
 
@@ -41,12 +55,30 @@ public final class CarriedReagentInventory {
         }
 
         List<ReagentStack> remainingStacks = remaining.get();
+        java.util.Map<Integer, ReagentContainer> basketRemainders = new java.util.LinkedHashMap<>();
         for (int i = 0; i < slots.size(); i++) {
+            int slot = slots.get(i);
+            ItemStack stack = inventory.getItem(slot);
             ReagentStack reagent = remainingStacks.get(i);
+            if (GatheringBasketItem.isBasket(stack)) {
+                if (reagent != null) {
+                    basketRemainders.computeIfAbsent(slot, ignored -> new ReagentContainer()).insert(reagent);
+                }
+                continue;
+            }
             if (reagent == null) {
-                inventory.setItem(slots.get(i), ItemStack.EMPTY);
+                inventory.setItem(slot, ItemStack.EMPTY);
             } else {
-                inventory.setItem(slots.get(i), ReagentItem.createStack(reagent));
+                inventory.setItem(slot, ReagentItem.createStack(reagent));
+            }
+        }
+        for (var entry : basketRemainders.entrySet()) {
+            GatheringBasketItem.setContents(inventory.getItem(entry.getKey()), entry.getValue());
+        }
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (GatheringBasketItem.isBasket(stack) && !basketRemainders.containsKey(slot)) {
+                GatheringBasketItem.setContents(stack, new ReagentContainer());
             }
         }
         inventory.setChanged();

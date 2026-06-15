@@ -18,12 +18,18 @@ public final class SynthesisPlanner {
 
         List<RequirementStatus> statuses = new ArrayList<>();
         for (SynthesisRequirement requirement : profile.requirements()) {
-            int available = remaining.totalAmount(requirement.query());
+            var reagentQuery = SynthesisRequirementMatcher.reagentQuery(requirement.query());
+            int available = remaining.totalAmount(reagentQuery);
             int missing = Math.max(0, requirement.amount() - available);
-            boolean satisfied = missing == 0 && !remaining.extract(requirement.query(), requirement.amount()).isEmpty();
+            boolean satisfied = missing == 0 && !remaining.extract(reagentQuery, requirement.amount()).isEmpty();
             statuses.add(new RequirementStatus(requirement, available, missing, satisfied));
         }
 
-        return new SynthesisPlan(profile, statuses, OutcomePreview.forSynthesis(profile.outcomes(), risk));
+        return new SynthesisPlan(
+                profile,
+                statuses,
+                OutcomePreview.forSynthesis(profile.outcomes(), risk),
+                SynthesisRequirementMatcher.elementBudgetSatisfied(profile.requirements(), container.entries())
+        );
     }
 }

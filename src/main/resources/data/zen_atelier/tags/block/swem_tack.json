@@ -1,7 +1,16 @@
 {
   "values": [
-    "#swem:holds_leash_knot",
-    "swem:horse_armor_rack",
-    "swem:locker"
+    {
+      "id": "#swem:holds_leash_knot",
+      "required": false
+    },
+    {
+      "id": "swem:horse_armor_rack",
+      "required": false
+    },
+    {
+      "id": "swem:locker",
+      "required": false
+    }
   ]
 }

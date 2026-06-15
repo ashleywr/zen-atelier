@@ -61,6 +61,42 @@ class SynthesisExecutorTest {
         assertThat(execution.result().effectiveTierCap()).isEqualTo(1);
     }
 
+    @Test
+    void consumesElementSupportSeparatelyFromFamilyRequirements() {
+        SynthesisProfile profile = new SynthesisProfile(
+                "zen_atelier:separate_elements",
+                List.of(
+                        new SynthesisRequirement(ReagentQuery.builder()
+                                .requiredCategories(Set.of("zen_atelier:organic"))
+                                .minElements(Map.of("water", 1))
+                                .build(), 35),
+                        new SynthesisRequirement(ReagentQuery.builder()
+                                .requiredCategories(Set.of("zen_atelier:binding"))
+                                .minElements(Map.of("water", 1))
+                                .build(), 20)
+                ),
+                2,
+                List.of(new SynthesisOutcome(
+                        OutcomeClass.SUCCESS,
+                        1,
+                        List.of(new SynthesisOutput("zen_atelier:output", 1, 1, 1, List.of())),
+                        List.of()
+                ))
+        );
+        ReagentContainer container = new ReagentContainer();
+        container.insert(reagentWithCategories("zen_atelier:taun_herb", 35, Set.of("zen_atelier:organic"), Map.of()));
+        container.insert(reagentWithCategories("zen_atelier:string", 20, Set.of("zen_atelier:binding"), Map.of()));
+        container.insert(reagentWithCategories("zen_atelier:aqua_gel", 2, Set.of("zen_atelier:filler"), Map.of("water", 2)));
+
+        SynthesisExecutionResult execution = executor.execute(profile, container, context(), 1L);
+
+        assertThat(execution.consumedReagents()).extracting(ReagentStack::reagentId)
+                .containsExactly("zen_atelier:taun_herb", "zen_atelier:string", "zen_atelier:aqua_gel");
+        assertThat(execution.consumedReagents()).extracting(ReagentStack::amount)
+                .containsExactly(35, 20, 1);
+        assertThat(container.totalAmount(ReagentQuery.any())).isEqualTo(1);
+    }
+
     private static SynthesisProfile sampleProfile() {
         return new SynthesisProfile(
                 "zen_atelier:crude_mining_coating",
@@ -86,6 +122,22 @@ class SynthesisExecutorTest {
 
     private static ReagentStack reagent(String id, int amount, String element) {
         return new ReagentStack(id, amount, 2, 30, 50, 0, Map.of(element, 2), List.of(), Set.of());
+    }
+
+    private static ReagentStack reagentWithCategories(String id, int amount, Set<String> categories, Map<String, Integer> elements) {
+        return new ReagentStack(
+                id,
+                categories,
+                amount,
+                1,
+                30,
+                50,
+                0,
+                elements,
+                List.of(),
+                com.sanhiruzu.atelier.synthesis.core.ReagentShape.SINGLE,
+                Set.of()
+        );
     }
 
     private static AttemptContext context() {

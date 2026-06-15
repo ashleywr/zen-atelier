@@ -1,6 +1,12 @@
 {
   "values": [
-    "furniture:copper_fish_tank",
-    "furniture:iron_fish_tank"
+    {
+      "id": "furniture:copper_fish_tank",
+      "required": false
+    },
+    {
+      "id": "furniture:iron_fish_tank",
+      "required": false
+    }
   ]
 }

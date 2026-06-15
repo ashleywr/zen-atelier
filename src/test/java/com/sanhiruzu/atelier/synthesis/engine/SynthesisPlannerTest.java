@@ -65,6 +65,39 @@ class SynthesisPlannerTest {
         assertThat(plan.requirements()).extracting(RequirementStatus::missingAmount).containsExactly(0, 40);
     }
 
+    @Test
+    void treatsElementsAsRecipeBudgetSeparateFromReagentFamilies() {
+        SynthesisProfile profile = new SynthesisProfile(
+                "zen_atelier:separate_elements",
+                List.of(
+                        new SynthesisRequirement(ReagentQuery.builder()
+                                .requiredCategories(Set.of("zen_atelier:organic"))
+                                .minElements(Map.of("water", 1))
+                                .build(), 35),
+                        new SynthesisRequirement(ReagentQuery.builder()
+                                .requiredCategories(Set.of("zen_atelier:binding"))
+                                .minElements(Map.of("water", 1))
+                                .build(), 20)
+                ),
+                2,
+                List.of(new SynthesisOutcome(
+                        OutcomeClass.SUCCESS,
+                        1,
+                        List.of(new SynthesisOutput("zen_atelier:output", 1, 1, 1, List.of())),
+                        List.of()
+                ))
+        );
+        ReagentContainer container = new ReagentContainer();
+        container.insert(reagentWithCategories("zen_atelier:taun_herb", 35, Set.of("zen_atelier:organic"), Map.of()));
+        container.insert(reagentWithCategories("zen_atelier:string", 20, Set.of("zen_atelier:binding"), Map.of()));
+        container.insert(reagentWithCategories("zen_atelier:aqua_gel", 1, Set.of("zen_atelier:filler"), Map.of("water", 2)));
+
+        SynthesisPlan plan = planner.plan(profile, container, 0);
+
+        assertThat(plan.canSynthesize()).isTrue();
+        assertThat(plan.requirements()).extracting(RequirementStatus::satisfied).containsExactly(true, true);
+    }
+
     private static SynthesisProfile sampleProfile() {
         return new SynthesisProfile(
                 "zen_atelier:crude_mining_coating",
@@ -98,6 +131,22 @@ class SynthesisPlannerTest {
                 0,
                 Map.of(element, 2),
                 List.of(),
+                Set.of()
+        );
+    }
+
+    private static ReagentStack reagentWithCategories(String id, int amount, Set<String> categories, Map<String, Integer> elements) {
+        return new ReagentStack(
+                id,
+                categories,
+                amount,
+                1,
+                30,
+                50,
+                0,
+                elements,
+                List.of(),
+                com.sanhiruzu.atelier.synthesis.core.ReagentShape.SINGLE,
                 Set.of()
         );
     }

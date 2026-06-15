@@ -1,5 +1,8 @@
 {
   "values": [
-    "#spectrum:crystallarieum_growable_clusters"
+    {
+      "id": "#spectrum:crystallarieum_growable_clusters",
+      "required": false
+    }
   ]
 }

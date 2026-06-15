@@ -44,14 +44,18 @@ public final class SynthesisEngine {
         }
 
         for (SynthesisRequirement requirement : attempt.profile().requirements()) {
-            int availableAmount = available.totalAmount(requirement.query());
+            var reagentQuery = SynthesisRequirementMatcher.reagentQuery(requirement.query());
+            int availableAmount = available.totalAmount(reagentQuery);
             trace.add("requirement amount " + availableAmount + " of " + requirement.amount());
             if (availableAmount < requirement.amount()) {
                 throw new IllegalArgumentException("missing required reagents for " + attempt.profile().id());
             }
-            if (available.extract(requirement.query(), requirement.amount()).isEmpty()) {
+            if (available.extract(reagentQuery, requirement.amount()).isEmpty()) {
                 throw new IllegalArgumentException("missing required reagents for " + attempt.profile().id());
             }
+        }
+        if (!SynthesisRequirementMatcher.elementBudgetSatisfied(attempt.profile().requirements(), attempt.reagents())) {
+            throw new IllegalArgumentException("missing required elements for " + attempt.profile().id());
         }
     }
 

@@ -1,0 +1,2 @@
+# Atelier public scripting API
++ com.sanhiruzu.atelier.api

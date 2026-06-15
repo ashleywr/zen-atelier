@@ -10,7 +10,11 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import java.lang.reflect.Method;
 
 /**
- * Applies zone climate (from {@link ZoneAtmosphere}) to player temperature via Thermoo.
+ * Applies local climate to player temperature via Thermoo.
+ *
+ * <p>Climate application is disabled pending the atmosphere substrate; the Thermoo wiring
+ * (reflection-based detection, server-tick hook) is kept so re-enabling is a localized change
+ * to {@code applyZoneClimate}.
  *
  * <p>Thermoo injects temperature management into {@link net.minecraft.world.entity.LivingEntity}
  * using Mixin. The injected methods are accessed by name via reflection so this integration
@@ -22,13 +26,12 @@ import java.lang.reflect.Method;
  *   void thermoo$setTemperature(int temperature)
  * </pre>
  *
- * <p>Temperature model: the zone's {@link ZoneAtmosphere#temperatureOffset()} (Atelier units,
- * roughly -100 to +100) is translated to Thermoo units and used as the equilibrium target.
- * Each application interval, the player's temperature is nudged 10% of the remaining distance
- * toward that target. This competes naturally with Thermoo's environmental factors (biome cold,
- * equipment insulation, etc.) so equilibrium reflects both the room and the outside world.
+ * <p>Temperature model (when re-enabled): a local temperature offset (Atelier units, roughly
+ * -100 to +100) is translated to Thermoo units and used as the equilibrium target. Each
+ * application interval, the player's temperature is nudged 10% of the remaining distance toward
+ * that target, competing naturally with Thermoo's environmental factors.
  *
- * <p>Tune {@link #THERMOO_UNITS_PER_ATELIER_UNIT} if the zone effect feels too weak or strong
+ * <p>Tune {@link #THERMOO_UNITS_PER_ATELIER_UNIT} if the effect feels too weak or strong
  * relative to your Thermoo installation's temperature range (typically ±2600 for extreme states).
  */
 public final class ThermooIntegration {

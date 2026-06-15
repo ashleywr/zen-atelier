@@ -374,6 +374,7 @@
   "message.zen_atelier.reagent_storage.deposited": "Stored %s units of %s.",
   "message.zen_atelier.reagent_storage.basket_deposited": "Deposited %s stacks, %s units from gathering basket.",
   "message.zen_atelier.reagent_storage.summary": "Reagent storage: %s stacks, %s units.",
+  "message.zen_atelier.reagent_storage.dumped": "Dumped %s stacks, %s units into storage.",
   "message.zen_atelier.gathering.got": "Gathered %s x%s (Q%s)",
   "message.zen_atelier.synthesis.debug_copied": "Synthesis debug JSON copied to clipboard.",
   "message.zen_atelier.tool_coating.applied": "Tool coating applied.",

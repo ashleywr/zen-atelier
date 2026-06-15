@@ -7,10 +7,6 @@ public class CommandEventHandler {
     @SubscribeEvent
     public static void onCommandsRegister(RegisterCommandsEvent event) {
         DebugCommand.register(event.getDispatcher());
-        QueryBlockCommand.register(event.getDispatcher());
-        CaptureZoneCommand.register(event.getDispatcher());
-        InspectZoneCommand.register(event.getDispatcher());
-        RoomFixtureCommand.register(event.getDispatcher());
         SynthesisDebugCommand.register(event.getDispatcher());
     }
 }

@@ -2,9 +2,6 @@ package com.sanhiruzu.atelier.integration.minecolonies;
 
 import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.Config;
-import com.sanhiruzu.atelier.space.zone.RoomData;
-import com.sanhiruzu.atelier.space.zone.ZoneData;
-import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -26,9 +23,7 @@ import java.lang.reflect.Proxy;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 public final class MineColoniesIntegration {
     private static final String MOD_ID = "minecolonies";
@@ -134,50 +129,9 @@ public final class MineColoniesIntegration {
         return "BUILD".equals(name) || "UPGRADE".equals(name) || "REPAIR".equals(name);
     }
 
-    private static float colonyResidenceComfort(ServerLevel level, Object colony) throws ReflectiveOperationException {
-        ZoneRegistry registry = ZoneRegistry.get(level);
-        float total = 0f;
-        int count = 0;
-
-        for (UUID zoneId : registry.getAllRoomIds()) {
-            ZoneData data = registry.getRoom(zoneId);
-            if (!(data instanceof RoomData room) || !room.hasSpatialExtent() || !isResidenceRoom(room)) {
-                continue;
-            }
-
-            BlockPos center = centerOf(room);
-            if (isInsideColony(colony, level, center)) {
-                total += room.isDegraded() ? room.getQuality() * 0.5f : room.getQuality();
-                count++;
-            }
-        }
-
-        return count == 0 ? 0f : total / count;
-    }
-
-    private static boolean isResidenceRoom(RoomData room) {
-        ResourceLocation typeId = room.getZoneTypeId();
-        if (typeId == null) {
-            return false;
-        }
-
-        String path = typeId.getPath().toLowerCase(Locale.ROOT);
-        return (MOD_ID.equals(typeId.getNamespace()) && path.contains("residence")) || path.contains("bedroom");
-    }
-
-    private static boolean isInsideColony(Object colony, Level level, BlockPos pos) throws ReflectiveOperationException {
-        Method method = colony.getClass().getMethod("isCoordInColony", Level.class, BlockPos.class);
-        method.setAccessible(true);
-        Object result = method.invoke(colony, level, pos);
-        return result instanceof Boolean inside && inside;
-    }
-
-    private static BlockPos centerOf(ZoneData data) {
-        return new BlockPos(
-                (data.getMinX() + data.getMaxX()) / 2,
-                (data.getMinY() + data.getMaxY()) / 2,
-                (data.getMinZ() + data.getMaxZ()) / 2
-        );
+    private static float colonyResidenceComfort(ServerLevel level, Object colony) {
+        // Room bonuses disabled pending the atmosphere substrate.
+        return 0f;
     }
 
     private static Object builderBuilding(Object colony, Object workOrder) throws ReflectiveOperationException {

@@ -1,9 +1,6 @@
 package com.sanhiruzu.atelier.integration.thermoo;
 
 import com.sanhiruzu.atelier.ZenAtelier;
-import com.sanhiruzu.atelier.api.ZoneAPI;
-import com.sanhiruzu.atelier.space.zone.ZoneAtmosphere;
-import com.sanhiruzu.atelier.space.zone.ZoneData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.fml.ModList;
@@ -88,26 +85,6 @@ public final class ThermooIntegration {
     }
 
     private static void applyZoneClimate(ServerPlayer player, ServerLevel level) {
-        ZoneData zone = ZoneAPI.getIndoorZoneContaining(level, player.blockPosition());
-        ZoneAtmosphere atmosphere = ZoneAPI.getAtmosphere(zone);
-        if (atmosphere == null || atmosphere.temperatureOffset() == 0) return;
-
-        int target = atmosphere.temperatureOffset() * THERMOO_UNITS_PER_ATELIER_UNIT;
-        try {
-            int current = (int) thermooGetTemperature.invoke(player);
-            // Nudge current temperature toward zone target; never overshoot
-            int delta = (int) ((target - current) * NUDGE_RATE);
-            if (delta == 0) {
-                delta = target > current ? 1 : -1;
-            }
-            int next = target > current
-                    ? Math.min(target, current + delta)
-                    : Math.max(target, current + delta);
-            if (next != current) {
-                thermooSetTemperature.invoke(player, next);
-            }
-        } catch (ReflectiveOperationException ex) {
-            // Suppress per-tick errors after initialization succeeded
-        }
+        // Room bonuses disabled pending the atmosphere substrate.
     }
 }

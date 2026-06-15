@@ -4,9 +4,6 @@ import com.minecolonies.api.colony.ICitizenData;
 import com.minecolonies.api.colony.buildings.IBuilding;
 import com.minecolonies.api.entity.citizen.AbstractEntityCitizen;
 import com.sanhiruzu.atelier.ZenAtelier;
-import com.sanhiruzu.atelier.space.SpaceQuery;
-import com.sanhiruzu.atelier.space.zone.RoomData;
-import com.sanhiruzu.atelier.space.zone.ZoneData;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
@@ -93,35 +90,11 @@ final class ColonistRoomBonuses {
     }
 
     private static void applyWorkEffect(ServerLevel level, ICitizenData citizen, LivingEntity entity) {
-        IBuilding workBuilding = citizen.getWorkBuilding();
-        if (workBuilding == null) return;
-
-        ZoneData zone = SpaceQuery.getRoomAt(level, workBuilding.getPosition());
-        if (!(zone instanceof RoomData room) || room.getZoneTypeId() == null) return;
-
-        int quality = Math.round(room.getQuality() * 100);
-        if (quality < 40) return;
-
-        EffectConfig cfg = WORK_EFFECTS.get(room.getZoneTypeId().toString());
-        if (cfg == null) return;
-
-        entity.addEffect(new MobEffectInstance(cfg.effect, cfg.duration, effectLevel(quality, cfg), false, false));
+        // Room bonuses disabled pending the atmosphere substrate.
     }
 
     private static void applyHomeEffect(ServerLevel level, ICitizenData citizen, LivingEntity entity) {
-        IBuilding homeBuilding = citizen.getHomeBuilding();
-        if (homeBuilding == null) return;
-
-        ZoneData zone = SpaceQuery.getRoomAt(level, homeBuilding.getPosition());
-        if (!(zone instanceof RoomData room) || room.getZoneTypeId() == null) return;
-
-        int quality = Math.round(room.getQuality() * 100);
-        if (quality < 50) return;
-
-        EffectConfig cfg = HOME_EFFECTS.get(room.getZoneTypeId().toString());
-        if (cfg == null) return;
-
-        entity.addEffect(new MobEffectInstance(cfg.effect, cfg.duration, effectLevel(quality, cfg), false, false));
+        // Room bonuses disabled pending the atmosphere substrate.
     }
 
     private static int effectLevel(int quality, EffectConfig cfg) {

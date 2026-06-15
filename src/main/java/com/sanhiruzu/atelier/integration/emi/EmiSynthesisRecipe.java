@@ -71,11 +71,9 @@ final class EmiSynthesisRecipe extends BasicEmiRecipe {
             widgets.addSlot(outputs.get(i), 118 + (i % 2) * 24, 18 + (i / 2) * 24).recipeContext(this);
         }
 
-        int pctIndoor  = successPct(profile, SynthesisStationMenu.ROOM_CONTEXT_INDOOR);
-        int pctAtelier = successPct(profile, SynthesisStationMenu.ROOM_CONTEXT_ATELIER);
-        int pctFine    = successPct(profile, SynthesisStationMenu.ROOM_CONTEXT_FINE_ATELIER);
-        widgets.addText(Component.literal(pctIndoor + "% / " + pctAtelier + "% / " + pctFine + "%"), 7, 74, 0xFF806F56, false);
-        widgets.addText(Component.literal("indoor / atelier / fine"), 7, 83, 0xFF4A3C2C, false);
+        int pct = successPct(profile);
+        widgets.addText(Component.literal(pct + "%"), 7, 74, 0xFF806F56, false);
+        widgets.addText(Component.literal("success"), 7, 83, 0xFF4A3C2C, false);
     }
 
     private static List<EmiStack> distinctOutputs(List<SynthesisOutcome> outcomes) {
@@ -97,8 +95,8 @@ final class EmiSynthesisRecipe extends BasicEmiRecipe {
         return stack.getId() + "|" + stack.getComponentChanges();
     }
 
-    private static int successPct(SynthesisProfile profile, int context) {
-        SynthesisProfile effective = SynthesisStationMenu.effectiveProfile(profile, context);
+    private static int successPct(SynthesisProfile profile) {
+        SynthesisProfile effective = SynthesisStationMenu.effectiveProfile(profile, 0);
         int total = effective.outcomes().stream().mapToInt(o -> o.weight()).sum();
         int success = effective.outcomes().stream().filter(o -> o.outcomeClass().successful()).mapToInt(o -> o.weight()).sum();
         return total > 0 ? (int) Math.round(100.0 * success / total) : 0;

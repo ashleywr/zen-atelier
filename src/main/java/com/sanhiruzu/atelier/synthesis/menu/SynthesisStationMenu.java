@@ -1,13 +1,8 @@
 package com.sanhiruzu.atelier.synthesis.menu;
 
 import com.sanhiruzu.atelier.ZenAtelier;
-import com.sanhiruzu.atelier.space.SpaceQuery;
-import com.sanhiruzu.atelier.space.zone.RoomData;
-import com.sanhiruzu.atelier.space.zone.ZoneData;
-import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
 import com.sanhiruzu.atelier.synthesis.core.ApparatusState;
 import com.sanhiruzu.atelier.synthesis.core.AttemptContext;
-import com.sanhiruzu.atelier.synthesis.core.OutcomeClass;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import com.sanhiruzu.atelier.synthesis.core.SynthesisRecipeCategory;
 import com.sanhiruzu.atelier.synthesis.data.SynthesisProfileRegistry;
@@ -30,12 +25,10 @@ import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
 import com.sanhiruzu.atelier.synthesis.vfx.AlchemyVfx;
 import com.sanhiruzu.atelier.synthesis.world.PlayerSynthesisKnowledge;
 import com.sanhiruzu.atelier.synthesis.world.RoomReagentStorage;
-import com.sanhiruzu.atelier.synthesis.world.RoomAlchemyContextFactory;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisBoardFusionPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisResultPayload;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -62,12 +55,6 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
     public static final int BUTTON_CATEGORY_BASE = 20;
     public static final int BUTTON_PROFILE_BASE = 100;
     private static final int CRAFTED_MASK_SLOTS = 16;
-    public static final int ROOM_CONTEXT_OUTSIDE = 0;
-    public static final int ROOM_CONTEXT_INDOOR = 1;
-    public static final int ROOM_CONTEXT_ATELIER = 2;
-    public static final int ROOM_CONTEXT_FINE_ATELIER = 3;
-    private static final int OUTSIDE_FAILURE_WEIGHT = 1200;
-    private static final ResourceLocation ATELIER_ROOM_ID = ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "atelier");
     private static final int VAULT_X = 16;
     private static final int VAULT_Y = 220;
     private static final int VAULT_COLUMNS = 18;
@@ -79,7 +66,6 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
     private int contextRisk;
     private int roomStorageStacks;
     private int roomStorageUnits;
-    private int roomContext = ROOM_CONTEXT_OUTSIDE;
     private final int[] craftedRecipeMasks = new int[CRAFTED_MASK_SLOTS];
     private List<ReagentStack> clientRoomVaultReagents = List.of();
     private List<ReagentStack> lastServerRoomVaultReagents = List.of();
@@ -142,17 +128,6 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
                 roomStorageUnits = Math.max(0, value);
             }
         });
-        addDataSlot(new DataSlot() {
-            @Override
-            public int get() {
-                return roomContext;
-            }
-
-            @Override
-            public void set(int value) {
-                roomContext = Math.clamp(value, ROOM_CONTEXT_OUTSIDE, ROOM_CONTEXT_FINE_ATELIER);
-            }
-        });
         for (int i = 0; i < craftedRecipeMasks.length; i++) {
             int maskIndex = i;
             addDataSlot(new DataSlot() {
@@ -167,7 +142,6 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
                 }
             });
         }
-        forceStationRoomRefresh();
         refreshStationState();
         addPlayerInventorySlots(playerInventory);
         addSlot(new Slot(catalystContainer, 0, CATALYST_X, CATALYST_Y) {
@@ -182,7 +156,7 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
     public List<SynthesisProfile> profiles() {
         return SynthesisProfileRegistry.all().stream()
                 .map(definition -> definition.toCore())
-                .filter(profile -> recipeUnlocked(profile, roomContext))
+                .filter(profile -> recipeUnlocked(profile, 0))
                 .sorted(Comparator.comparing(SynthesisProfile::category, SynthesisRecipeCategory.comparator())
                         .thenComparing(SynthesisProfile::id))
                 .toList();
@@ -267,26 +241,6 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         this.pendingFusionData = payload;
     }
 
-    public boolean hasValidSynthesisRoom() {
-        return roomContext >= ROOM_CONTEXT_INDOOR;
-    }
-
-    public boolean hasAtelierRoom() {
-        return roomContext >= ROOM_CONTEXT_ATELIER;
-    }
-
-    public boolean hasFineAtelierRoom() {
-        return roomContext >= ROOM_CONTEXT_FINE_ATELIER;
-    }
-
-    public int synthesisRoomContext() {
-        return roomContext;
-    }
-
-    public int unlockedRecipeTier() {
-        return maxRecipeTier(roomContext);
-    }
-
     @Override
     public boolean clickMenuButton(Player player, int buttonId) {
         if (buttonId == BUTTON_PREVIOUS) {
@@ -366,28 +320,13 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
 
     private void refreshStationState() {
         if (!playerInventory.player.level().isClientSide) {
-            roomContext = stationRoomContext();
             contextRisk = currentAttemptContext().risk();
             refreshRoomStorageStats();
         }
         refreshCraftedRecipeMask();
     }
 
-    private void forceStationRoomRefresh() {
-        if (playerInventory.player.level().isClientSide) {
-            return;
-        }
-        access.evaluate((level, pos) -> {
-            if (level instanceof ServerLevel serverLevel) {
-                ZoneRegistry.get(serverLevel).bootstrapChunk(serverLevel.getChunk(pos), serverLevel);
-            }
-            return true;
-        }, false);
-    }
-
     private SynthesisAttemptInput buildAttemptInput(Player player, SynthesisBoardFusionPayload payload) {
-        int executionContext = stationRoomContext();
-        roomContext = executionContext;
         Optional<SynthesisProfile> profile = selectedProfile();
         if (profile.isEmpty()) {
             return null;
@@ -397,7 +336,7 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         ReagentContainer combined = RoomReagentStorage.combine(carried, roomStorage);
         AttemptContext context = currentAttemptContext();
         ResolvedFusionData fusion = payload != null ? payload.resolve() : ResolvedFusionData.EMPTY;
-        SynthesisProfile effective = effectiveProfile(profile.get(), executionContext);
+        SynthesisProfile effective = effectiveProfile(profile.get());
         if (fusion.successWeightBonus() > 0) {
             effective = applyFusionSuccessBonus(effective, fusion.successWeightBonus());
         }
@@ -439,6 +378,19 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
                             ReagentQuery.DEBUG_UNIVERSAL_REAGENT_ID, status.missingAmount(), 1));
                 }
             }
+            if (!plan.elementBudgetSatisfied()) {
+                input.reagents().insert(new ReagentStack(
+                        ReagentQuery.DEBUG_UNIVERSAL_REAGENT_ID,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        com.sanhiruzu.atelier.synthesis.engine.SynthesisRequirementMatcher.elementBudget(input.effectiveProfile().requirements()),
+                        java.util.List.of(),
+                        java.util.Set.of()
+                ));
+            }
             plan = new SynthesisPlanner().plan(input);
             if (!plan.canSynthesize()) {
                 return;
@@ -479,7 +431,7 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         for (SynthesisOutput output : outputs) {
             giveOrDrop(player, SynthesisOutputItemFactory.createStack(output));
         }
-        for (ReagentStack byproduct : result.result().byproducts()) {
+        for (ReagentStack byproduct : awardableByproducts(result.result(), creative)) {
             giveOrDrop(player, ReagentItem.createStack(byproduct));
         }
         if (usingCatalyst && !creative) {
@@ -497,36 +449,29 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         }
     }
 
+    private static final ApparatusState SYNTHESIS_APPARATUS =
+            new ApparatusState("zen_atelier:synthesis_station", 4, 0);
+
     private AttemptContext currentAttemptContext() {
-        return access.evaluate((level, pos) -> {
-            if (level instanceof ServerLevel serverLevel) {
-                ZoneData zone = SpaceQuery.getRoomContaining(serverLevel, pos);
-                int context = roomContextFor(zone);
-                return new AttemptContext(
-                        apparatusForContext(context),
-                        RoomAlchemyContextFactory.fromZoneData(zone),
-                        6,
-                        riskForContext(context)
-                );
-            }
-            return new AttemptContext(
-                    ApparatusState.crude("zen_atelier:synthesis_station"),
-                    com.sanhiruzu.atelier.synthesis.core.RoomAlchemyContext.none(),
-                    6,
-                    0
-            );
-        }, new AttemptContext(
-                ApparatusState.crude("zen_atelier:synthesis_station"),
-                com.sanhiruzu.atelier.synthesis.core.RoomAlchemyContext.none(),
+        return new AttemptContext(
+                SYNTHESIS_APPARATUS,
+                com.sanhiruzu.atelier.synthesis.core.RoomAlchemyContext.neutral(),
                 6,
                 0
-        ));
+        );
     }
 
     private static void giveOrDrop(Player player, ItemStack stack) {
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
+    }
+
+    static java.util.List<ReagentStack> awardableByproducts(com.sanhiruzu.atelier.synthesis.engine.SynthesisResult result, boolean creative) {
+        if (creative) {
+            return java.util.List.of();
+        }
+        return result.byproducts();
     }
 
     private void emitSynthesisVfx(Player player, SynthesisProfile profile, SynthesisExecutionResult result) {
@@ -680,111 +625,20 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         return playerInventory.player.level().isClientSide;
     }
 
-    private int stationRoomContext() {
-        return access.evaluate((level, pos) -> {
-            if (level instanceof ServerLevel serverLevel) {
-                return roomContextFor(SpaceQuery.getRoomContaining(serverLevel, pos));
-            }
-            return ROOM_CONTEXT_OUTSIDE;
-        }, ROOM_CONTEXT_OUTSIDE);
-    }
-
-    private static boolean validSynthesisRoom(ZoneData zone) {
-        return zone != null && !zone.isOutdoor() && zone.hasSpatialExtent();
-    }
-
     private SynthesisProfile effectiveProfile(SynthesisProfile profile) {
-        return effectiveProfile(profile, roomContext);
+        return profile;
     }
 
     public static SynthesisProfile effectiveProfile(SynthesisProfile profile, int context) {
-        if (context == ROOM_CONTEXT_INDOOR) {
-            return profile;
-        }
-
-        java.util.List<SynthesisOutcome> outcomes = new java.util.ArrayList<>();
-        boolean hasFailure = false;
-        for (SynthesisOutcome outcome : profile.outcomes()) {
-            if (context == ROOM_CONTEXT_OUTSIDE && outcome.outcomeClass().successful()) {
-                outcomes.add(new SynthesisOutcome(outcome.outcomeClass(), 1, outcome.outputs(), outcome.byproducts()));
-            } else if (context == ROOM_CONTEXT_OUTSIDE) {
-                hasFailure = true;
-                outcomes.add(new SynthesisOutcome(
-                        outcome.outcomeClass(),
-                        Math.max(OUTSIDE_FAILURE_WEIGHT, outcome.weight() * 20),
-                        outcome.outputs(),
-                        outcome.byproducts()
-                ));
-            } else if (outcome.outcomeClass().successful()) {
-                outcomes.add(new SynthesisOutcome(
-                        outcome.outcomeClass(),
-                        outcome.weight() * successMultiplier(context),
-                        outcome.outputs(),
-                        outcome.byproducts()
-                ));
-            } else {
-                hasFailure = true;
-                outcomes.add(new SynthesisOutcome(
-                        outcome.outcomeClass(),
-                        Math.max(1, outcome.weight() / failureDivisor(context)),
-                        outcome.outputs(),
-                        outcome.byproducts()
-                ));
-            }
-        }
-        if (context == ROOM_CONTEXT_OUTSIDE && !hasFailure) {
-            outcomes.add(new SynthesisOutcome(OutcomeClass.DUD, OUTSIDE_FAILURE_WEIGHT, java.util.List.of(), java.util.List.of()));
-        }
-        return new SynthesisProfile(
-                profile.id(),
-                profile.category(),
-                profile.requirements(),
-                profile.recipeTierCap(),
-                outcomes
-        );
+        return profile;
     }
 
     static boolean recipeUnlocked(SynthesisProfile profile, int context) {
-        return profile.recipeTierCap() <= maxRecipeTier(context);
+        return profile.recipeTierCap() <= 6;
     }
 
     static int maxRecipeTier(int context) {
-        return switch (context) {
-            case ROOM_CONTEXT_ATELIER -> 3;
-            case ROOM_CONTEXT_FINE_ATELIER -> 4;
-            default -> 2;
-        };
-    }
-
-    private static int roomContextFor(ZoneData zone) {
-        if (!validSynthesisRoom(zone)) {
-            return ROOM_CONTEXT_OUTSIDE;
-        }
-        if (zone instanceof RoomData room && ATELIER_ROOM_ID.equals(room.getZoneTypeId())) {
-            return room.getQuality() >= 0.75F ? ROOM_CONTEXT_FINE_ATELIER : ROOM_CONTEXT_ATELIER;
-        }
-        return ROOM_CONTEXT_INDOOR;
-    }
-
-    private static ApparatusState apparatusForContext(int context) {
-        return switch (context) {
-            case ROOM_CONTEXT_ATELIER -> new ApparatusState("zen_atelier:synthesis_station", 3, 10);
-            case ROOM_CONTEXT_FINE_ATELIER -> new ApparatusState("zen_atelier:synthesis_station", 4, 20);
-            case ROOM_CONTEXT_INDOOR -> new ApparatusState("zen_atelier:synthesis_station", 2, 0);
-            default -> ApparatusState.crude("zen_atelier:synthesis_station");
-        };
-    }
-
-    private static int riskForContext(int context) {
-        return context == ROOM_CONTEXT_OUTSIDE ? 90 : 0;
-    }
-
-    private static int successMultiplier(int context) {
-        return context >= ROOM_CONTEXT_FINE_ATELIER ? 3 : 2;
-    }
-
-    private static int failureDivisor(int context) {
-        return context >= ROOM_CONTEXT_FINE_ATELIER ? 3 : 2;
+        return 6;
     }
 
     private static SynthesisProfile applyFusionSuccessBonus(SynthesisProfile profile, int bonus) {

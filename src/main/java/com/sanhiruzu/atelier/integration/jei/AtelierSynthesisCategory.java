@@ -110,11 +110,9 @@ final class AtelierSynthesisCategory implements IRecipeCategory<JeiSynthesisReci
             graphics.drawString(font, "x" + recipe.requirements().get(i).requirement().amount(), x, y, 0xFF806F56, false);
         }
 
-        int pctIndoor  = successPct(recipe.profile(), SynthesisStationMenu.ROOM_CONTEXT_INDOOR);
-        int pctAtelier = successPct(recipe.profile(), SynthesisStationMenu.ROOM_CONTEXT_ATELIER);
-        int pctFine    = successPct(recipe.profile(), SynthesisStationMenu.ROOM_CONTEXT_FINE_ATELIER);
-        graphics.drawString(font, Component.literal(pctIndoor + "% / " + pctAtelier + "% / " + pctFine + "%"), 7, 74, 0xFF806F56, false);
-        graphics.drawString(font, Component.literal("indoor / atelier / fine"), 7, 83, 0xFF4A3C2C, false);
+        int pct = successPct(recipe.profile());
+        graphics.drawString(font, Component.literal(pct + "%"), 7, 74, 0xFF806F56, false);
+        graphics.drawString(font, Component.literal("success"), 7, 83, 0xFF4A3C2C, false);
     }
 
     @Override
@@ -122,8 +120,8 @@ final class AtelierSynthesisCategory implements IRecipeCategory<JeiSynthesisReci
         return recipe.id();
     }
 
-    private static int successPct(SynthesisProfile profile, int context) {
-        SynthesisProfile effective = SynthesisStationMenu.effectiveProfile(profile, context);
+    private static int successPct(SynthesisProfile profile) {
+        SynthesisProfile effective = SynthesisStationMenu.effectiveProfile(profile, 0);
         int total = effective.outcomes().stream().mapToInt(o -> o.weight()).sum();
         int success = effective.outcomes().stream().filter(o -> o.outcomeClass().successful()).mapToInt(o -> o.weight()).sum();
         return total > 0 ? (int) Math.round(100.0 * success / total) : 0;

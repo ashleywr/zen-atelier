@@ -20,7 +20,6 @@ public final class ClientPayloadHandlers {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
             mc.player.getPersistentData().putBoolean("spaceregion_debug", enabled);
-            ClientZoneData.setDebugMode(enabled);
             ZenAtelier.LOGGER.info("Client received debug toggle: {}", enabled);
         }
     }

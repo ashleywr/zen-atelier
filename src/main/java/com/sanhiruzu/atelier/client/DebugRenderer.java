@@ -2,13 +2,6 @@ package com.sanhiruzu.atelier.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.sanhiruzu.atelier.space.SpaceRegionRegistry;
-import com.sanhiruzu.atelier.space.zone.RoomData;
-import com.sanhiruzu.atelier.space.zone.Zone;
-import com.sanhiruzu.atelier.space.zone.ZoneRegistry;
-import com.sanhiruzu.atelier.ui.adapter.ZoneHudAdapter;
-import com.sanhiruzu.atelier.ui.client.RoomHudColors;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -19,57 +12,6 @@ import java.util.*;
 
 public class DebugRenderer {
     private static final double RENDER_DISTANCE = 128.0;
-
-    public static void renderDebug(PoseStack stack, MultiBufferSource buffers, Minecraft mc) {
-        if (mc.player == null || mc.level == null) return;
-
-        Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
-
-        // In single-player the render thread shares the JVM with the integrated server,
-        // so server-side registries are directly readable here.
-        SpaceRegionRegistry registry = SpaceRegionRegistry.get(mc.level);
-        ZoneRegistry zoneRegistry = ZoneRegistry.get(mc.level);
-        Set<UUID> renderedZones = new HashSet<>();
-
-        // Render one stable-color wireframe per live zone. We intentionally render
-        // bounds instead of every air block so zone edges and overlaps are readable.
-        try {
-            for (Zone zone : zoneRegistry.getAllZones()) {
-                if (zone.isDissolved()) continue;
-                Set<BlockPos> blocks = registry.getBlocksInRegion(zone.getId());
-                if (blocks.isEmpty()) {
-                    blocks = zone.getInteriorBlocks();
-                }
-                if (blocks.isEmpty()) continue;
-
-                renderBlockBoundaryWireframe(stack, buffers, blocks, cameraPos, colorForZone(zone.getId()));
-                renderedZones.add(zone.getId());
-            }
-        } catch (ConcurrentModificationException e) {
-            // Registry being modified on server thread — skip this frame
-        }
-
-        // Client cache fallback for multiplayer/lag frames where server block data
-        // is unavailable on the render thread.
-        try {
-            for (com.sanhiruzu.atelier.space.zone.ZoneData zone : ClientZoneCache.getAllZones()) {
-                UUID zoneId = zone.getRegionId();
-                if (renderedZones.contains(zoneId)) continue;
-
-                Set<BlockPos> blocks = registry.getBlocksInRegion(zoneId);
-                if (!blocks.isEmpty()) {
-                    renderBlockBoundaryWireframe(stack, buffers, blocks, cameraPos, colorForZone(zone));
-                } else if (zone.hasSpatialExtent()) {
-                    renderBox(stack, buffers,
-                            zone.getMinX(), zone.getMinY(), zone.getMinZ(),
-                            zone.getMaxX() + 1, zone.getMaxY() + 1, zone.getMaxZ() + 1,
-                            cameraPos, colorForZone(zone));
-                }
-            }
-        } catch (ConcurrentModificationException e) {
-            // Skip frame
-        }
-    }
 
     private static void renderBlockBoundaryWireframe(PoseStack stack, MultiBufferSource buffers, Set<BlockPos> blocks, Vec3 cameraPos, int color) {
         if (blocks.isEmpty()) return;
@@ -219,18 +161,6 @@ public class DebugRenderer {
         float saturation = 0.70f + (((hash >>> 16) & 0xFF) / 255.0f) * 0.25f;
         float value = 0.85f + (((hash >>> 24) & 0xFF) / 255.0f) * 0.15f;
         return hsvToRgb(hue, saturation, value);
-    }
-
-    public static int colorForZone(com.sanhiruzu.atelier.space.zone.ZoneData zoneData) {
-        if (zoneData instanceof RoomData room) {
-            ZoneHudAdapter.ZoneHudSnapshot snapshot = ZoneHudAdapter.snapshotFromZoneData(room);
-            String typeInfo = snapshot.activeProfiles();
-            if ((typeInfo == null || typeInfo.isBlank()) && room.getZoneTypeId() != null) {
-                typeInfo = room.getZoneTypeId().toString();
-            }
-            return RoomHudColors.forTypeInfo(typeInfo, room.isDegraded());
-        }
-        return colorForZone(zoneData.getRegionId());
     }
 
     private static int hsvToRgb(float hue, float saturation, float value) {

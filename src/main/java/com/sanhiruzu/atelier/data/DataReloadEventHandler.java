@@ -15,5 +15,6 @@ public class DataReloadEventHandler {
         event.addListener(new SynthesisProfileReloadListener());
         event.addListener(new RoomProfileReloadListener());
         event.addListener(new TraitFusionReloadListener());
+        event.addListener(new com.sanhiruzu.atelier.synthesis.vfx.ImpactVfxReloadListener());
     }
 }

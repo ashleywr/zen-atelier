@@ -7,7 +7,6 @@ import com.sanhiruzu.atelier.ui.patchouli.PatchouliDiscoveryFlags;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
 import com.sanhiruzu.atelier.ui.network.ExtractionKnowledgeSyncPayload;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
-import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisResultPayload;
 import net.minecraft.client.Minecraft;
@@ -35,10 +34,6 @@ public final class ClientPayloadHandlers {
                 payload.testedEmptySources(),
                 payload.knownSourceDetails()
         );
-    }
-
-    public static void handleRoomCatalogSync(RoomCatalogSyncPayload payload) {
-        ClientRoomCatalogData.update(payload.entries());
     }
 
     public static void handleSynthesisCatalogSync(SynthesisCatalogSyncPayload payload) {

@@ -1,16 +1,9 @@
 package com.sanhiruzu.atelier.network;
 
-import com.sanhiruzu.atelier.client.ChunkClassificationClientData;
-import com.sanhiruzu.atelier.client.ClientZoneCache;
-import com.sanhiruzu.atelier.client.ZoneVfxManager;
-import com.sanhiruzu.atelier.space.zone.Zone;
-import com.sanhiruzu.atelier.space.zone.ZoneAttachment;
 import com.sanhiruzu.atelier.ui.network.SynthesisCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
 import com.sanhiruzu.atelier.ui.network.ExtractionKnowledgeSyncPayload;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
-import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
-import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisBoardFusionPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisResultPayload;
 import net.neoforged.api.distmarker.Dist;
@@ -21,8 +14,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public class NetworkHandler {
     public static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
         event.registrar("1.0")
-                .playToClient(SyncChunkClassificationPayload.TYPE, SyncChunkClassificationPayload.CODEC,
-                        NetworkHandler::handleChunkClassificationSync)
                 .playToClient(ToggleDebugPayload.TYPE, ToggleDebugPayload.CODEC,
                         NetworkHandler::handleToggleDebug)
                 .playToClient(DiscoveryDataSyncPayload.TYPE, DiscoveryDataSyncPayload.CODEC,
@@ -35,67 +26,8 @@ public class NetworkHandler {
                         NetworkHandler::handleReagentVaultSync)
                 .playToClient(SynthesisResultPayload.TYPE, SynthesisResultPayload.CODEC,
                         NetworkHandler::handleSynthesisResult)
-                .playToClient(RoomCatalogSyncPayload.TYPE, RoomCatalogSyncPayload.CODEC,
-                        NetworkHandler::handleRoomCatalogSync)
-                .playToClient(SyncZoneGridPayload.TYPE, SyncZoneGridPayload.CODEC,
-                        NetworkHandler::handleZoneGridSync)
-                .playToClient(SyncPlayerZonePayload.TYPE, SyncPlayerZonePayload.CODEC,
-                        NetworkHandler::handlePlayerZoneSync)
-                .playToClient(RemoveZonePayload.TYPE, RemoveZonePayload.CODEC,
-                        NetworkHandler::handleRemoveZone)
-                .playToClient(ZoneQualityChangePayload.TYPE, ZoneQualityChangePayload.CODEC,
-                        NetworkHandler::handleZoneQualityChange)
-                .playToClient(ZoneGracePeriodPayload.TYPE, ZoneGracePeriodPayload.CODEC,
-                        NetworkHandler::handleZoneGracePeriod)
-                .playToServer(RoomInspectPayload.TYPE, RoomInspectPayload.CODEC,
-                        NetworkHandler::handleRoomInspect)
                 .playToServer(SynthesisBoardFusionPayload.TYPE, SynthesisBoardFusionPayload.CODEC,
                         NetworkHandler::handleBoardFusion);
-    }
-
-    private static void handleZoneGridSync(SyncZoneGridPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientZoneCache.storeZone(payload));
-    }
-
-    private static void handleZoneQualityChange(ZoneQualityChangePayload payload, IPayloadContext context) {
-        context.enqueueWork(() ->
-                ZoneVfxManager.onQualityChanged(
-                        payload.oldQuality(), payload.newQuality(),
-                        payload.triggerX(), payload.triggerY(), payload.triggerZ())
-        );
-    }
-
-    private static void handleRemoveZone(RemoveZonePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            ZoneVfxManager.onZoneExpired(payload.minX(), payload.minY(), payload.minZ(), payload.maxX(), payload.maxY(), payload.maxZ());
-            ClientZoneCache.remove(payload.zoneId());
-            // Zone fully gone — stop showing grace period countdown if still running
-            com.sanhiruzu.atelier.ui.client.ClientZoneData.cancelGracePeriod(payload.zoneId());
-        });
-    }
-
-    private static void handleZoneGracePeriod(ZoneGracePeriodPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (payload.ticksRemaining() > 0) {
-                com.sanhiruzu.atelier.ui.client.ClientZoneData.startGracePeriod(payload.zoneId(), payload.ticksRemaining());
-            } else {
-                com.sanhiruzu.atelier.ui.client.ClientZoneData.cancelGracePeriod(payload.zoneId());
-            }
-        });
-    }
-
-    private static void handlePlayerZoneSync(SyncPlayerZonePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            var player = context.player();
-            Zone zone = payload.zoneId() != null ? new Zone(payload.zoneId()) : null;
-            player.getData(ZoneAttachment.ZONE.get()).setCurrentZone(zone);
-        });
-    }
-
-    private static void handleChunkClassificationSync(SyncChunkClassificationPayload payload, IPayloadContext context) {
-        context.enqueueWork(() ->
-                ChunkClassificationClientData.storeChunkData(payload.chunkX(), payload.chunkZ(), payload.data())
-        );
     }
 
     private static void handleToggleDebug(ToggleDebugPayload payload, IPayloadContext context) {
@@ -110,24 +42,12 @@ public class NetworkHandler {
         context.enqueueWork(() -> handleClientExtractionKnowledgeSync(payload));
     }
 
-    private static void handleRoomCatalogSync(RoomCatalogSyncPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> handleClientRoomCatalogSync(payload));
-    }
-
     private static void handleSynthesisCatalogSync(SynthesisCatalogSyncPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> handleClientSynthesisCatalogSync(payload));
     }
 
     private static void handleReagentVaultSync(ReagentVaultSyncPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> handleClientReagentVaultSync(payload));
-    }
-
-    private static void handleRoomInspect(RoomInspectPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (context.player() instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
-                payload.handle(serverPlayer);
-            }
-        });
     }
 
     private static void handleBoardFusion(SynthesisBoardFusionPayload payload, IPayloadContext context) {
@@ -165,16 +85,6 @@ public class NetworkHandler {
             try {
                 Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
                 handlers.getMethod("handleExtractionKnowledgeSync", ExtractionKnowledgeSyncPayload.class).invoke(null, payload);
-            } catch (ReflectiveOperationException ignored) {
-            }
-        }
-    }
-
-    private static void handleClientRoomCatalogSync(RoomCatalogSyncPayload payload) {
-        if (FMLEnvironment.dist == Dist.CLIENT) {
-            try {
-                Class<?> handlers = Class.forName("com.sanhiruzu.atelier.ui.client.ClientPayloadHandlers");
-                handlers.getMethod("handleRoomCatalogSync", RoomCatalogSyncPayload.class).invoke(null, payload);
             } catch (ReflectiveOperationException ignored) {
             }
         }

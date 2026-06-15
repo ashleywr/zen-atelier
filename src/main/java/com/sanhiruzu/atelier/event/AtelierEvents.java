@@ -8,7 +8,6 @@ import com.sanhiruzu.atelier.synthesis.world.CauldronExtractionService;
 import com.sanhiruzu.atelier.synthesis.world.PlayerExtractionKnowledge;
 import com.sanhiruzu.atelier.synthesis.world.PlayerSynthesisKnowledge;
 import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
-import com.sanhiruzu.atelier.ui.network.RoomCatalogSyncPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisCatalogSyncPayload;
 import com.sanhiruzu.atelier.zone.bonus.RoomPresenceEffects;
 import com.sanhiruzu.atelier.zone.discovery.PlayerRoomDiscovery;
@@ -36,10 +35,6 @@ public class AtelierEvents {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             PacketDistributor.sendToPlayer(
                     serverPlayer,
-                    RoomCatalogSyncPayload.current()
-            );
-            PacketDistributor.sendToPlayer(
-                    serverPlayer,
                     SynthesisCatalogSyncPayload.current()
             );
             PacketDistributor.sendToPlayer(
@@ -65,10 +60,8 @@ public class AtelierEvents {
 
     @SubscribeEvent
     public static void onDatapackSync(OnDatapackSyncEvent event) {
-        RoomCatalogSyncPayload payload = RoomCatalogSyncPayload.current();
         SynthesisCatalogSyncPayload synthesisPayload = SynthesisCatalogSyncPayload.current();
         event.getRelevantPlayers().forEach(player -> {
-            PacketDistributor.sendToPlayer(player, payload);
             PacketDistributor.sendToPlayer(player, synthesisPayload);
         });
     }

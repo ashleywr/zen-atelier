@@ -25,7 +25,6 @@ public final class ClientEvents {
         if (!event.getLevel().isClientSide()) return;
         ClientDiscoveryData.clear();
         ClientExtractionKnowledgeData.clear();
-        ClientRoomCatalogData.clear();
     }
 
     public static void onItemTooltip(ItemTooltipEvent event) {

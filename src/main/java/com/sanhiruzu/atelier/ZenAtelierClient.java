@@ -1,5 +1,6 @@
 package com.sanhiruzu.atelier;
 
+import com.sanhiruzu.atelier.client.particle.AdditiveParticleRenderType;
 import com.sanhiruzu.atelier.client.particle.ScalingBillboardParticle;
 import com.sanhiruzu.atelier.client.particle.ShatterOnDeathParticle;
 import com.sanhiruzu.atelier.synthesis.gathering.client.GatheringPointRenderer;
@@ -49,23 +50,27 @@ public class ZenAtelierClient {
                                 options.peakScale(), options.lifetime(),
                                 ZenAtelier.ICE_SHATTER.get(), ParticleTypes.SNOWFLAKE, 4));
 
-        // Burst: quick scale-up flash (long grow, short fade).
+        // Burst: quick scale-up flash (long grow, short fade). Additive glow so the
+        // full-frame energy sprite reads as light, not a translucent square.
         event.registerSpriteSet(ZenAtelier.ICE_BURST.get(),
                 sprites -> (ScaledParticleOptions options, ClientLevel level,
                             double x, double y, double z, double xd, double yd, double zd) ->
                         new ScalingBillboardParticle(level, x, y, z, sprites,
-                                options.peakScale(), options.lifetime(), 4, 6));
+                                options.peakScale(), options.lifetime(), 4, 6,
+                                AdditiveParticleRenderType.INSTANCE));
 
-        // Shatter: fixed-size quick fade.
+        // Shatter: fixed-size quick fade, additive glow.
         event.registerSpriteSet(ZenAtelier.ICE_SHATTER.get(),
                 sprites -> (SimpleParticleType type, ClientLevel level,
                             double x, double y, double z, double xd, double yd, double zd) ->
-                        new ScalingBillboardParticle(level, x, y, z, sprites, 1.4F, 8, 2, 4));
+                        new ScalingBillboardParticle(level, x, y, z, sprites, 1.4F, 8, 2, 4,
+                                AdditiveParticleRenderType.INSTANCE));
 
-        // Spark: small animated twinkle.
+        // Spark: small animated twinkle, additive glow.
         event.registerSpriteSet(ZenAtelier.ICE_SPARK.get(),
                 sprites -> (SimpleParticleType type, ClientLevel level,
                             double x, double y, double z, double xd, double yd, double zd) ->
-                        new ScalingBillboardParticle(level, x, y, z, sprites, 0.6F, 12, 3, 5));
+                        new ScalingBillboardParticle(level, x, y, z, sprites, 0.6F, 12, 3, 5,
+                                AdditiveParticleRenderType.INSTANCE));
     }
 }

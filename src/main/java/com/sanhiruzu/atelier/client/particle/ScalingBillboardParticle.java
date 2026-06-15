@@ -15,16 +15,25 @@ public class ScalingBillboardParticle extends TextureSheetParticle {
     private final float peakScale;
     private final int growTicks;
     private final int fadeTicks;
+    private final ParticleRenderType renderType;
 
     public ScalingBillboardParticle(ClientLevel level, double x, double y, double z,
                                     SpriteSet sprites, float peakScale, int lifetime,
                                     int growTicks, int fadeTicks) {
+        this(level, x, y, z, sprites, peakScale, lifetime, growTicks, fadeTicks,
+                ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT);
+    }
+
+    public ScalingBillboardParticle(ClientLevel level, double x, double y, double z,
+                                    SpriteSet sprites, float peakScale, int lifetime,
+                                    int growTicks, int fadeTicks, ParticleRenderType renderType) {
         super(level, x, y, z);
         this.sprites = sprites;
         this.peakScale = peakScale;
         this.lifetime = Math.max(1, lifetime);
         this.growTicks = Math.max(1, growTicks);
         this.fadeTicks = Math.max(1, fadeTicks);
+        this.renderType = renderType;
         this.gravity = 0.0F;
         this.hasPhysics = false;
         this.friction = 1.0F;
@@ -57,6 +66,6 @@ public class ScalingBillboardParticle extends TextureSheetParticle {
 
     @Override
     public ParticleRenderType getRenderType() {
-        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+        return renderType;
     }
 }

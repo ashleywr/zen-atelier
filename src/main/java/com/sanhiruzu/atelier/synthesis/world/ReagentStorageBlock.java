@@ -30,7 +30,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ReagentStorageBlock extends Block {
     public static final MapCodec<ReagentStorageBlock> CODEC = simpleCodec(ReagentStorageBlock::new);
 
-    /** Transient per-player record of the most recent click on any cabinet, for double-click detection. */
+    /**
+     * Transient per-player record of the most recent click on any cabinet, for double-click detection.
+     * Touched only on the server thread (block interactions); the concurrent map is defensive, not required.
+     */
     private static final Map<UUID, ReagentDumpLogic.Click> LAST_CLICK = new ConcurrentHashMap<>();
 
     public ReagentStorageBlock(BlockBehaviour.Properties properties) {
@@ -172,7 +175,7 @@ public class ReagentStorageBlock extends Block {
             container.insert(reagent);
             deposited.add(reagent);
             if (!player.getAbilities().instabuild) {
-                stack.setCount(0);
+                stack.shrink(1);
             }
         }
         if (deposited.isEmpty()) {

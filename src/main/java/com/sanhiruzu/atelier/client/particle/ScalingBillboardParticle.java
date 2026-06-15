@@ -1,5 +1,6 @@
 package com.sanhiruzu.atelier.client.particle;
 
+import com.sanhiruzu.atelier.synthesis.vfx.data.Anchor;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
@@ -19,18 +20,6 @@ public class ScalingBillboardParticle extends TextureSheetParticle {
     private final Anchor anchor;
     /** Spawn-point Y; the ground line for GROUND-anchored sprites. Visible to subclasses. */
     protected final double baseY;
-
-    /** How the billboard sits relative to its spawn point. */
-    public enum Anchor {
-        /** Quad centered on the spawn point (good for flashes, sparks, mid-air bursts). */
-        CENTER,
-        /**
-         * Quad's base stays on the spawn point as it scales, so the sprite rests on the
-         * ground and grows upward instead of sinking half into the terrain. The lift is
-         * derived from the sprite's own size, so no per-effect offset is needed.
-         */
-        GROUND
-    }
 
     public ScalingBillboardParticle(ClientLevel level, double x, double y, double z,
                                     SpriteSet sprites, float peakScale, int lifetime,

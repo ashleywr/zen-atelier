@@ -5,8 +5,11 @@ import com.sanhiruzu.atelier.client.particle.ScalingBillboardParticle;
 import com.sanhiruzu.atelier.client.particle.ShatterOnDeathParticle;
 import com.sanhiruzu.atelier.synthesis.gathering.client.GatheringPointRenderer;
 import com.sanhiruzu.atelier.synthesis.vfx.ScaledParticleOptions;
+import com.sanhiruzu.atelier.synthesis.vfx.data.Anchor;
+import com.sanhiruzu.atelier.synthesis.vfx.data.Blend;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
@@ -42,35 +45,40 @@ public class ZenAtelierClient {
 
     @SubscribeEvent
     static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
-        // Crystal: grows, then shatters into ice_shatter + vanilla snowflakes.
+        // Crystal: behavior from options; intrinsic shatter into ice_shatter + snowflakes.
         event.registerSpriteSet(ZenAtelier.ICE_CRYSTAL.get(),
-                sprites -> (ScaledParticleOptions options, ClientLevel level,
+                sprites -> (ScaledParticleOptions o, ClientLevel level,
                             double x, double y, double z, double xd, double yd, double zd) ->
                         new ShatterOnDeathParticle(level, x, y, z, sprites,
-                                options.peakScale(), options.lifetime(),
+                                o.peakScale(), o.lifetime(), o.growTicks(), o.fadeTicks(),
+                                renderTypeFor(o.blend()), o.anchor(),
                                 ZenAtelier.ICE_SHATTER.get(), ParticleTypes.SNOWFLAKE, 4));
 
-        // Burst: quick scale-up flash (long grow, short fade). Additive glow so the
-        // full-frame energy sprite reads as light, not a translucent square.
+        // Burst + spark: plain billboards driven entirely by options.
         event.registerSpriteSet(ZenAtelier.ICE_BURST.get(),
-                sprites -> (ScaledParticleOptions options, ClientLevel level,
+                sprites -> (ScaledParticleOptions o, ClientLevel level,
                             double x, double y, double z, double xd, double yd, double zd) ->
                         new ScalingBillboardParticle(level, x, y, z, sprites,
-                                options.peakScale(), options.lifetime(), 4, 6,
-                                AdditiveParticleRenderType.INSTANCE));
+                                o.peakScale(), o.lifetime(), o.growTicks(), o.fadeTicks(),
+                                renderTypeFor(o.blend()), o.anchor()));
+        event.registerSpriteSet(ZenAtelier.ICE_SPARK.get(),
+                sprites -> (ScaledParticleOptions o, ClientLevel level,
+                            double x, double y, double z, double xd, double yd, double zd) ->
+                        new ScalingBillboardParticle(level, x, y, z, sprites,
+                                o.peakScale(), o.lifetime(), o.growTicks(), o.fadeTicks(),
+                                renderTypeFor(o.blend()), o.anchor()));
 
-        // Shatter: fixed-size quick fade, additive glow, planted on the ground.
+        // Shatter: simple type with fixed behavior (spawned by the crystal on death).
         event.registerSpriteSet(ZenAtelier.ICE_SHATTER.get(),
                 sprites -> (SimpleParticleType type, ClientLevel level,
                             double x, double y, double z, double xd, double yd, double zd) ->
                         new ScalingBillboardParticle(level, x, y, z, sprites, 1.4F, 8, 2, 4,
-                                AdditiveParticleRenderType.INSTANCE, ScalingBillboardParticle.Anchor.GROUND));
+                                AdditiveParticleRenderType.INSTANCE, Anchor.GROUND));
+    }
 
-        // Spark: small animated twinkle, additive glow.
-        event.registerSpriteSet(ZenAtelier.ICE_SPARK.get(),
-                sprites -> (SimpleParticleType type, ClientLevel level,
-                            double x, double y, double z, double xd, double yd, double zd) ->
-                        new ScalingBillboardParticle(level, x, y, z, sprites, 0.6F, 12, 3, 5,
-                                AdditiveParticleRenderType.INSTANCE));
+    private static ParticleRenderType renderTypeFor(Blend blend) {
+        return blend == Blend.ADDITIVE
+                ? AdditiveParticleRenderType.INSTANCE
+                : ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 }

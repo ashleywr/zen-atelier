@@ -1,8 +1,9 @@
 package com.sanhiruzu.atelier.synthesis.item;
 
 import com.sanhiruzu.atelier.ZenAtelier;
-import com.sanhiruzu.atelier.synthesis.vfx.EruptionVfx;
-import com.sanhiruzu.atelier.synthesis.vfx.ImpactVfxProfile;
+import com.sanhiruzu.atelier.synthesis.vfx.ImpactVfx;
+import com.sanhiruzu.atelier.synthesis.vfx.ImpactVfxRegistry;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -88,7 +89,8 @@ public class AlchemicalThrowable extends ThrowableItemProjectile {
             }
         }
         if (level() instanceof ServerLevel serverLevel) {
-            EruptionVfx.play(serverLevel, pos, qt, ImpactVfxProfile.ICE);
+            ImpactVfxRegistry.get(ResourceLocation.fromNamespaceAndPath("zen_atelier", "ice"))
+                    .ifPresent(def -> ImpactVfx.play(serverLevel, pos, qt, def));
         }
     }
 

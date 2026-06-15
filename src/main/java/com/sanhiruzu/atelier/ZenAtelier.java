@@ -97,8 +97,8 @@ public class ZenAtelier {
             PARTICLE_TYPES.register("ice_burst", ScaledParticleOptions.Type::new);
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> ICE_SHATTER =
             PARTICLE_TYPES.register("ice_shatter", () -> new SimpleParticleType(false));
-    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> ICE_SPARK =
-            PARTICLE_TYPES.register("ice_spark", () -> new SimpleParticleType(false));
+    public static final DeferredHolder<ParticleType<?>, ScaledParticleOptions.Type> ICE_SPARK =
+            PARTICLE_TYPES.register("ice_spark", ScaledParticleOptions.Type::new);
 
     public static final DeferredBlock<SynthesisStationBlock> SYNTHESIS_STATION = BLOCKS.registerBlock(
             "synthesis_station",

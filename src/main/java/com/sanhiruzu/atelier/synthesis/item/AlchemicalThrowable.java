@@ -1,6 +1,9 @@
 package com.sanhiruzu.atelier.synthesis.item;
 
 import com.sanhiruzu.atelier.ZenAtelier;
+import com.sanhiruzu.atelier.synthesis.vfx.EruptionVfx;
+import com.sanhiruzu.atelier.synthesis.vfx.ImpactVfxProfile;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -83,6 +86,9 @@ public class AlchemicalThrowable extends ThrowableItemProjectile {
             if (lowDamage) {
                 entity.hurt(level().damageSources().freeze(), FROST_DAMAGE[qt]);
             }
+        }
+        if (level() instanceof ServerLevel serverLevel) {
+            EruptionVfx.play(serverLevel, pos, qt, ImpactVfxProfile.ICE);
         }
     }
 

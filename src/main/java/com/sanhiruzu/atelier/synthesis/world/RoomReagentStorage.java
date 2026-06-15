@@ -38,6 +38,10 @@ public final class RoomReagentStorage {
     /** Cabinets within this many blocks of the station/cauldron feed it. Tunable. */
     public static final int STORAGE_SCAN_RADIUS = 8;
 
+    // NOTE: runs a full (2r+1)^3 block scan on each call, and callers invoke it every
+    // broadcastChanges tick while a station is open. Acceptable for the teardown's direct-scan
+    // neutral; the anonymous per-device cache that replaces this is deferred to the atmosphere
+    // substrate phase (see teardown spec Decision 7).
     public static List<BlockPos> positionsInRoom(ServerLevel level, BlockPos origin) {
         List<BlockPos> positions = new ArrayList<>();
         for (BlockPos pos : BlockPos.betweenClosed(

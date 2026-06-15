@@ -637,10 +637,6 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         return profile.recipeTierCap() <= 6;
     }
 
-    static int maxRecipeTier(int context) {
-        return 6;
-    }
-
     private static SynthesisProfile applyFusionSuccessBonus(SynthesisProfile profile, int bonus) {
         java.util.List<SynthesisOutcome> boosted = new java.util.ArrayList<>();
         for (SynthesisOutcome outcome : profile.outcomes()) {

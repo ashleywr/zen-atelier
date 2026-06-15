@@ -1,11 +1,6 @@
 package com.sanhiruzu.atelier.ui.journal;
 
 import com.sanhiruzu.atelier.ZenAtelier;
-import com.sanhiruzu.atelier.space.SpaceQuery;
-import com.sanhiruzu.atelier.space.zone.RoomData;
-import com.sanhiruzu.atelier.space.zone.RoomImprovementHints;
-import com.sanhiruzu.atelier.space.zone.ZoneData;
-import com.sanhiruzu.atelier.zone.discovery.RoomDiscoveryHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -18,7 +13,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.WrittenBookContent;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
 
 import java.lang.reflect.Method;
@@ -47,45 +41,8 @@ public final class RoomJournalActions {
     }
 
     public static void inspectRoom(Player player, BlockPos pos) {
-        if (!(player.level() instanceof ServerLevel serverLevel)) {
-            return;
-        }
-
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return;
-        }
-
-        if (player.distanceToSqr(Vec3.atCenterOf(pos)) > MAX_INSPECT_DISTANCE_SQ || !isChunkLoaded(serverLevel, pos)) {
-            player.sendSystemMessage(Component.literal("Room Journal: move closer to inspect that space."));
-            return;
-        }
-
-        ZoneData zone = SpaceQuery.getRoomAt(serverLevel, pos);
-        if (zone == null || zone.isOutdoor()) {
-            player.sendSystemMessage(Component.literal("Room Journal: This is outdoor space."));
-            return;
-        }
-
-        RoomData room = (RoomData) zone;
-        int quality = Math.round(room.getQuality() * 100);
-        String typeId = room.getZoneTypeId() != null ? room.getZoneTypeId().toString() : "Unknown";
-        String epithet = room.getEpithetName() != null ? room.getEpithetName() : "None";
-        String status = room.isDegraded() ? "Degraded (outdoor)" : "Full quality";
-
-        player.sendSystemMessage(Component.literal("=== Room Journal ==="));
-        player.sendSystemMessage(Component.literal("Type: " + typeId));
-        player.sendSystemMessage(Component.literal("Quality: " + quality + "%"));
-        player.sendSystemMessage(Component.literal("Special Name: " + epithet));
-        player.sendSystemMessage(Component.literal("Status: " + status));
-        player.sendSystemMessage(Component.literal("Volume: " + room.getVolume() + " blocks"));
-        player.sendSystemMessage(Component.literal("Enclosure: " + String.format("%.1f", room.getEnclosureScore() * 100) + "%"));
-        player.sendSystemMessage(Component.literal("Suggestions:"));
-        for (String hint : RoomImprovementHints.forRoom(room)) {
-            player.sendSystemMessage(Component.literal("- " + hint));
-        }
-
-        // Trigger room discovery when inspected with the journal
-        RoomDiscoveryHandler.handleDiscovery(serverPlayer, room);
+        // Room journal inspection disabled pending the atmosphere substrate.
+        player.sendSystemMessage(Component.literal("Room Journal: Room inspection is not available yet."));
     }
 
     private static boolean tryOpenPatchouli(ServerPlayer player) {

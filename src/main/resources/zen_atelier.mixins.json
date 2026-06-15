@@ -1,14 +1,7 @@
 {
   "config_version": 1,
   "package": "com.sanhiruzu.atelier.mixin",
-  "mixins": [
-    "BrewingStandBlockEntityMixin",
-    "compat.CCPluginMixin",
-    "compat.JERMobEntryMixin",
-    "compat.SpawnAnimalVariantManagerMixin"
-  ],
-  "client": [
-    "client.ColorfulHeartsIntegrationMixin"
-  ],
+  "mixins": [],
+  "client": [],
   "server": []
 }

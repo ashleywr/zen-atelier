@@ -7,12 +7,6 @@ import com.sanhiruzu.atelier.event.AtelierEvents;
 import com.sanhiruzu.atelier.integration.minecolonies.MineColoniesIntegration;
 import com.sanhiruzu.atelier.integration.thermoo.ThermooIntegration;
 import com.sanhiruzu.atelier.network.NetworkHandler;
-import com.sanhiruzu.atelier.space.ChunkClassificationAttachment;
-import com.sanhiruzu.atelier.space.ClassificationEventHandler;
-import com.sanhiruzu.atelier.space.ClassificationTickHandler;
-import com.sanhiruzu.atelier.space.zone.BlockRarityCache;
-import com.sanhiruzu.atelier.space.zone.ZoneAttachment;
-import com.sanhiruzu.atelier.space.zone.ZoneSignHandler;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import com.sanhiruzu.atelier.synthesis.gathering.GatheringBasketItem;
 import com.sanhiruzu.atelier.synthesis.gathering.GatheringPoint;
@@ -266,16 +260,10 @@ public class ZenAtelier {
         RECIPE_SERIALIZERS.register(modEventBus);
         ENTITY_TYPES.register(modEventBus);
         PARTICLE_TYPES.register(modEventBus);
-        ChunkClassificationAttachment.ATTACHMENT_TYPES.register(modEventBus);
-        ZoneAttachment.ATTACHMENT_TYPES.register(modEventBus);
-
         NeoForge.EVENT_BUS.register(this);
-        NeoForge.EVENT_BUS.register(ClassificationEventHandler.class);
-        NeoForge.EVENT_BUS.register(ClassificationTickHandler.class);
         NeoForge.EVENT_BUS.register(CommandEventHandler.class);
         NeoForge.EVENT_BUS.register(DataReloadEventHandler.class);
         NeoForge.EVENT_BUS.register(AtelierEvents.class);
-        NeoForge.EVENT_BUS.register(ZoneSignHandler.class);
         NeoForge.EVENT_BUS.register(ToolCoatingEvents.class);
         NeoForge.EVENT_BUS.register(StarterIngredientEvents.class);
         NeoForge.EVENT_BUS.register(SynthesisItemEvents.class);
@@ -345,7 +333,5 @@ public class ZenAtelier {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("HELLO from server starting");
-        BlockRarityCache.initialize(event.getServer().registryAccess(), event.getServer().getRecipeManager());
-        LOGGER.info("Block rarity cache initialized");
     }
 }

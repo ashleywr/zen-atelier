@@ -25,4 +25,9 @@ public record RoomAlchemyContext(
     public static RoomAlchemyContext none() {
         return new RoomAlchemyContext("", 1, 0, 0, 0, Map.of(), Set.of());
     }
+
+    /** Room no longer participates in tiering: tier cap 6 so CapResolver's min is driven by apparatus/recipe/etc. */
+    public static RoomAlchemyContext neutral() {
+        return new RoomAlchemyContext("", 6, 0, 0, 0, Map.of(), Set.of());
+    }
 }

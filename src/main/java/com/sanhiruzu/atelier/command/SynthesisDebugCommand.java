@@ -4,12 +4,9 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import com.sanhiruzu.atelier.space.SpaceQuery;
-import com.sanhiruzu.atelier.space.zone.ZoneData;
 import com.sanhiruzu.atelier.synthesis.core.ApparatusState;
 import com.sanhiruzu.atelier.synthesis.core.AttemptContext;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
-import com.sanhiruzu.atelier.synthesis.core.RoomAlchemyContext;
 import com.sanhiruzu.atelier.synthesis.data.SynthesisCatalog;
 import com.sanhiruzu.atelier.synthesis.engine.ExtractionExecutionResult;
 import com.sanhiruzu.atelier.synthesis.engine.ExtractionExecutor;
@@ -32,7 +29,6 @@ import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
 import com.sanhiruzu.atelier.synthesis.world.ReagentCabinetSavedData;
 import com.sanhiruzu.atelier.synthesis.world.ItemSourceSnapshot;
 import com.sanhiruzu.atelier.synthesis.world.PlayerExtractionKnowledge;
-import com.sanhiruzu.atelier.synthesis.world.RoomAlchemyContextFactory;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
@@ -469,11 +465,9 @@ public final class SynthesisDebugCommand {
     }
 
     private static AttemptContext attemptContext(ServerLevel level, BlockPos pos, int risk) {
-        ZoneData zone = SpaceQuery.getRoomAt(level, pos);
-        RoomAlchemyContext room = RoomAlchemyContextFactory.fromZoneData(zone);
         return new AttemptContext(
                 ApparatusState.crude("zen_atelier:placeholder_extractor"),
-                room,
+                com.sanhiruzu.atelier.synthesis.core.RoomAlchemyContext.neutral(),
                 6,
                 risk
         );

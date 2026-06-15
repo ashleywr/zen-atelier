@@ -30,7 +30,9 @@ public class ShatterOnDeathParticle extends ScalingBillboardParticle {
     public void tick() {
         if (!shattered && this.age >= this.lifetime - 1) {
             shattered = true;
-            this.level.addParticle(shatter, this.x, this.y, this.z, 0.0, 0.0, 0.0);
+            // Spawn the shatter at the crystal's base (ground) so it can rest on the
+            // surface instead of clipping; this.y is the lifted crystal centre.
+            this.level.addParticle(shatter, this.x, this.baseY, this.z, 0.0, 0.0, 0.0);
             for (int i = 0; i < accentCount; i++) {
                 double vx = (this.random.nextDouble() - 0.5) * 0.18;
                 double vy = this.random.nextDouble() * 0.12;

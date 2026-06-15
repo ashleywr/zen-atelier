@@ -17,7 +17,8 @@ public class ScalingBillboardParticle extends TextureSheetParticle {
     private final int fadeTicks;
     private final ParticleRenderType renderType;
     private final Anchor anchor;
-    private final double baseY;
+    /** Spawn-point Y; the ground line for GROUND-anchored sprites. Visible to subclasses. */
+    protected final double baseY;
 
     /** How the billboard sits relative to its spawn point. */
     public enum Anchor {

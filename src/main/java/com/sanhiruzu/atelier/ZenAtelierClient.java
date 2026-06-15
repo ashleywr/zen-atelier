@@ -59,12 +59,12 @@ public class ZenAtelierClient {
                                 options.peakScale(), options.lifetime(), 4, 6,
                                 AdditiveParticleRenderType.INSTANCE));
 
-        // Shatter: fixed-size quick fade, additive glow.
+        // Shatter: fixed-size quick fade, additive glow, planted on the ground.
         event.registerSpriteSet(ZenAtelier.ICE_SHATTER.get(),
                 sprites -> (SimpleParticleType type, ClientLevel level,
                             double x, double y, double z, double xd, double yd, double zd) ->
                         new ScalingBillboardParticle(level, x, y, z, sprites, 1.4F, 8, 2, 4,
-                                AdditiveParticleRenderType.INSTANCE));
+                                AdditiveParticleRenderType.INSTANCE, ScalingBillboardParticle.Anchor.GROUND));
 
         // Spark: small animated twinkle, additive glow.
         event.registerSpriteSet(ZenAtelier.ICE_SPARK.get(),

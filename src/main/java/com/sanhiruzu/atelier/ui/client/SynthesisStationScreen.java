@@ -6,6 +6,7 @@ import com.sanhiruzu.atelier.synthesis.engine.ResolvedFusionData;
 import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisPlan;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisProfile;
+import com.sanhiruzu.atelier.synthesis.gathering.GatheringBasketItem;
 import com.sanhiruzu.atelier.synthesis.menu.SynthesisStationMenu;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisResultPayload;
@@ -32,6 +33,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     private Button synthesizeButton;
     private Button confirmButton;
     private SynthesisResultOverlay pendingResult;
+    private int failureImpactTicks;
     private int lastMouseX;
     private int lastMouseY;
 
@@ -68,6 +70,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     protected void containerTick() {
         super.containerTick();
         boolean hasResult = pendingResult != null;
+        if (failureImpactTicks > 0) {
+            failureImpactTicks--;
+        }
         if (synthesizeButton != null) {
             boolean canCraft = menu.canSynthesize()
                     || (menu.selectedProfile().isPresent() && minecraft != null
@@ -76,7 +81,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             synthesizeButton.visible = !hasResult;
         }
         if (confirmButton != null) {
-            confirmButton.visible = hasResult;
+            confirmButton.visible = hasResult && failureImpactTicks <= 0;
         }
     }
 
@@ -97,7 +102,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentFilter));
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentSort));
         SynthesisRecipeGrid.render(graphics, font, menu, layout, origin(), selectedCategory());
-        spatialPrototype.render(graphics, font, currentPlan(), origin());
+        spatialPrototype.render(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin());
         renderCatalystSlot(graphics, mouseX, mouseY);
         if (DEBUG_LAYOUT) {
             SynthesisStationLayoutDebug.render(graphics, font, layout, origin());
@@ -122,13 +127,6 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.fill(8, 226, imageWidth - 8, imageHeight - 7, SynthesisScreenTheme.PANEL_DARKEST);
 
-        SynthesisStationText.drawCenteredFit(
-                graphics,
-                font,
-                roomStatusText(),
-                new ScreenRect(40, 7, imageWidth - 80, 12),
-                menu.hasValidSynthesisRoom() ? SynthesisScreenTheme.TEXT : SynthesisScreenTheme.BAD
-        );
         SynthesisStationText.drawFit(graphics, font, Component.literal("[Reagent Vault]"), layout.reagentSearch.inset(UiMetrics.INSET_MEDIUM), vaultLabelColor());
         SynthesisStationText.drawFit(graphics, font, roomStorageSummary(), new ScreenRect(380, 235, 84, 9), SynthesisScreenTheme.GOOD);
         renderCategoryTabLabels(graphics);
@@ -163,7 +161,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         renderLabels(graphics, mouseX, mouseY);
         graphics.pose().popPose();
         spatialPrototype.renderOverlay(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY);
-        if (pendingResult != null) {
+        if (pendingResult != null && failureImpactTicks > 0) {
+            renderFailureImpact(graphics, partialTick);
+        } else if (pendingResult != null) {
             pendingResult.render(graphics, font, origin());
             if (confirmButton != null) {
                 confirmButton.render(graphics, mouseX, mouseY, partialTick);
@@ -174,7 +174,6 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
 
     private void renderSynthesisTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
         if (!spatialPrototype.renderTooltip(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY)) {
-            renderRoomStatusTooltip(graphics, mouseX, mouseY);
             renderRoomVaultTooltip(graphics, mouseX, mouseY);
             renderCategoryTooltip(graphics, mouseX, mouseY);
             renderCraftReasonTooltip(graphics, mouseX, mouseY);
@@ -182,6 +181,33 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             SynthesisRecipeGrid.renderTooltip(graphics, font, menu, layout, origin(), selectedCategory(), mouseX, mouseY);
             renderTooltip(graphics, mouseX, mouseY);
         }
+    }
+
+    private void renderFailureImpact(GuiGraphics graphics, float partialTick) {
+        ScreenRect root = absolute(layout.root);
+        float elapsed = SynthesisResultOverlay.FAILURE_IMPACT_TICKS - failureImpactTicks + partialTick;
+        float progress = Math.clamp(elapsed / SynthesisResultOverlay.FAILURE_IMPACT_TICKS, 0.0F, 1.0F);
+        int centerX = root.x() + root.width() / 2;
+        int centerY = root.y() + root.height() / 2 - 12;
+        int jitter = failureImpactTicks > 13 ? ((failureImpactTicks & 1) == 0 ? 3 : -3) : 0;
+
+        graphics.fill(root.x(), root.y(), root.right(), root.bottom(), 0xE6100D0A);
+        renderSmokePuff(graphics, centerX - 82 + jitter, centerY - 28, 92 + (int) (progress * 36), 0x805D5750);
+        renderSmokePuff(graphics, centerX - 18 - jitter, centerY - 42, 118 + (int) (progress * 44), 0x966B655C);
+        renderSmokePuff(graphics, centerX + 58 + jitter, centerY - 20, 88 + (int) (progress * 32), 0x78504C47);
+        renderSmokePuff(graphics, centerX - 52 - jitter, centerY + 34, 108 + (int) (progress * 28), 0x70534B42);
+        renderSmokePuff(graphics, centerX + 42 + jitter, centerY + 32, 96 + (int) (progress * 30), 0x7A625A50);
+
+        graphics.fill(root.x(), root.y(), root.right(), root.bottom(), 0x65000000);
+        graphics.drawCenteredString(font, Component.literal("SYNTHESIS FAILED"), centerX + jitter, centerY - 3, SynthesisScreenTheme.BAD);
+        graphics.drawCenteredString(font, Component.literal("Smoke floods the apparatus..."), centerX, centerY + 13, SynthesisScreenTheme.MUTED);
+    }
+
+    private static void renderSmokePuff(GuiGraphics graphics, int centerX, int centerY, int size, int color) {
+        int half = size / 2;
+        int inset = Math.max(8, size / 5);
+        graphics.fill(centerX - half + inset, centerY - half, centerX + half - inset, centerY + half, color);
+        graphics.fill(centerX - half, centerY - half + inset, centerX + half, centerY + half - inset, color);
     }
 
     private void renderCatalystTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -218,6 +244,10 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
                                 .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
                     }
                 }
+            }
+            if (!plan.get().elementBudgetSatisfied()) {
+                lines.add(Component.literal("Missing required elements.")
+                        .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
             }
             if (lines.size() == 1) {
                 lines.add(Component.literal("Not enough reagents in storage or inventory.").withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
@@ -271,7 +301,29 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         if (keyCode == GLFW.GLFW_KEY_R && spatialPrototype.rotateCarriedAt(lastMouseX, lastMouseY, currentPlan(), origin())) {
             return true;
         }
+        if (keyCode == GLFW.GLFW_KEY_J) {
+            copySynthesisDebugState();
+            return true;
+        }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    private void copySynthesisDebugState() {
+        if (minecraft == null) {
+            return;
+        }
+        String json = spatialPrototype.buildState(
+                currentPlan(),
+                menu.roomVaultReagents(),
+                playerInventoryReagents()
+        ).toDebugJson();
+        minecraft.keyboardHandler.setClipboard(json);
+        if (minecraft.player != null) {
+            minecraft.player.displayClientMessage(
+                    Component.translatable("message.zen_atelier.synthesis.debug_copied"),
+                    true
+            );
+        }
     }
 
     private void addButton(Component label, ScreenRect localBounds, int buttonId) {
@@ -370,7 +422,10 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         if (stack.isEmpty()) {
             return;
         }
-        boolean reagent = com.sanhiruzu.atelier.synthesis.item.ReagentItem.getReagent(stack) != null;
+        boolean reagent = ReagentItem.getReagent(stack) != null;
+        if (!reagent && GatheringBasketItem.isBasket(stack) && !GatheringBasketItem.entries(stack).isEmpty()) {
+            reagent = true;
+        }
         SynthesisStationDrawing.frame(graphics, rect.inset(1), reagent ? 0xAA7FD889 : 0x664A4038);
     }
 
@@ -379,7 +434,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         for (int slot = 0; slot < 36; slot++) {
             ItemStack stack = menu.getSlot(slot).getItem();
             ReagentStack reagent = ReagentItem.getReagent(stack);
-            if (reagent != null) {
+            if (reagent == null && GatheringBasketItem.isBasket(stack)) {
+                reagents.addAll(GatheringBasketItem.entries(stack));
+            } else if (reagent != null) {
                 reagents.add(reagent);
             }
         }
@@ -425,58 +482,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     }
 
     private int vaultLabelColor() {
-        if (!menu.hasValidSynthesisRoom()) {
-            return SynthesisScreenTheme.MUTED;
-        }
         return menu.roomStorageStacks() > 0 ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.ACCENT_DIM;
-    }
-
-    private Component roomStatusText() {
-        if (menu.hasFineAtelierRoom()) {
-            return Component.literal("Room Bonus: Fine Atelier (Tier " + menu.unlockedRecipeTier() + ")");
-        }
-        if (menu.hasAtelierRoom()) {
-            return Component.literal("Room Bonus: Atelier (Tier " + menu.unlockedRecipeTier() + ")");
-        }
-        if (menu.hasValidSynthesisRoom()) {
-            return Component.literal("Room Bonus: Indoor Room (Tier " + menu.unlockedRecipeTier() + ")");
-        }
-        return Component.literal("No Atelier Room: Synthesis Unstable");
-    }
-
-    private void renderRoomStatusTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (!absolute(layout.titleBar).contains(mouseX, mouseY)) {
-            return;
-        }
-        if (menu.hasFineAtelierRoom()) {
-            graphics.renderComponentTooltip(font, java.util.List.of(
-                    Component.literal("High-quality Atelier detected."),
-                    Component.literal("Tier " + menu.unlockedRecipeTier() + " synthesis recipes are available."),
-                    Component.literal("Success outcomes are strongly favored.")
-            ), mouseX, mouseY);
-            return;
-        }
-        if (menu.hasAtelierRoom()) {
-            graphics.renderComponentTooltip(font, java.util.List.of(
-                    Component.literal("Atelier room detected."),
-                    Component.literal("Tier " + menu.unlockedRecipeTier() + " synthesis recipes are available."),
-                    Component.literal("Success outcomes are favored.")
-            ), mouseX, mouseY);
-            return;
-        }
-        if (menu.hasValidSynthesisRoom()) {
-            graphics.renderComponentTooltip(font, java.util.List.of(
-                    Component.literal("The station is inside a room."),
-                    Component.literal("Tier " + menu.unlockedRecipeTier() + " recipes are available."),
-                    Component.literal("Build an Atelier to unlock advanced synthesis.")
-            ), mouseX, mouseY);
-            return;
-        }
-        graphics.renderComponentTooltip(font, java.util.List.of(
-                Component.literal("Build an enclosed room around the station."),
-                Component.literal("Outside synthesis is highly unstable."),
-                Component.literal("Room reagent storage will not connect.")
-        ), mouseX, mouseY);
     }
 
     private void renderRoomVaultTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -495,13 +501,6 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             return;
         }
         java.util.List<ReagentStack> reagents = menu.roomVaultReagents();
-        if (!menu.hasValidSynthesisRoom()) {
-            graphics.renderComponentTooltip(font, java.util.List.of(
-                    Component.literal("Room reagent storage is disconnected."),
-                    Component.literal("Place the station and reagent storage inside the same enclosed room.")
-            ), mouseX, mouseY);
-            return;
-        }
         if (reagents.isEmpty()) {
             graphics.renderComponentTooltip(font, java.util.List.of(
                     Component.literal("No room reagent storage entries found."),
@@ -588,11 +587,13 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     public void handleSynthesisResult(SynthesisResultPayload payload) {
         if (payload.containerId() == menu.containerId) {
             pendingResult = new SynthesisResultOverlay(payload.outcomeClass(), payload.outputs(), payload.byproducts());
+            failureImpactTicks = SynthesisResultOverlay.impactTicksFor(payload.outcomeClass());
         }
     }
 
     private void clearResult() {
         pendingResult = null;
+        failureImpactTicks = 0;
     }
 
     private ScreenRect absolute(ScreenRect rect) {

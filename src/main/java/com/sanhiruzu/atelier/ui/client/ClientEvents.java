@@ -9,6 +9,7 @@ import com.sanhiruzu.atelier.synthesis.engine.ExtractionProfile;
 import com.sanhiruzu.atelier.synthesis.item.SynthesisOutputData;
 import com.sanhiruzu.atelier.synthesis.world.ItemSourceSnapshot;
 import com.sanhiruzu.atelier.ui.adapter.ZoneHudAdapter;
+import com.sanhiruzu.atelier.network.ForceZoneRecheckPayload;
 import com.sanhiruzu.atelier.ui.network.RoomInspectPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -120,10 +121,13 @@ public final class ClientEvents {
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {
-        // Poll keybind for bounds display
+        // Poll keybind for bounds display; also trigger a server-side recheck when no zone is active
         if (AtelierKeys.SHOW_ZONE_BOUNDS.consumeClick()) {
             ZoneVfxManager.showBoundsTemporarily();
             ClientZoneData.revealRoomHud();
+            if (ClientZoneData.getCurrentZoneId() == null) {
+                PacketDistributor.sendToServer(new ForceZoneRecheckPayload());
+            }
         }
 
         // Drain particle queue

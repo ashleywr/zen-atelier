@@ -18,6 +18,8 @@ import net.minecraft.world.item.Items;
 import java.util.List;
 
 final class SynthesisResultOverlay {
+    static final int FAILURE_IMPACT_TICKS = 20;
+
     private final OutcomeClass outcomeClass;
     private final List<SynthesisOutput> outputs;
     private final List<ReagentStack> byproducts;
@@ -26,6 +28,10 @@ final class SynthesisResultOverlay {
         this.outcomeClass = outcomeClass;
         this.outputs = List.copyOf(outputs);
         this.byproducts = List.copyOf(byproducts);
+    }
+
+    static int impactTicksFor(OutcomeClass outcomeClass) {
+        return outcomeClass.successful() ? 0 : FAILURE_IMPACT_TICKS;
     }
 
     void render(GuiGraphics graphics, Font font, ScreenRect origin) {
@@ -51,14 +57,18 @@ final class SynthesisResultOverlay {
         int titleX = px + pw / 2;
         int titleY = py + 12;
         graphics.drawCenteredString(font, outcomeTitle(), titleX, titleY, titleColor());
+        if (!outcomeClass.successful()) {
+            graphics.drawCenteredString(font, failureDetail(), titleX, titleY + 11, SynthesisScreenTheme.MUTED);
+        }
 
         // Divider
-        graphics.fill(px + 10, titleY + 14, px + pw - 10, titleY + 15, 0x44EFE6D5);
+        int dividerY = outcomeClass.successful() ? titleY + 14 : titleY + 24;
+        graphics.fill(px + 10, dividerY, px + pw - 10, dividerY + 1, 0x44EFE6D5);
 
         // Outputs
-        int listY = titleY + 22;
+        int listY = dividerY + 8;
         if (outputs.isEmpty()) {
-            graphics.drawCenteredString(font, Component.literal("Nothing produced."),
+            graphics.drawCenteredString(font, emptyOutputText(),
                     titleX, listY, SynthesisScreenTheme.MUTED);
         } else {
             for (SynthesisOutput output : outputs) {
@@ -104,7 +114,7 @@ final class SynthesisResultOverlay {
         if (!byproducts.isEmpty()) {
             graphics.fill(px + 10, listY + 1, px + pw - 10, listY + 2, 0x33EFE6D5);
             listY += 9;
-            graphics.drawString(font, Component.literal("Byproducts"), px + 14, listY, SynthesisScreenTheme.MUTED, false);
+            graphics.drawString(font, byproductHeading(), px + 14, listY, SynthesisScreenTheme.MUTED, false);
             listY += 11;
             for (ReagentStack bp : byproducts) {
                 ItemStack bpStack = ReagentItem.createStack(bp);
@@ -120,17 +130,41 @@ final class SynthesisResultOverlay {
     }
 
     private Component outcomeTitle() {
+        if (!outcomeClass.successful()) {
+            return Component.literal("Synthesis Failed");
+        }
         return switch (outcomeClass) {
             case PERFECT_SUCCESS -> Component.literal("Perfect Success!");
             case SUCCESS -> Component.literal("Success");
             case UNSTABLE_SUCCESS -> Component.literal("Unstable Success");
             case PARTIAL_SUCCESS -> Component.literal("Partial Success");
             case MUTATED_SUCCESS -> Component.literal("Mutated Result");
-            case DUD -> Component.literal("Dud");
-            case RECOVERABLE_FAILURE -> Component.literal("Recoverable Failure");
-            case MESSY_FAILURE -> Component.literal("Messy Failure");
-            case CATASTROPHIC_FAILURE -> Component.literal("Catastrophic Failure");
+            case DUD, RECOVERABLE_FAILURE, MESSY_FAILURE, CATASTROPHIC_FAILURE -> Component.literal("Synthesis Failed");
         };
+    }
+
+    private Component failureDetail() {
+        return switch (outcomeClass) {
+            case DUD -> Component.literal("The mixture went inert.");
+            case RECOVERABLE_FAILURE -> Component.literal("The reaction collapsed, but some residue survived.");
+            case MESSY_FAILURE -> Component.literal("The reaction fouled the apparatus.");
+            case CATASTROPHIC_FAILURE -> Component.literal("The reaction burned out violently.");
+            default -> Component.empty();
+        };
+    }
+
+    private Component emptyOutputText() {
+        if (!outcomeClass.successful()) {
+            return Component.literal("Nothing usable survived.");
+        }
+        return Component.literal("Nothing produced.");
+    }
+
+    private Component byproductHeading() {
+        if (!outcomeClass.successful()) {
+            return Component.literal("Recovered byproducts");
+        }
+        return Component.literal("Byproducts");
     }
 
     private int titleColor() {

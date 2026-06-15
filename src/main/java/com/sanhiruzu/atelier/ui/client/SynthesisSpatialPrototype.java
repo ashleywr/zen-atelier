@@ -10,6 +10,7 @@ import com.sanhiruzu.atelier.synthesis.engine.RequirementStatus;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisBoard;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisPlan;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisPlanner;
+import com.sanhiruzu.atelier.synthesis.engine.SynthesisRequirementMatcher;
 import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
@@ -25,6 +26,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -101,12 +103,19 @@ final class SynthesisSpatialPrototype {
     private int selectedRequirementFilterIndex = -1;
     private SpatialEvaluation lastEvaluation = null;
 
-    void render(GuiGraphics graphics, Font font, Optional<SynthesisPlan> plan, ScreenRect origin) {
+    void render(
+            GuiGraphics graphics,
+            Font font,
+            Optional<SynthesisPlan> plan,
+            List<ReagentStack> storageReagents,
+            List<ReagentStack> inventoryReagents,
+            ScreenRect origin
+    ) {
         syncSelectedBoard(plan);
         SynthesisBoard board = currentBoard(plan);
         renderBoard(graphics, font, board, origin);
         renderPlacements(graphics, font, board, origin);
-        renderReadout(graphics, font, plan, board, origin);
+        renderReadout(graphics, font, plan, storageReagents, inventoryReagents, board, origin);
     }
 
     void renderOverlay(GuiGraphics graphics, Font font, Optional<SynthesisPlan> plan, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents, ScreenRect origin, int mouseX, int mouseY) {
@@ -527,7 +536,15 @@ final class SynthesisSpatialPrototype {
         );
     }
 
-    private void renderReadout(GuiGraphics graphics, Font font, Optional<SynthesisPlan> plan, SynthesisBoard board, ScreenRect origin) {
+    private void renderReadout(
+            GuiGraphics graphics,
+            Font font,
+            Optional<SynthesisPlan> plan,
+            List<ReagentStack> storageReagents,
+            List<ReagentStack> inventoryReagents,
+            SynthesisBoard board,
+            ScreenRect origin
+    ) {
         ScreenRect panel = READOUT.offset(origin.x(), origin.y());
         graphics.fill(panel.x(), panel.y(), panel.right(), panel.bottom(), 0xEE171411);
         SynthesisStationDrawing.frame(graphics, panel, 0xFF4F453C);
@@ -538,7 +555,10 @@ final class SynthesisSpatialPrototype {
         }
 
         SynthesisPlan current = plan.get();
-        SynthesisPlan placedPlan = new SynthesisPlanner().plan(current.profile(), placedReagentContainer(), 0);
+        SynthesisPlan placedPlan = new SynthesisPlanner().plan(
+                current.profile(),
+                placedReagentContainer(storageReagents, inventoryReagents),
+                0);
         SpatialEvaluation spatial = evaluate(board);
         int resonanceRisk = spatial.resonantPlacementIds().size() * 15;
         int occupied = occupiedCellCount();
@@ -573,6 +593,24 @@ final class SynthesisSpatialPrototype {
         }
         layout.extraNeedsLine().ifPresent(rect ->
                 SynthesisStationText.drawFit(graphics, font, "+" + (placedPlan.requirements().size() - displayedRequirements.size()) + " more needs", rect, SynthesisScreenTheme.MUTED));
+
+        String elementBudget = SynthesisStationText.compactElementBudget(placedPlan.requirements().stream()
+                .map(status -> status.requirement().query())
+                .toList());
+        layout.elementsHeader().ifPresent(rect ->
+                SynthesisStationText.drawFit(
+                        graphics,
+                        font,
+                        "Elements",
+                        rect,
+                        placedPlan.elementBudgetSatisfied() ? SynthesisScreenTheme.ACCENT : SynthesisScreenTheme.BAD));
+        layout.elementsLine().ifPresent(rect ->
+                SynthesisStationText.drawFit(
+                        graphics,
+                        font,
+                        elementBudget,
+                        rect,
+                        placedPlan.elementBudgetSatisfied() ? SynthesisScreenTheme.TEXT : SynthesisScreenTheme.BAD));
 
         SynthesisStationText.drawFit(graphics, font, "Traits", layout.traitsHeader(), spatial.expectedTraits().isEmpty() ? SynthesisScreenTheme.MUTED : SynthesisScreenTheme.GOOD);
         if (spatial.expectedTraits().isEmpty()) {
@@ -938,17 +976,38 @@ final class SynthesisSpatialPrototype {
         return container;
     }
 
+    private ReagentContainer placedReagentContainer(List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
+        ArrayList<ReagentStack> available = new ArrayList<>(storageReagents.size() + inventoryReagents.size());
+        available.addAll(storageReagents);
+        available.addAll(inventoryReagents);
+
+        ReagentContainer bounded = new ReagentContainer();
+        ArrayList<ReagentStack> accepted = new ArrayList<>();
+        for (Placement placement : placements) {
+            ReagentStack reagent = placement.piece().reagent();
+            int remainingAvailable = totalAmountForProfile(available, reagent) - totalAmountForProfile(accepted, reagent);
+            if (remainingAvailable <= 0) {
+                continue;
+            }
+            ReagentStack capped = reagent.withAmount(Math.min(reagent.amount(), remainingAvailable));
+            accepted.add(capped);
+            bounded.insert(capped);
+        }
+        return bounded;
+    }
+
     private PaletteView paletteView(Optional<SynthesisPlan> plan, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
         List<ReagentStack> reagents = paletteSource == PaletteSource.STORAGE
-                ? storageReagents.isEmpty() ? PrototypeReagentStock.eraOneStorageStock() : storageReagents
+                ? storageReagents
                 : inventoryReagents;
         List<RequirementStatus> unsatisfied = unsatisfiedRequirements(plan);
+        List<ReagentStack> currentInputs = placedReagentContainer(storageReagents, inventoryReagents).entries();
         List<PaletteEntry> entries = reagents.stream()
                 .map(Piece::new)
                 .filter(this::matchesPaletteFilters)
                 .map(piece -> new PaletteEntry(
                         piece,
-                        matchesAnyUnsatisfiedRequirement(piece, unsatisfied),
+                        matchesNeedNow(piece, plan, unsatisfied, currentInputs),
                         hasFusionPotentialWithPlaced(piece),
                         primaryElementIndex(piece),
                         canFitOnCurrentBoard(piece, plan),
@@ -961,6 +1020,107 @@ final class SynthesisSpatialPrototype {
                 : entries.isEmpty() ? "No matching reagents"
                 : "";
         return new PaletteView(entries, emptyMessage);
+    }
+
+    SynthesisState buildState(
+            Optional<SynthesisPlan> plan,
+            List<ReagentStack> storageReagents,
+            List<ReagentStack> inventoryReagents
+    ) {
+        if (plan.isEmpty()) {
+            return SynthesisState.empty();
+        }
+        SynthesisBoard board = currentBoard(plan);
+        ReagentContainer placedReagents = placedReagentContainer(storageReagents, inventoryReagents);
+        SynthesisPlan placedPlan = new SynthesisPlanner().plan(plan.get().profile(), placedReagents, 0);
+        SpatialEvaluation spatial = evaluate(board);
+        PaletteView palette = paletteView(plan, storageReagents, inventoryReagents);
+        int occupied = occupiedCellCount();
+        int totalCells = board.size() * board.size();
+        return new SynthesisState(
+                plan.get().profile().id(),
+                plan.get().profile().category(),
+                SynthesisStationText.profileName(plan.get().profile()),
+                placedPlan.canSynthesize(),
+                placedPlan.elementBudgetSatisfied(),
+                SynthesisState.requirementLines(placedPlan),
+                SynthesisState.elementState(plan.get().profile().requirements(), placedReagents.entries(), placedPlan.elementBudgetSatisfied()),
+                new SynthesisState.BoardState(
+                        occupied,
+                        totalCells,
+                        totalCells - occupied,
+                        spatial.qualityBonus(),
+                        spatial.perfectBonus(),
+                        spatial.resonantPlacementIds().size() * 15,
+                        placements.isEmpty() ? 0.0D : plan.get().preview().successProbability(),
+                        placements.isEmpty() ? 0.0D : plan.get().preview().probabilityOf(OutcomeClass.PERFECT_SUCCESS),
+                        placedReagentsForState(),
+                        spatial.fusionResults().stream()
+                                .map(fusion -> fusion.traitA() + "+" + fusion.traitB()
+                                        + fusion.rule().outputAffix().map(affix -> "->" + affix).orElse(""))
+                                .toList()
+                ),
+                new SynthesisState.PaletteState(
+                        paletteSource.name().toLowerCase(Locale.ROOT),
+                        filterNeedsOnly,
+                        filterFusionOnly,
+                        filterFitsOnly,
+                        shapeFilterMode.name().toLowerCase(Locale.ROOT),
+                        palette.entries().stream()
+                                .map(this::paletteEntryState)
+                                .toList()
+                )
+        );
+    }
+
+    private List<SynthesisState.PlacedReagent> placedReagentsForState() {
+        return placements.stream()
+                .map(placement -> new SynthesisState.PlacedReagent(
+                        placement.piece().reagent().reagentId(),
+                        placement.piece().reagent().amount(),
+                        placement.piece().reagent().tier(),
+                        placement.piece().reagent().quality(),
+                        placement.piece().reagent().purity(),
+                        placement.piece().reagent().instability(),
+                        placement.piece().reagent().categories().stream().sorted().toList(),
+                        sortedIntMap(placement.piece().reagent().elements()),
+                        placement.piece().reagent().traits().stream().sorted().toList(),
+                        placement.cells().stream()
+                                .map(cell -> cell.x() + "," + cell.y())
+                                .sorted()
+                                .toList()
+                ))
+                .toList();
+    }
+
+    private SynthesisState.PaletteEntryState paletteEntryState(PaletteEntry entry) {
+        ArrayList<String> reasons = new ArrayList<>();
+        if (entry.matchesUnsatisfiedRequirement()) {
+            reasons.add("need_now");
+        }
+        if (entry.hasFusionPotential()) {
+            reasons.add("fusion_ready");
+        }
+        if (entry.fitsCurrentBoard()) {
+            reasons.add("fits_board");
+        }
+        return new SynthesisState.PaletteEntryState(
+                entry.piece().reagent().reagentId(),
+                entry.piece().reagent().amount(),
+                entry.matchesUnsatisfiedRequirement(),
+                entry.hasFusionPotential(),
+                entry.fitsCurrentBoard(),
+                entry.shapeCellCount(),
+                reasons
+        );
+    }
+
+    private static Map<String, Integer> sortedIntMap(Map<String, Integer> source) {
+        LinkedHashMap<String, Integer> sorted = new LinkedHashMap<>();
+        source.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> sorted.put(entry.getKey(), entry.getValue()));
+        return sorted;
     }
 
     private Optional<Integer> hoveredPaletteIndex(int localX, int localY, List<PaletteEntry> pieces) {
@@ -1121,38 +1281,40 @@ final class SynthesisSpatialPrototype {
     }
 
     private static Component summarizeRequirement(ReagentQuery query) {
-        ArrayList<Component> parts = new ArrayList<>();
         if (!query.reagentIds().isEmpty()) {
-            parts.add(SynthesisNoun.component(query.reagentIds().stream().sorted().findFirst().orElse("reagent")));
+            return SynthesisNoun.component(query.reagentIds().stream().sorted().findFirst().orElse("reagent"));
         }
         if (!query.requiredCategories().isEmpty()) {
-            parts.add(SynthesisNoun.component(query.requiredCategories().stream().sorted().findFirst().orElse("category")));
-        }
-        if (!query.minElements().isEmpty()) {
-            parts.add(query.minElements().entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .findFirst()
-                    .map(entry -> SynthesisNoun.line(SynthesisNoun.component(entry.getKey()), " ", entry.getValue()))
-                    .orElseGet(() -> Component.literal("Element")));
+            return SynthesisNoun.component(query.requiredCategories().stream().sorted().findFirst().orElse("category"));
         }
         if (!query.requiredTraits().isEmpty()) {
-            parts.add(SynthesisNoun.component(query.requiredTraits().stream().sorted().findFirst().orElse("trait")));
+            return SynthesisNoun.component(query.requiredTraits().stream().sorted().findFirst().orElse("trait"));
         }
-        if (parts.isEmpty()) {
-            return Component.literal("Any");
-        }
-        MutableComponent result = Component.empty();
-        for (int i = 0; i < parts.size(); i++) {
-            if (i > 0) {
-                result.append(Component.literal(" + "));
-            }
-            result.append(parts.get(i));
-        }
-        return result;
+        return Component.literal("Any");
     }
 
     private static boolean samePiece(Piece first, Piece second) {
         return first != null && second != null && first.reagent().reagentId().equals(second.reagent().reagentId());
+    }
+
+    private static int totalAmountForProfile(List<ReagentStack> reagents, ReagentStack profile) {
+        return reagents.stream()
+                .filter(reagent -> sameReagentProfile(reagent, profile))
+                .mapToInt(ReagentStack::amount)
+                .sum();
+    }
+
+    private static boolean sameReagentProfile(ReagentStack left, ReagentStack right) {
+        return left.reagentId().equals(right.reagentId())
+                && left.categories().equals(right.categories())
+                && left.tier() == right.tier()
+                && left.quality() == right.quality()
+                && left.purity() == right.purity()
+                && left.instability() == right.instability()
+                && left.elements().equals(right.elements())
+                && left.traits().equals(right.traits())
+                && left.shape().equals(right.shape())
+                && left.sourceHints().equals(right.sourceHints());
     }
 
     private void togglePaletteElementFilter(String element) {
@@ -1184,7 +1346,9 @@ final class SynthesisSpatialPrototype {
             return false;
         }
         Optional<RequirementStatus> selectedRequirement = selectedRequirementFilter(plan);
-        if (selectedRequirement.isPresent() && !selectedRequirement.get().requirement().query().matches(entry.piece().reagent())) {
+        if (selectedRequirement.isPresent()
+                && !SynthesisRequirementMatcher.reagentQuery(selectedRequirement.get().requirement().query())
+                .matches(entry.piece().reagent())) {
             return false;
         }
         return true;
@@ -1281,6 +1445,19 @@ final class SynthesisSpatialPrototype {
         }
 
         y += READOUT_SECTION_PAD;
+        Optional<ScreenRect> elementsHeader = Optional.empty();
+        Optional<ScreenRect> elementsLine = Optional.empty();
+        String elementBudget = SynthesisStationText.compactElementBudget(placedPlan.requirements().stream()
+                .map(status -> status.requirement().query())
+                .toList());
+        if (!"None".equals(elementBudget) && y + READOUT_TEXT_HEIGHT <= panel.bottom()) {
+            int labelX = panel.x() + READOUT_INSET_X;
+            int valueX = labelX + 57;
+            elementsHeader = Optional.of(new ScreenRect(labelX, y, 54, READOUT_TEXT_HEIGHT));
+            elementsLine = Optional.of(new ScreenRect(valueX, y, panel.right() - READOUT_INSET_X - valueX, READOUT_TEXT_HEIGHT));
+            y += READOUT_ROW_GAP + READOUT_SECTION_PAD;
+        }
+
         ScreenRect traitsHeader = readoutLineRect(panel, y);
         y += READOUT_SECTION_GAP;
 
@@ -1322,6 +1499,8 @@ final class SynthesisSpatialPrototype {
                 needsHeader,
                 requirementLines,
                 extraNeedsLine,
+                elementsHeader,
+                elementsLine,
                 traitsHeader,
                 emptyTraitsLine,
                 traitLines,
@@ -1339,9 +1518,25 @@ final class SynthesisSpatialPrototype {
                 .toList();
     }
 
+    private boolean matchesNeedNow(
+            Piece piece,
+            Optional<SynthesisPlan> plan,
+            List<RequirementStatus> unsatisfied,
+            List<ReagentStack> currentInputs
+    ) {
+        if (matchesAnyUnsatisfiedRequirement(piece, unsatisfied)) {
+            return true;
+        }
+        return plan.isPresent() && SynthesisRequirementMatcher.contributesMissingElement(
+                piece.reagent(),
+                plan.get().profile().requirements(),
+                currentInputs
+        );
+    }
+
     private boolean matchesAnyUnsatisfiedRequirement(Piece piece, List<RequirementStatus> unsatisfied) {
         for (RequirementStatus status : unsatisfied) {
-            if (status.requirement().query().matches(piece.reagent())) {
+            if (SynthesisRequirementMatcher.reagentQuery(status.requirement().query()).matches(piece.reagent())) {
                 return true;
             }
         }
@@ -1660,6 +1855,8 @@ final class SynthesisSpatialPrototype {
             ScreenRect needsHeader,
             List<ScreenRect> requirementLines,
             Optional<ScreenRect> extraNeedsLine,
+            Optional<ScreenRect> elementsHeader,
+            Optional<ScreenRect> elementsLine,
             ScreenRect traitsHeader,
             Optional<ScreenRect> emptyTraitsLine,
             List<ScreenRect> traitLines,

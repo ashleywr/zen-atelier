@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 import java.util.Locale;
+import java.util.List;
 
 final class SynthesisStationText {
     private SynthesisStationText() {
@@ -71,7 +72,7 @@ final class SynthesisStationText {
         java.util.ArrayList<String> parts = new java.util.ArrayList<>();
         String elements = elementBudget(query);
         if (!elements.isBlank()) {
-            parts.add(elements);
+            parts.add("Elements " + elements);
         }
         String traits = traitNeed(query);
         if (!traits.isBlank()) {
@@ -97,6 +98,15 @@ final class SynthesisStationText {
                 .sorted(java.util.Map.Entry.comparingByKey())
                 .map(entry -> SynthesisNoun.label(entry.getKey()) + " " + entry.getValue())
                 .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    static String compactElementBudget(List<ReagentQuery> queries) {
+        java.util.LinkedHashMap<String, Integer> elements = new java.util.LinkedHashMap<>();
+        queries.stream()
+                .flatMap(query -> query.minElements().entrySet().stream())
+                .sorted(java.util.Map.Entry.comparingByKey())
+                .forEach(entry -> elements.merge(entry.getKey(), entry.getValue(), Integer::sum));
+        return compactElementBudget(elements);
     }
 
     static String compactTraitList(java.util.Set<String> traits) {

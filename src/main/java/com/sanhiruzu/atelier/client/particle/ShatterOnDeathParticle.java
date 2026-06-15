@@ -1,6 +1,7 @@
 package com.sanhiruzu.atelier.client.particle;
 
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.core.particles.ParticleOptions;
 
@@ -18,7 +19,8 @@ public class ShatterOnDeathParticle extends ScalingBillboardParticle {
     public ShatterOnDeathParticle(ClientLevel level, double x, double y, double z,
                                   SpriteSet sprites, float peakScale, int lifetime,
                                   ParticleOptions shatter, ParticleOptions accent, int accentCount) {
-        super(level, x, y, z, sprites, peakScale, lifetime, 6, 4);
+        super(level, x, y, z, sprites, peakScale, lifetime, 6, 4,
+                ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT, Anchor.GROUND);
         this.shatter = shatter;
         this.accent = accent;
         this.accentCount = accentCount;

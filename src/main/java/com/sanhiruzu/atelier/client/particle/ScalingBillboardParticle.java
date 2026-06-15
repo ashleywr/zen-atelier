@@ -16,17 +16,37 @@ public class ScalingBillboardParticle extends TextureSheetParticle {
     private final int growTicks;
     private final int fadeTicks;
     private final ParticleRenderType renderType;
+    private final Anchor anchor;
+    private final double baseY;
+
+    /** How the billboard sits relative to its spawn point. */
+    public enum Anchor {
+        /** Quad centered on the spawn point (good for flashes, sparks, mid-air bursts). */
+        CENTER,
+        /**
+         * Quad's base stays on the spawn point as it scales, so the sprite rests on the
+         * ground and grows upward instead of sinking half into the terrain. The lift is
+         * derived from the sprite's own size, so no per-effect offset is needed.
+         */
+        GROUND
+    }
 
     public ScalingBillboardParticle(ClientLevel level, double x, double y, double z,
                                     SpriteSet sprites, float peakScale, int lifetime,
                                     int growTicks, int fadeTicks) {
         this(level, x, y, z, sprites, peakScale, lifetime, growTicks, fadeTicks,
-                ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT);
+                ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT, Anchor.CENTER);
     }
 
     public ScalingBillboardParticle(ClientLevel level, double x, double y, double z,
                                     SpriteSet sprites, float peakScale, int lifetime,
                                     int growTicks, int fadeTicks, ParticleRenderType renderType) {
+        this(level, x, y, z, sprites, peakScale, lifetime, growTicks, fadeTicks, renderType, Anchor.CENTER);
+    }
+
+    public ScalingBillboardParticle(ClientLevel level, double x, double y, double z,
+                                    SpriteSet sprites, float peakScale, int lifetime,
+                                    int growTicks, int fadeTicks, ParticleRenderType renderType, Anchor anchor) {
         super(level, x, y, z);
         this.sprites = sprites;
         this.peakScale = peakScale;
@@ -34,11 +54,21 @@ public class ScalingBillboardParticle extends TextureSheetParticle {
         this.growTicks = Math.max(1, growTicks);
         this.fadeTicks = Math.max(1, fadeTicks);
         this.renderType = renderType;
+        this.anchor = anchor;
+        this.baseY = y;
         this.gravity = 0.0F;
         this.hasPhysics = false;
         this.friction = 1.0F;
         this.quadSize = 0.01F;
         this.setSpriteFromAge(sprites);
+        if (anchor == Anchor.GROUND) {
+            this.y = baseY + halfHeightAt(0.0F);
+        }
+    }
+
+    /** Half-height (= quad half-extent, in blocks) at a given age. */
+    private float halfHeightAt(float t) {
+        return Math.max(0.01F, (t < growTicks) ? peakScale * (t / growTicks) : peakScale);
     }
 
     @Override
@@ -46,14 +76,16 @@ public class ScalingBillboardParticle extends TextureSheetParticle {
         super.tick();
         if (!this.removed) {
             this.setSpriteFromAge(sprites);
+            if (anchor == Anchor.GROUND) {
+                // Keep the base planted on the spawn point as the sprite grows.
+                this.y = baseY + halfHeightAt(this.age);
+            }
         }
     }
 
     @Override
     public float getQuadSize(float partialTicks) {
         float t = (this.age + partialTicks);
-        float scale = (t < growTicks) ? peakScale * (t / growTicks) : peakScale;
-
         int fadeStart = this.lifetime - fadeTicks;
         if (t >= fadeStart) {
             float f = 1.0F - Math.min(1.0F, (t - fadeStart) / fadeTicks);
@@ -61,7 +93,7 @@ public class ScalingBillboardParticle extends TextureSheetParticle {
         } else {
             this.setAlpha(1.0F);
         }
-        return Math.max(0.01F, scale);
+        return halfHeightAt(t);
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.sanhiruzu.atelier.data;
 import com.sanhiruzu.atelier.synthesis.data.ExtractionProfileReloadListener;
 import com.sanhiruzu.atelier.synthesis.data.SynthesisProfileReloadListener;
 import com.sanhiruzu.atelier.synthesis.data.TraitFusionReloadListener;
+import com.sanhiruzu.atelier.synthesis.vfx.ImpactVfxReloadListener;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 
@@ -15,6 +16,6 @@ public class DataReloadEventHandler {
         event.addListener(new SynthesisProfileReloadListener());
         event.addListener(new RoomProfileReloadListener());
         event.addListener(new TraitFusionReloadListener());
-        event.addListener(new com.sanhiruzu.atelier.synthesis.vfx.ImpactVfxReloadListener());
+        event.addListener(new ImpactVfxReloadListener());
     }
 }

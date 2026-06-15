@@ -5,20 +5,18 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Holds the loaded impact-VFX profiles, keyed by resource id. */
 public final class ImpactVfxRegistry {
-    private static final Map<ResourceLocation, ImpactVfxDefinition> PROFILES = new ConcurrentHashMap<>();
+    private static volatile Map<ResourceLocation, ImpactVfxDefinition> profiles = Map.of();
 
     private ImpactVfxRegistry() {}
 
-    public static void replaceAll(Map<ResourceLocation, ImpactVfxDefinition> profiles) {
-        PROFILES.clear();
-        PROFILES.putAll(profiles);
+    public static void replaceAll(Map<ResourceLocation, ImpactVfxDefinition> incoming) {
+        profiles = Map.copyOf(incoming);
     }
 
     public static Optional<ImpactVfxDefinition> get(ResourceLocation id) {
-        return Optional.ofNullable(PROFILES.get(id));
+        return Optional.ofNullable(profiles.get(id));
     }
 }

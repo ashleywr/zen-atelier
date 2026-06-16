@@ -54,7 +54,7 @@
   "outcomes": [
     {
       "outcome": "success",
-      "weight": 84,
+      "weight": 92,
       "outputs": [
         {
           "output": "zen_atelier:lodestone_ring",
@@ -87,7 +87,7 @@
     },
     {
       "outcome": "recoverable_failure",
-      "weight": 12,
+      "weight": 4,
       "byproducts": [
         {
           "reagent": "zen_atelier:metallic_slurry",

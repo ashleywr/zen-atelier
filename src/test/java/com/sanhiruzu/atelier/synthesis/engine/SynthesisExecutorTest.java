@@ -97,6 +97,60 @@ class SynthesisExecutorTest {
         assertThat(container.totalAmount(ReagentQuery.any())).isEqualTo(1);
     }
 
+    @Test
+    void attemptInputConsumesEveryPlacedReagentIncludingExtras() {
+        ReagentContainer placed = new ReagentContainer();
+        placed.insert(reagent("zen_atelier:abrasive_reagent", 40, "sharp"));
+        placed.insert(reagent("zen_atelier:binding_reagent", 30, "binding"));
+        placed.insert(reagentWithCategories("zen_atelier:extra_catalyst", 5, Set.of("zen_atelier:filler"), Map.of("fire", 1)));
+
+        SynthesisExecutionResult execution = executor.execute(
+                new SynthesisAttemptInput(sampleProfile(), placed, context(), ResolvedFusionData.EMPTY),
+                1L
+        );
+
+        assertThat(execution.consumedReagents())
+                .extracting(ReagentStack::reagentId)
+                .containsExactly(
+                        "zen_atelier:abrasive_reagent",
+                        "zen_atelier:binding_reagent",
+                        "zen_atelier:extra_catalyst"
+                );
+        assertThat(execution.consumedReagents())
+                .extracting(ReagentStack::amount)
+                .containsExactly(40, 30, 5);
+        assertThat(placed.totalAmount(ReagentQuery.any())).isZero();
+    }
+
+    @Test
+    void attemptInputConsumesEveryPlacedReagentOnFailure() {
+        SynthesisProfile profile = new SynthesisProfile(
+                "zen_atelier:guaranteed_failure",
+                sampleProfile().requirements(),
+                2,
+                List.of(new SynthesisOutcome(
+                        OutcomeClass.RECOVERABLE_FAILURE,
+                        1,
+                        List.of(),
+                        List.of(ReagentStack.simple("zen_atelier:sticky_residue", 1, 1))
+                ))
+        );
+        ReagentContainer placed = new ReagentContainer();
+        placed.insert(reagent("zen_atelier:abrasive_reagent", 40, "sharp"));
+        placed.insert(reagent("zen_atelier:binding_reagent", 30, "binding"));
+
+        SynthesisExecutionResult execution = executor.execute(
+                new SynthesisAttemptInput(profile, placed, context(), ResolvedFusionData.EMPTY),
+                1L
+        );
+
+        assertThat(execution.result().outcomeClass()).isEqualTo(OutcomeClass.RECOVERABLE_FAILURE);
+        assertThat(execution.consumedReagents())
+                .extracting(ReagentStack::amount)
+                .containsExactly(40, 30);
+        assertThat(placed.totalAmount(ReagentQuery.any())).isZero();
+    }
+
     private static SynthesisProfile sampleProfile() {
         return new SynthesisProfile(
                 "zen_atelier:crude_mining_coating",

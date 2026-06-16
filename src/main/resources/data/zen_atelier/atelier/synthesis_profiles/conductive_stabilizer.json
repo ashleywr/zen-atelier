@@ -45,7 +45,7 @@
   "outcomes": [
     {
       "outcome": "success",
-      "weight": 82,
+      "weight": 92,
       "outputs": [
         {
           "output": "zen_atelier:conductive_stabilizer",
@@ -78,7 +78,7 @@
     },
     {
       "outcome": "recoverable_failure",
-      "weight": 14,
+      "weight": 4,
       "byproducts": [
         {
           "reagent": "zen_atelier:metallic_residue",

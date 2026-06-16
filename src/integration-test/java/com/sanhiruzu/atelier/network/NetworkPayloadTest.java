@@ -4,6 +4,7 @@ import com.sanhiruzu.atelier.ui.network.DiscoveryDataSyncPayload;
 import com.sanhiruzu.atelier.ui.network.ExtractionKnowledgeSyncPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisBoardFusionPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisCatalogSyncPayload;
+import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -143,10 +144,22 @@ public class NetworkPayloadTest {
     @Test
     void testSynthesisBoardFusionPayloadSerializeDeserialize() {
         FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        ReagentStack placed = new ReagentStack(
+                "zen_atelier:spark_reagent",
+                2,
+                3,
+                40,
+                75,
+                5,
+                Map.of("fire", 2),
+                List.of("zen_atelier:sparking"),
+                java.util.Set.of("minecraft:flint")
+        );
         SynthesisBoardFusionPayload original = new SynthesisBoardFusionPayload(
                 17,
                 List.of("zen_atelier:ab_rule", "zen_atelier:ab_rule", "zen_atelier:bc_rule"),
-                99
+                99,
+                List.of(placed)
         );
 
         SynthesisBoardFusionPayload.CODEC.encode(buffer, original);
@@ -157,6 +170,7 @@ public class NetworkPayloadTest {
         assertEquals(17, decoded.containerId(), "Container id should round-trip");
         assertEquals(List.of("zen_atelier:ab_rule", "zen_atelier:bc_rule"), decoded.activeRuleIds(), "Rule ids should deduplicate and preserve order");
         assertEquals(49, decoded.resonanceCount(), "Resonance count should be clamped to board limits");
+        assertEquals(List.of(placed), decoded.decodePlacedReagents(), "Placed board reagents should round-trip");
     }
 
     @Test

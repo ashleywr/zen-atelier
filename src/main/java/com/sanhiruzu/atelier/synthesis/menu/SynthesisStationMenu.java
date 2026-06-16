@@ -334,13 +334,50 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         ReagentContainer carried = CarriedReagentInventory.snapshot(player.getInventory());
         ReagentContainer roomStorage = roomStorageAtStation();
         ReagentContainer combined = RoomReagentStorage.combine(carried, roomStorage);
+        ReagentContainer placed = placedReagents(payload);
         AttemptContext context = currentAttemptContext();
         ResolvedFusionData fusion = payload != null ? payload.resolve() : ResolvedFusionData.EMPTY;
         SynthesisProfile effective = effectiveProfile(profile.get());
         if (fusion.successWeightBonus() > 0) {
             effective = applyFusionSuccessBonus(effective, fusion.successWeightBonus());
         }
-        return new SynthesisAttemptInput(effective, combined, context, fusion);
+        ReagentContainer attemptReagents = placed.entries().isEmpty() ? new ReagentContainer() : placed;
+        if (!placed.entries().isEmpty() && !placedAvailableIn(combined, placed.entries())) {
+            return null;
+        }
+        return new SynthesisAttemptInput(effective, attemptReagents, context, fusion);
+    }
+
+    private static ReagentContainer placedReagents(SynthesisBoardFusionPayload payload) {
+        ReagentContainer placed = new ReagentContainer();
+        if (payload == null) {
+            return placed;
+        }
+        for (ReagentStack stack : payload.decodePlacedReagents()) {
+            placed.insert(stack);
+        }
+        return placed;
+    }
+
+    private static boolean placedAvailableIn(ReagentContainer available, List<ReagentStack> placed) {
+        java.util.List<ReagentStack> remaining = new java.util.ArrayList<>(available.entries());
+        for (ReagentStack stack : placed) {
+            int needed = stack.amount();
+            for (int i = 0; i < remaining.size() && needed > 0; i++) {
+                ReagentStack candidate = remaining.get(i);
+                if (!sameReagentProfile(candidate, stack)) {
+                    continue;
+                }
+                int taken = Math.min(candidate.amount(), needed);
+                needed -= taken;
+                int left = candidate.amount() - taken;
+                remaining.set(i, left <= 0 ? null : candidate.withAmount(left));
+            }
+            if (needed > 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void execute(Player player) {
@@ -656,6 +693,21 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
                 profile.requirements(),
                 profile.recipeTierCap(),
                 boosted);
+    }
+
+    private static boolean sameReagentProfile(ReagentStack left, ReagentStack right) {
+        return left != null
+                && right != null
+                && left.reagentId().equals(right.reagentId())
+                && left.categories().equals(right.categories())
+                && left.tier() == right.tier()
+                && left.quality() == right.quality()
+                && left.purity() == right.purity()
+                && left.instability() == right.instability()
+                && left.elements().equals(right.elements())
+                && left.traits().equals(right.traits())
+                && left.shape().equals(right.shape())
+                && left.sourceHints().equals(right.sourceHints());
     }
 
 }

@@ -62,7 +62,7 @@
   "outcomes": [
     {
       "outcome": "success",
-      "weight": 82,
+      "weight": 91,
       "outputs": [
         {
           "output": "zen_atelier:wanderers_robes",
@@ -97,7 +97,7 @@
     },
     {
       "outcome": "recoverable_failure",
-      "weight": 13,
+      "weight": 4,
       "byproducts": [
         {
           "reagent": "zen_atelier:threadbare_residue",

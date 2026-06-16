@@ -56,7 +56,7 @@
   "outcomes": [
     {
       "outcome": "success",
-      "weight": 82,
+      "weight": 91,
       "outputs": [
         {
           "output": "zen_atelier:frost_globe",
@@ -91,7 +91,7 @@
     },
     {
       "outcome": "recoverable_failure",
-      "weight": 13,
+      "weight": 4,
       "byproducts": [
         {
           "reagent": "zen_atelier:briny_residue",

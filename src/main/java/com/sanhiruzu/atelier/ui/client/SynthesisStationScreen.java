@@ -36,6 +36,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     private int failureImpactTicks;
     private int lastMouseX;
     private int lastMouseY;
+    private ModeState modeState = ModeState.initial();
 
     public SynthesisStationScreen(SynthesisStationMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -74,11 +75,12 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             failureImpactTicks--;
         }
         if (synthesizeButton != null) {
-            boolean canCraft = menu.canSynthesize()
+            boolean canCraft = spatialPrototype.canSynthesizePlaced(currentPlan(), menu.roomVaultReagents(), playerInventoryReagents())
                     || (menu.selectedProfile().isPresent() && minecraft != null
                             && minecraft.player != null && minecraft.player.getAbilities().instabuild);
-            synthesizeButton.active = canCraft && !hasResult;
-            synthesizeButton.visible = !hasResult;
+            boolean boardMode = modeState.mode() == ScreenMode.BOARD;
+            synthesizeButton.active = boardMode && canCraft && !hasResult;
+            synthesizeButton.visible = boardMode && !hasResult;
         }
         if (confirmButton != null) {
             confirmButton.visible = hasResult && failureImpactTicks <= 0;
@@ -89,24 +91,43 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         SynthesisStationDrawing.window(graphics, absolute(layout.root));
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.titleBar));
-        renderCategoryTabs(graphics);
-        SynthesisStationDrawing.panel(graphics, absolute(layout.mainPanel));
-        SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.recipePanel));
-        SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.detailPanel));
-        SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.reagentPanel));
-        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.recipePanel).inset(UiMetrics.INSET_MEDIUM));
-        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.detailPanel).inset(UiMetrics.INSET_MEDIUM));
-        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.reagentPanel).inset(UiMetrics.INSET_MEDIUM));
-        SynthesisStationDrawing.searchBox(graphics, absolute(layout.recipeSearch));
-        SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentSearch));
-        SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentFilter));
-        SynthesisStationDrawing.searchBox(graphics, absolute(layout.reagentSort));
-        SynthesisRecipeGrid.render(graphics, font, menu, layout, origin(), selectedCategory());
-        spatialPrototype.render(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin());
-        renderCatalystSlot(graphics, mouseX, mouseY);
+        if (modeState.mode() == ScreenMode.RECIPE_BOOK) {
+            renderRecipeBookBackground(graphics);
+        } else {
+            renderBoardModeBackground(graphics, mouseX, mouseY);
+        }
         if (DEBUG_LAYOUT) {
             SynthesisStationLayoutDebug.render(graphics, font, layout, origin());
         }
+    }
+
+    private void renderRecipeBookBackground(GuiGraphics graphics) {
+        renderCategoryTabs(graphics);
+        SynthesisStationDrawing.panel(graphics, absolute(layout.mainPanel));
+        SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.recipeBookLeftPage()));
+        SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.recipeBookRightPage()));
+        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.recipeBookLeftPage()).inset(UiMetrics.INSET_MEDIUM));
+        SynthesisStationDrawing.tiledWood(graphics, absolute(layout.recipeBookRightPage()).inset(UiMetrics.INSET_MEDIUM));
+        SynthesisRecipeGrid.render(graphics, font, menu, layout, origin(), selectedCategory());
+    }
+
+    private void renderBoardModeBackground(GuiGraphics graphics, int mouseX, int mouseY) {
+        SynthesisStationDrawing.panel(graphics, absolute(layout.mainPanel));
+        SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.boardModePalettePanel()));
+        SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.boardModeProgressPanel()));
+        SynthesisStationDrawing.searchBox(graphics, absolute(layout.boardModeBackButton()));
+        spatialPrototype.renderBoardMode(
+                graphics,
+                font,
+                currentPlan(),
+                menu.roomVaultReagents(),
+                playerInventoryReagents(),
+                origin(),
+                layout.boardModeBoardArea(),
+                layout.boardModePalettePanel(),
+                layout.boardModeProgressPanel()
+        );
+        renderCatalystSlot(graphics, mouseX, mouseY);
     }
 
     private void renderCatalystSlot(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -127,11 +148,16 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.fill(8, 226, imageWidth - 8, imageHeight - 7, SynthesisScreenTheme.PANEL_DARKEST);
 
-        SynthesisStationText.drawFit(graphics, font, Component.literal("[Reagent Vault]"), layout.reagentSearch.inset(UiMetrics.INSET_MEDIUM), vaultLabelColor());
-        SynthesisStationText.drawFit(graphics, font, roomStorageSummary(), new ScreenRect(380, 235, 84, 9), SynthesisScreenTheme.GOOD);
-        renderCategoryTabLabels(graphics);
+        if (modeState.mode() == ScreenMode.RECIPE_BOOK) {
+            renderRecipeBookLabels(graphics);
+            return;
+        }
 
         boolean catalystActive = !menu.getSlot(SynthesisStationMenu.CATALYST_SLOT_INDEX).getItem().isEmpty();
+        SynthesisStationText.drawCenteredFit(graphics, font, Component.literal("Back"),
+                layout.boardModeBackButton().inset(3), SynthesisScreenTheme.TEXT);
+        menu.selectedProfile().ifPresent(profile ->
+                graphics.drawCenteredString(font, SynthesisStationText.fitWidth(font, SynthesisStationText.profileName(profile), 180), imageWidth / 2, 28, SynthesisScreenTheme.ACCENT));
         SynthesisStationText.drawFit(graphics, font, Component.literal("Catalyst"),
                 CATALYST_LABEL, catalystActive ? SynthesisScreenTheme.ACCENT_DIM : SynthesisScreenTheme.MUTED);
 
@@ -142,6 +168,12 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         }
 
         spatialPrototype.renderLabels(graphics, font);
+    }
+
+    private void renderRecipeBookLabels(GuiGraphics graphics) {
+        renderCategoryTabLabels(graphics);
+        menu.selectedProfile().ifPresent(profile ->
+                SynthesisRecipeDetails.render(graphics, font, menu, layout, profile));
     }
 
     @Override
@@ -160,7 +192,17 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         graphics.pose().translate(leftPos, topPos, 0.0F);
         renderLabels(graphics, mouseX, mouseY);
         graphics.pose().popPose();
-        spatialPrototype.renderOverlay(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY);
+        if (modeState.mode() == ScreenMode.BOARD) {
+            spatialPrototype.renderBoardModeOverlay(
+                    graphics,
+                    font,
+                    currentPlan(),
+                    origin(),
+                    layout.boardModeBoardArea(),
+                    mouseX,
+                    mouseY
+            );
+        }
         if (pendingResult != null && failureImpactTicks > 0) {
             renderFailureImpact(graphics, partialTick);
         } else if (pendingResult != null) {
@@ -173,11 +215,15 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     }
 
     private void renderSynthesisTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (!spatialPrototype.renderTooltip(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY)) {
+        if (modeState.mode() == ScreenMode.BOARD && !spatialPrototype.renderTooltip(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY)) {
             renderRoomVaultTooltip(graphics, mouseX, mouseY);
             renderCategoryTooltip(graphics, mouseX, mouseY);
             renderCraftReasonTooltip(graphics, mouseX, mouseY);
             renderCatalystTooltip(graphics, mouseX, mouseY);
+            SynthesisRecipeGrid.renderTooltip(graphics, font, menu, layout, origin(), selectedCategory(), mouseX, mouseY);
+            renderTooltip(graphics, mouseX, mouseY);
+        } else if (modeState.mode() == ScreenMode.RECIPE_BOOK) {
+            renderCategoryTooltip(graphics, mouseX, mouseY);
             SynthesisRecipeGrid.renderTooltip(graphics, font, menu, layout, origin(), selectedCategory(), mouseX, mouseY);
             renderTooltip(graphics, mouseX, mouseY);
         }
@@ -262,10 +308,26 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             // Only the confirm button (rendered above the overlay) should receive clicks
             return super.mouseClicked(mouseX, mouseY, button);
         }
-        // spatialPrototype runs first so popup overlays (filter drawer) can block clicks
-        // from reaching widgets that sit visually behind them.
-        if (spatialPrototype.mouseClicked(mouseX, mouseY, button, hasShiftDown(), currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin())) {
-            return true;
+        if (modeState.mode() == ScreenMode.BOARD) {
+            if (absolute(layout.boardModeBackButton()).contains((int) mouseX, (int) mouseY)) {
+                spatialPrototype.resetAfterSynthesis();
+                modeState = modeState.backToRecipeBook();
+                return true;
+            }
+            if (spatialPrototype.mouseClickedBoardMode(
+                    mouseX,
+                    mouseY,
+                    button,
+                    hasShiftDown(),
+                    currentPlan(),
+                    menu.roomVaultReagents(),
+                    playerInventoryReagents(),
+                    origin(),
+                    layout.boardModeBoardArea(),
+                    layout.boardModePalettePanel())) {
+                return true;
+            }
+            return super.mouseClicked(mouseX, mouseY, button);
         }
         Optional<Integer> hoveredCategory = hoveredCategoryIndex((int) mouseX, (int) mouseY);
         if (hoveredCategory.isPresent()) {
@@ -274,8 +336,13 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         }
         Optional<Integer> hovered = SynthesisRecipeGrid.hoveredProfileIndex(menu, layout, origin(), selectedCategory(), (int) mouseX, (int) mouseY);
         if (hovered.isPresent()) {
+            ModeState previous = modeState;
             menu.selectProfile(hovered.get());
             clickMenuButton(SynthesisStationMenu.BUTTON_PROFILE_BASE + hovered.get());
+            modeState = modeState.enterBoard(hovered.get());
+            if (modeState.selectedProfileChangedFrom(previous)) {
+                spatialPrototype.resetAfterSynthesis();
+            }
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -283,7 +350,15 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (spatialPrototype.mouseScrolled(mouseX, mouseY, scrollY, menu.roomVaultReagents(), playerInventoryReagents(), origin())) {
+        if (modeState.mode() == ScreenMode.BOARD && spatialPrototype.mouseScrolledBoardMode(
+                mouseX,
+                mouseY,
+                scrollY,
+                currentPlan(),
+                menu.roomVaultReagents(),
+                playerInventoryReagents(),
+                origin(),
+                layout.boardModePalettePanel())) {
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -298,7 +373,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             }
             return false;
         }
-        if (keyCode == GLFW.GLFW_KEY_R && spatialPrototype.rotateCarriedAt(lastMouseX, lastMouseY, currentPlan(), origin())) {
+        if (modeState.mode() == ScreenMode.BOARD && keyCode == GLFW.GLFW_KEY_R && spatialPrototype.rotateCarriedAt(lastMouseX, lastMouseY, currentPlan(), origin())) {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_J) {
@@ -588,6 +663,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         if (payload.containerId() == menu.containerId) {
             pendingResult = new SynthesisResultOverlay(payload.outcomeClass(), payload.outputs(), payload.byproducts());
             failureImpactTicks = SynthesisResultOverlay.impactTicksFor(payload.outcomeClass());
+            spatialPrototype.resetAfterSynthesis();
         }
     }
 
@@ -602,5 +678,28 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
 
     private ScreenRect origin() {
         return new ScreenRect(leftPos, topPos, 0, 0);
+    }
+
+    enum ScreenMode {
+        RECIPE_BOOK,
+        BOARD
+    }
+
+    record ModeState(ScreenMode mode, int selectedProfileIndex) {
+        static ModeState initial() {
+            return new ModeState(ScreenMode.RECIPE_BOOK, 0);
+        }
+
+        ModeState enterBoard(int profileIndex) {
+            return new ModeState(ScreenMode.BOARD, Math.max(0, profileIndex));
+        }
+
+        ModeState backToRecipeBook() {
+            return new ModeState(ScreenMode.RECIPE_BOOK, selectedProfileIndex);
+        }
+
+        boolean selectedProfileChangedFrom(ModeState previous) {
+            return previous != null && selectedProfileIndex != previous.selectedProfileIndex;
+        }
     }
 }

@@ -12,7 +12,21 @@ public final class SynthesisExecutor {
     private final SynthesisPlanner planner = new SynthesisPlanner();
 
     public SynthesisExecutionResult execute(SynthesisAttemptInput input, long seed) {
-        return execute(input.effectiveProfile(), input.reagents(), input.context(), input.effectiveRisk(), seed);
+        SynthesisPlan plan = planner.plan(input);
+        if (!plan.canSynthesize()) {
+            throw new IllegalArgumentException("missing required reagents for " + input.effectiveProfile().id());
+        }
+
+        List<ReagentStack> consumed = input.reagents().entries();
+        SynthesisResult result = engine.roll(new SynthesisAttempt(
+                input.effectiveProfile(), consumed,
+                input.context().apparatusTierCap(), input.context().roomTierCap(), input.context().configTierCap(),
+                input.effectiveRisk(), seed));
+        int totalConsumed = consumed.stream().mapToInt(ReagentStack::amount).sum();
+        if (totalConsumed > 0) {
+            input.reagents().extract(com.sanhiruzu.atelier.synthesis.storage.ReagentQuery.any(), totalConsumed);
+        }
+        return new SynthesisExecutionResult(result, consumed);
     }
 
     public SynthesisExecutionResult execute(

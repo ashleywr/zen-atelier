@@ -51,6 +51,34 @@ final class SynthesisStationLayout {
         return new ScreenRect(19, 76 + index * metrics.recipeCellHeight(), 124, 20);
     }
 
+    ScreenRect recipeBookLeftPage() {
+        return new ScreenRect(14, 49, 190, 166);
+    }
+
+    ScreenRect recipeBookRightPage() {
+        return new ScreenRect(210, 49, 258, 166);
+    }
+
+    ScreenRect boardModePalettePanel() {
+        return new ScreenRect(12, 49, 120, 166);
+    }
+
+    ScreenRect boardModeBoardArea() {
+        return new ScreenRect(142, 45, 190, 190);
+    }
+
+    ScreenRect boardModeProgressPanel() {
+        return new ScreenRect(342, 49, 126, 166);
+    }
+
+    ScreenRect boardModeBottomControls() {
+        return new ScreenRect(142, 242, 326, 40);
+    }
+
+    ScreenRect boardModeBackButton() {
+        return new ScreenRect(16, 199, 48, 18);
+    }
+
     ScreenRect core() {
         return new ScreenRect(235, 83, 26, 26);
     }

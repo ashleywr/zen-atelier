@@ -64,7 +64,7 @@
   "outcomes": [
     {
       "outcome": "success",
-      "weight": 80,
+      "weight": 91,
       "outputs": [
         {
           "output": "zen_atelier:spark_core",
@@ -99,7 +99,7 @@
     },
     {
       "outcome": "recoverable_failure",
-      "weight": 15,
+      "weight": 4,
       "byproducts": [
         {
           "reagent": "zen_atelier:alchemical_slag",

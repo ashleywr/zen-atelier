@@ -2,7 +2,9 @@ package com.sanhiruzu.atelier.synthesis.data;
 
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
+import com.sanhiruzu.atelier.synthesis.core.OutcomeClass;
 import com.sanhiruzu.atelier.synthesis.core.ReagentShape;
+import com.sanhiruzu.atelier.synthesis.engine.OutcomePreview;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -63,6 +65,32 @@ class SynthesisResourceFilesTest {
         assertFirstReagent("phlogiston_pebble.json", "zen_atelier:combustible", "fire", ReagentShape.LINE_TWO);
         assertFirstReagent("aqua_gel.json", "zen_atelier:binding", "water", ReagentShape.SQUARE_TWO);
         assertFirstReagent("ember_gel.json", "zen_atelier:binding", "fire", ReagentShape.ELBOW);
+    }
+
+    @Test
+    void tierTwoSynthesisProfilesHaveLowBaseFailureChance() throws IOException {
+        List<Path> files = jsonFiles(Path.of("src/main/resources/data/zen_atelier/atelier/synthesis_profiles"));
+
+        for (Path file : files) {
+            SynthesisProfileDefinition definition = SynthesisProfileDefinition.CODEC.parse(
+                            JsonOps.INSTANCE,
+                            JsonParser.parseString(Files.readString(file)))
+                    .result()
+                    .orElseThrow();
+            if (definition.recipeTierCap() > 2) {
+                continue;
+            }
+
+            double baseFailure = OutcomePreview.forSynthesis(definition.toCore().outcomes(), 0)
+                    .failureProbability();
+            assertThat(baseFailure)
+                    .as(file.getFileName().toString())
+                    .isLessThanOrEqualTo(0.05);
+            assertThat(OutcomePreview.forSynthesis(definition.toCore().outcomes(), 100)
+                    .probabilityOf(OutcomeClass.RECOVERABLE_FAILURE))
+                    .as(file.getFileName().toString() + " risky failure remains possible")
+                    .isGreaterThan(baseFailure);
+        }
     }
 
     private static List<Path> jsonFiles(Path directory) throws IOException {

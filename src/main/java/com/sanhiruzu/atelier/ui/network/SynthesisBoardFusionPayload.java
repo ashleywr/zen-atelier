@@ -1,6 +1,11 @@
 package com.sanhiruzu.atelier.ui.network;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
 import com.sanhiruzu.atelier.ZenAtelier;
+import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import com.sanhiruzu.atelier.synthesis.data.TraitFusionRegistry;
 import com.sanhiruzu.atelier.synthesis.data.TraitFusionRule;
 import com.sanhiruzu.atelier.synthesis.engine.ResolvedFusionData;
@@ -17,10 +22,13 @@ import java.util.List;
 public record SynthesisBoardFusionPayload(
         int containerId,
         List<String> activeRuleIds,
-        int resonanceCount
+        int resonanceCount,
+        List<ReagentStack> placedReagents
 ) implements CustomPacketPayload {
+    private static final Gson GSON = new Gson();
     private static final int MAX_RULES = 64;
     private static final int MAX_RESONANCE = 49;
+    private static final int MAX_PLACED_REAGENTS = 49;
 
     public static final Type<SynthesisBoardFusionPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(ZenAtelier.MODID, "board_fusion"));
@@ -34,6 +42,7 @@ public record SynthesisBoardFusionPayload(
                             buf.writeUtf(ruleId);
                         }
                         buf.writeVarInt(packet.resonanceCount);
+                        writePlacedReagents(buf, packet.placedReagents);
                     },
                     buf -> {
                         int containerId = buf.readVarInt();
@@ -43,9 +52,13 @@ public record SynthesisBoardFusionPayload(
                             ruleIds.add(buf.readUtf());
                         }
                         int resonanceCount = buf.readVarInt();
-                        return new SynthesisBoardFusionPayload(containerId, ruleIds, resonanceCount);
+                        return new SynthesisBoardFusionPayload(containerId, ruleIds, resonanceCount, readPlacedReagents(buf));
                     }
             );
+
+    public SynthesisBoardFusionPayload(int containerId, List<String> activeRuleIds, int resonanceCount) {
+        this(containerId, activeRuleIds, resonanceCount, List.of());
+    }
 
     public SynthesisBoardFusionPayload {
         LinkedHashSet<String> uniqueRuleIds = new LinkedHashSet<>();
@@ -59,6 +72,9 @@ public record SynthesisBoardFusionPayload(
         }
         activeRuleIds = List.copyOf(uniqueRuleIds);
         resonanceCount = Math.clamp(resonanceCount, 0, MAX_RESONANCE);
+        placedReagents = placedReagents == null ? List.of() : placedReagents.stream()
+                .limit(MAX_PLACED_REAGENTS)
+                .toList();
     }
 
     public static SynthesisBoardFusionPayload fromEvaluation(SynthesisBoardEvaluation eval, int containerId) {
@@ -71,8 +87,13 @@ public record SynthesisBoardFusionPayload(
         return new SynthesisBoardFusionPayload(
                 containerId,
                 new ArrayList<>(ruleIds),
-                eval.resonantPlacementIds().size()
+                eval.resonantPlacementIds().size(),
+                List.of()
         );
+    }
+
+    public List<ReagentStack> decodePlacedReagents() {
+        return placedReagents;
     }
 
     public ResolvedFusionData resolve() {
@@ -89,5 +110,27 @@ public record SynthesisBoardFusionPayload(
     @Override
     public Type<SynthesisBoardFusionPayload> type() {
         return TYPE;
+    }
+
+    private static void writePlacedReagents(FriendlyByteBuf buf, List<ReagentStack> entries) {
+        buf.writeVarInt(entries.size());
+        for (ReagentStack entry : entries) {
+            buf.writeUtf(GSON.toJson(ReagentStack.CODEC.encodeStart(JsonOps.INSTANCE, entry).getOrThrow()));
+        }
+    }
+
+    private static List<ReagentStack> readPlacedReagents(FriendlyByteBuf buf) {
+        int size = buf.readVarInt();
+        List<ReagentStack> entries = new ArrayList<>(Math.min(size, MAX_PLACED_REAGENTS));
+        for (int i = 0; i < size; i++) {
+            JsonElement json = JsonParser.parseString(buf.readUtf());
+            if (i >= MAX_PLACED_REAGENTS) {
+                continue;
+            }
+            ReagentStack.CODEC.parse(JsonOps.INSTANCE, json)
+                    .resultOrPartial(error -> ZenAtelier.LOGGER.error("Failed to read placed synthesis reagent: {}", error))
+                    .ifPresent(entries::add);
+        }
+        return List.copyOf(entries);
     }
 }

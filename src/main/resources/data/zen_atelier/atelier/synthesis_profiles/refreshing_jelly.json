@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:refreshing_jelly",
+  "category": "food",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 1,
+        "type": "element",
+        "required_element": "water",
+        "required_element_value": 2,
+        "quality_bonus": 6
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "type": "element",
+        "required_element": "life",
+        "required_element_value": 1,
+        "perfect_bonus": 4
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 30,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_elements": {
+          "water": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:quickening"
+        ],
+        "required_traits": [
+          "zen_atelier:sweet"
+        ]
+      }
+    },
+    {
+      "amount": 15,
+      "query": {
+        "required_categories": [
+          "zen_atelier:medicinal"
+        ],
+        "min_elements": {
+          "life": 1
+        }
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 91,
+      "outputs": [
+        {
+          "output": "zen_atelier:refreshing_jelly",
+          "count": 2,
+          "tier": 2,
+          "quality": 52,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:refreshing",
+            "zen_atelier:quickening"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 5,
+      "outputs": [
+        {
+          "output": "zen_atelier:refreshing_jelly",
+          "count": 3,
+          "tier": 2,
+          "quality": 74,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:refreshing",
+            "zen_atelier:quickening",
+            "zen_atelier:revitalizing"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 4,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:sticky_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:binding"
+          ],
+          "amount": 10,
+          "tier": 1,
+          "elements": {
+            "water": 1
+          },
+          "traits": [
+            "zen_atelier:sticky"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:field_marker",
+  "category": "misc",
+  "recipe_tier_cap": 1,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 1,
+        "type": "element",
+        "required_element": "light",
+        "required_element_value": 1,
+        "quality_bonus": 4
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:luminous"
+        ],
+        "min_elements": {
+          "light": 1
+        }
+      }
+    },
+    {
+      "amount": 10,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ]
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 95,
+      "outputs": [
+        {
+          "output": "zen_atelier:field_marker",
+          "count": 1,
+          "tier": 1,
+          "quality": 42,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:luminous"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 2,
+      "outputs": [
+        {
+          "output": "zen_atelier:field_marker",
+          "count": 2,
+          "tier": 1,
+          "quality": 62,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:luminous",
+            "zen_atelier:stable"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 3,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:glimmer_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:luminous"
+          ],
+          "amount": 6,
+          "tier": 1,
+          "elements": {
+            "light": 1
+          },
+          "traits": [
+            "zen_atelier:luminous"
+          ]
+        }
+      ]
+    }
+  ]
+}

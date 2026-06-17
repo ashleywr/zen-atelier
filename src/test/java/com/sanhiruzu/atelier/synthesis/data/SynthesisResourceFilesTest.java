@@ -149,6 +149,27 @@ class SynthesisResourceFilesTest {
     }
 
     @Test
+    void bundledReagentIdsHaveLocalizedNames() throws IOException {
+        JsonObject lang = loadLang();
+        Set<String> missing = new TreeSet<>();
+
+        for (ResourceLocation reagentId : bundledReagentIds()) {
+            if (!"zen_atelier".equals(reagentId.getNamespace())) {
+                continue;
+            }
+
+            String key = reagentKey(reagentId);
+            if (!lang.has(key)) {
+                missing.add(key + " for " + reagentId);
+            }
+        }
+
+        assertThat(missing)
+                .as("Missing en_us.json reagent localization entries")
+                .isEmpty();
+    }
+
+    @Test
     void bundledSynthesisRequirementsAreReachableFromExtractionOrByproducts() throws IOException {
         List<ReagentStack> producedStacks = producedReagentStacks();
 
@@ -298,6 +319,22 @@ class SynthesisResourceFilesTest {
         return affixes;
     }
 
+    private static Set<ResourceLocation> bundledReagentIds() throws IOException {
+        Set<ResourceLocation> reagentIds = new TreeSet<>();
+        for (ExtractionProfileDefinition profile : extractionDefinitions()) {
+            for (ExtractionOutcomeDefinition outcome : profile.outcomes()) {
+                outcome.reagents().stream().map(ReagentStackDefinition::reagent).forEach(reagentIds::add);
+                outcome.byproducts().stream().map(ReagentStackDefinition::reagent).forEach(reagentIds::add);
+            }
+        }
+        for (SynthesisProfileDefinition profile : synthesisDefinitions()) {
+            for (SynthesisOutcomeDefinition outcome : profile.outcomes()) {
+                outcome.byproducts().stream().map(ReagentStackDefinition::reagent).forEach(reagentIds::add);
+            }
+        }
+        return reagentIds;
+    }
+
     private static Set<String> finalOutputAffixes() throws IOException {
         Set<String> affixes = new TreeSet<>();
         for (SynthesisProfileDefinition profile : synthesisDefinitions()) {
@@ -316,6 +353,10 @@ class SynthesisResourceFilesTest {
 
     private static String blockKey(ResourceLocation id) {
         return "block." + id.getNamespace() + "." + id.getPath();
+    }
+
+    private static String reagentKey(ResourceLocation id) {
+        return id.getNamespace() + ".reagent." + id.getPath();
     }
 
     private static void assertFirstReagent(String file, String category, String element, ReagentShape shape) throws IOException {

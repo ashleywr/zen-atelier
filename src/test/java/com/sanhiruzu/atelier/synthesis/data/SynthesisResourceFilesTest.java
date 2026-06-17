@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import com.sanhiruzu.atelier.synthesis.core.OutcomeClass;
+import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
 import com.sanhiruzu.atelier.synthesis.core.ReagentShape;
 import com.sanhiruzu.atelier.synthesis.core.SynthesisRecipeCategory;
 import com.sanhiruzu.atelier.synthesis.engine.OutcomePreview;
@@ -14,10 +15,12 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -147,44 +150,18 @@ class SynthesisResourceFilesTest {
 
     @Test
     void bundledSynthesisRequirementsAreReachableFromExtractionOrByproducts() throws IOException {
-        Set<String> producedCategories = new LinkedHashSet<>();
-        Set<String> producedElements = new LinkedHashSet<>();
+        List<ReagentStack> producedStacks = producedReagentStacks();
 
-        for (ExtractionProfileDefinition profile : extractionDefinitions()) {
-            for (ExtractionOutcomeDefinition outcome : profile.outcomes()) {
-                for (ReagentStackDefinition reagent : outcome.reagents()) {
-                    reagent.categories().stream().map(ResourceLocation::toString).forEach(producedCategories::add);
-                    producedElements.addAll(reagent.elements().keySet());
-                }
-                for (ReagentStackDefinition byproduct : outcome.byproducts()) {
-                    byproduct.categories().stream().map(ResourceLocation::toString).forEach(producedCategories::add);
-                    producedElements.addAll(byproduct.elements().keySet());
-                }
-            }
-        }
-        for (SynthesisProfileDefinition profile : synthesisDefinitions()) {
-            for (SynthesisOutcomeDefinition outcome : profile.outcomes()) {
-                for (ReagentStackDefinition byproduct : outcome.byproducts()) {
-                    byproduct.categories().stream().map(ResourceLocation::toString).forEach(producedCategories::add);
-                    producedElements.addAll(byproduct.elements().keySet());
-                }
-            }
-        }
-
-        Set<String> missing = new TreeSet<>();
+        Set<String> unreachable = new TreeSet<>();
         for (SynthesisProfileDefinition profile : synthesisDefinitions()) {
             for (SynthesisRequirementDefinition requirement : profile.requirements()) {
-                requirement.query().requiredCategories().stream()
-                        .map(ResourceLocation::toString)
-                        .filter(category -> !producedCategories.contains(category))
-                        .forEach(category -> missing.add(profile.id() + " category " + category));
-                requirement.query().minElements().keySet().stream()
-                        .filter(element -> !producedElements.contains(element))
-                        .forEach(element -> missing.add(profile.id() + " element " + element));
+                if (producedStacks.stream().noneMatch(stack -> requirement.query().toCore().matches(stack))) {
+                    unreachable.add(profile.id() + " unreachable query " + requirement.query());
+                }
             }
         }
 
-        assertThat(missing).isEmpty();
+        assertThat(unreachable).isEmpty();
     }
 
     @Test
@@ -217,6 +194,44 @@ class SynthesisResourceFilesTest {
         return files.stream()
                 .map(SynthesisResourceFilesTest::parseSynthesis)
                 .toList();
+    }
+
+    private static List<ReagentStack> producedReagentStacks() throws IOException {
+        List<ReagentStack> producedStacks = new ArrayList<>();
+        for (ExtractionProfileDefinition profile : extractionDefinitions()) {
+            for (ExtractionOutcomeDefinition outcome : profile.outcomes()) {
+                outcome.reagents().stream()
+                        .map(SynthesisResourceFilesTest::representativeReachableStack)
+                        .forEach(producedStacks::add);
+                outcome.byproducts().stream()
+                        .map(SynthesisResourceFilesTest::representativeReachableStack)
+                        .forEach(producedStacks::add);
+            }
+        }
+        for (SynthesisProfileDefinition profile : synthesisDefinitions()) {
+            for (SynthesisOutcomeDefinition outcome : profile.outcomes()) {
+                outcome.byproducts().stream()
+                        .map(SynthesisResourceFilesTest::representativeReachableStack)
+                        .forEach(producedStacks::add);
+            }
+        }
+        return producedStacks;
+    }
+
+    private static ReagentStack representativeReachableStack(ReagentStackDefinition definition) {
+        return new ReagentStack(
+                definition.reagent().toString(),
+                definition.categories().stream().map(ResourceLocation::toString).collect(Collectors.toSet()),
+                definition.amount(),
+                definition.tier(),
+                definition.qualityRange().map(IntRangeDefinition::max).orElse(definition.quality()),
+                definition.purityRange().map(IntRangeDefinition::max).orElse(definition.purity()),
+                definition.instabilityRange().map(IntRangeDefinition::min).orElse(definition.instability()),
+                definition.elements(),
+                definition.traits().stream().map(ResourceLocation::toString).toList(),
+                definition.shape(),
+                definition.sourceHints().stream().map(ResourceLocation::toString).collect(Collectors.toSet())
+        );
     }
 
     private static ExtractionProfileDefinition parseExtraction(Path file) {

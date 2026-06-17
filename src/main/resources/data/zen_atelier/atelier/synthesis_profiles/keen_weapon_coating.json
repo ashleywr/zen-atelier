@@ -46,7 +46,7 @@
           "zen_atelier:quickening_reagent"
         ],
         "min_elements": {
-          "life": 1
+          "wind": 1
         }
       }
     },

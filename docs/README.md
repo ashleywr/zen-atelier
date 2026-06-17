@@ -94,6 +94,8 @@ profiles, zone definitions, common block tags, and optional Patchouli book
 entries. See [docs/MOD_INTEGRATION.md](docs/MOD_INTEGRATION.md) for the current
 extension points and examples.
 
+For synthesis data packs, see [Synthesis Authoring](SYNTHESIS_AUTHORING.md) for extraction profiles, synthesis profiles, localization, and validation tests.
+
 ### Architecture Overview
 
 #### Pipeline (Server-Side)

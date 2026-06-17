@@ -247,6 +247,16 @@ class SynthesisResourceFilesTest {
     private static Set<String> usedAffixes() throws IOException {
         Set<String> affixes = new TreeSet<>();
         affixes.addAll(finalOutputAffixes());
+        for (SynthesisProfileDefinition profile : synthesisDefinitions()) {
+            for (SynthesisRequirementDefinition requirement : profile.requirements()) {
+                requirement.query().requiredTraits().stream().map(ResourceLocation::toString).forEach(affixes::add);
+            }
+            for (SynthesisOutcomeDefinition outcome : profile.outcomes()) {
+                for (ReagentStackDefinition byproduct : outcome.byproducts()) {
+                    byproduct.traits().stream().map(ResourceLocation::toString).forEach(affixes::add);
+                }
+            }
+        }
         for (ExtractionProfileDefinition profile : extractionDefinitions()) {
             for (ExtractionOutcomeDefinition outcome : profile.outcomes()) {
                 for (ReagentStackDefinition reagent : outcome.reagents()) {

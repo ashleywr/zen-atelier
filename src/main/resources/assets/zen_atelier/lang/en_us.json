@@ -473,6 +473,7 @@
   "zen_atelier.affix.harmonic.desc": "Resonant internal order. Pairs well with crystalline and conductive formulas.",
   "zen_atelier.affix.organic.desc": "Living material character. Supports growth, food, and medicinal work.",
   "zen_atelier.affix.preserving.desc": "Stabilizing preservative quality. Keeps volatile mixtures usable longer.",
+  "zen_atelier.affix.spoiled.desc": "Decayed organic character. Risky, impure, and useful for unstable life-aligned formulas.",
   "zen_atelier.affix.freezing.desc": "Chilling burst on impact. Slows nearby creatures.",
   "zen_atelier.affix.wide_chill.desc": "Expanded cold radius. Reaches further targets.",
   "zen_atelier.affix.low_damage.desc": "Frost bite on contact. Deals minor freeze damage.",

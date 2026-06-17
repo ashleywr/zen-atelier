@@ -11,6 +11,7 @@ import com.sanhiruzu.atelier.synthesis.menu.SynthesisStationMenu;
 import com.sanhiruzu.atelier.ui.network.ReagentVaultSyncPayload;
 import com.sanhiruzu.atelier.ui.network.SynthesisResultPayload;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -26,11 +27,13 @@ import java.util.Optional;
 
 public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisStationMenu> {
     private static final boolean DEBUG_LAYOUT = Boolean.getBoolean("zen_atelier.debugSynthesisLayout");
+    private static final long RECIPE_DOUBLE_CLICK_MS = 400L;
     private static final ScreenRect CATALYST_SLOT = new ScreenRect(372, 190, 18, 18);
     private static final ScreenRect CATALYST_LABEL = new ScreenRect(336, 181, 40, 8);
     private final SynthesisStationLayout layout = new SynthesisStationLayout();
     private final SynthesisSpatialPrototype spatialPrototype = new SynthesisSpatialPrototype();
     private Button synthesizeButton;
+    private Button beginSynthesisButton;
     private Button confirmButton;
     private Button previousButton;
     private Button nextButton;
@@ -38,6 +41,8 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     private int failureImpactTicks;
     private int lastMouseX;
     private int lastMouseY;
+    private int lastClickedRecipeProfileIndex = -1;
+    private long lastRecipeClickMillis = Long.MIN_VALUE;
     private ModeState modeState = ModeState.initial();
 
     public SynthesisStationScreen(SynthesisStationMenu menu, Inventory playerInventory, Component title) {
@@ -59,6 +64,13 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
                         button -> clickMenuButton(SynthesisStationMenu.BUTTON_SYNTHESIZE)
                 )
                 .bounds(synthesize.x(), synthesize.y(), synthesize.width(), synthesize.height()),
+                SynthesisScreenTheme.ACCENT));
+        ScreenRect begin = absolute(layout.recipeBookSynthesizeButton());
+        beginSynthesisButton = addRenderableWidget(SynthesisStationButton.build(Button.builder(
+                        Component.literal("Synthesize"),
+                        button -> enterBoardForSelectedProfile()
+                )
+                .bounds(begin.x(), begin.y(), begin.width(), begin.height()),
                 SynthesisScreenTheme.ACCENT));
         confirmButton = addRenderableWidget(SynthesisStationButton.build(Button.builder(
                         Component.literal("Confirm"),
@@ -90,6 +102,15 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             synthesizeButton.visible = boardMode && !hasResult;
         }
         boolean recipeBookMode = modeState.mode() == ScreenMode.RECIPE_BOOK;
+        if (beginSynthesisButton != null) {
+            ScreenRect beginBounds = absolute(layout.recipeBookSynthesizeButton());
+            beginSynthesisButton.setX(beginBounds.x());
+            beginSynthesisButton.setY(beginBounds.y());
+            beginSynthesisButton.setWidth(beginBounds.width());
+            beginSynthesisButton.setHeight(beginBounds.height());
+            beginSynthesisButton.visible = recipeBookMode && !hasResult && menu.selectedProfile().isPresent();
+            beginSynthesisButton.active = beginSynthesisButton.visible;
+        }
         if (previousButton != null) {
             previousButton.visible = recipeBookMode;
             previousButton.active = recipeBookMode;
@@ -407,11 +428,18 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         Optional<Integer> hovered = SynthesisRecipeGrid.hoveredProfileIndex(menu, layout, origin(), selectedCategory(), (int) mouseX, (int) mouseY);
         if (hovered.isPresent()) {
             ModeState previous = modeState;
+            long now = Util.getMillis();
+            boolean doubleClick = isRecipeDoubleClick(hovered.get(), lastClickedRecipeProfileIndex, now, lastRecipeClickMillis);
+            lastClickedRecipeProfileIndex = hovered.get();
+            lastRecipeClickMillis = now;
             menu.selectProfile(hovered.get());
             clickMenuButton(SynthesisStationMenu.BUTTON_PROFILE_BASE + hovered.get());
-            modeState = modeState.enterBoard(hovered.get());
+            modeState = modeState.selectProfile(hovered.get());
             if (modeState.selectedProfileChangedFrom(previous)) {
                 spatialPrototype.resetAfterSynthesis();
+            }
+            if (doubleClick) {
+                enterBoardForSelectedProfile();
             }
             return true;
         }
@@ -486,6 +514,14 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         return addRenderableWidget(SynthesisStationButton.build(Button.builder(label, button -> clickMenuButton(buttonId))
                 .bounds(bounds.x(), bounds.y(), bounds.width(), bounds.height()),
                 SynthesisScreenTheme.ACCENT_DIM));
+    }
+
+    private void enterBoardForSelectedProfile() {
+        ModeState previous = modeState;
+        modeState = modeState.selectProfile(menu.selectedProfileIndex()).enterBoard();
+        if (modeState.selectedProfileChangedFrom(previous)) {
+            spatialPrototype.resetAfterSynthesis();
+        }
     }
 
     private void clickMenuButton(int button) {
@@ -639,6 +675,12 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
                 || catalystSlot.contains((int) mouseX, (int) mouseY);
     }
 
+    static boolean isRecipeDoubleClick(int profileIndex, int lastProfileIndex, long nowMillis, long lastClickMillis) {
+        return profileIndex == lastProfileIndex
+                && nowMillis >= lastClickMillis
+                && nowMillis - lastClickMillis <= RECIPE_DOUBLE_CLICK_MS;
+    }
+
     private String roomStorageSummary() {
         if (menu.roomStorageStacks() <= 0) {
             return "0";
@@ -780,8 +822,12 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             return new ModeState(ScreenMode.RECIPE_BOOK, 0);
         }
 
-        ModeState enterBoard(int profileIndex) {
-            return new ModeState(ScreenMode.BOARD, Math.max(0, profileIndex));
+        ModeState selectProfile(int profileIndex) {
+            return new ModeState(mode, Math.max(0, profileIndex));
+        }
+
+        ModeState enterBoard() {
+            return new ModeState(ScreenMode.BOARD, selectedProfileIndex);
         }
 
         ModeState backToRecipeBook() {

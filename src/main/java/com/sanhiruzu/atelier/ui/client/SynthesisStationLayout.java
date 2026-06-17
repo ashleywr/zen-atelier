@@ -59,6 +59,10 @@ final class SynthesisStationLayout {
         return new ScreenRect(210, 49, 258, 166);
     }
 
+    ScreenRect recipeBookSynthesizeButton() {
+        return new ScreenRect(384, 188, 76, 22);
+    }
+
     ScreenRect boardModePalettePanel() {
         return new ScreenRect(12, 49, 122, 254);
     }

@@ -67,6 +67,22 @@ class UiLayerUsageTest {
                 .doesNotContain("renderTooltip(graphics, mouseX, mouseY)");
     }
 
+    @Test
+    void synthesisRecipeGridDoesNotRenderPreviewItemTooltips() throws IOException {
+        String source = Files.readString(UI_CLIENT_ROOT.resolve("SynthesisRecipeGrid.java"));
+        int methodStart = source.indexOf("static void renderTooltip");
+        int methodEnd = source.indexOf("static Optional<Integer> hoveredProfileIndex", methodStart);
+
+        assertThat(methodStart).isGreaterThanOrEqualTo(0);
+        assertThat(methodEnd).isGreaterThan(methodStart);
+        String method = source.substring(methodStart, methodEnd);
+
+        assertThat(method)
+                .as("Recipe rows should not show generated item data as if it were the final synthesis result.")
+                .doesNotContain("SynthesisOutputItemFactory.previewStack")
+                .doesNotContain("graphics.renderTooltip(font, SynthesisOutputItemFactory.previewStack");
+    }
+
     private static void collectViolations(Path path, List<String> violations) throws IOException {
         String source = Files.readString(path);
         Matcher matcher = TRANSLATE_CALL.matcher(source);

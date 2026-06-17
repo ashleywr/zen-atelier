@@ -43,12 +43,6 @@ final class SynthesisRecipeGrid {
     }
 
     static void renderTooltip(GuiGraphics graphics, Font font, SynthesisStationMenu menu, SynthesisStationLayout layout, ScreenRect origin, String selectedCategory, int mouseX, int mouseY) {
-        Optional<Integer> hovered = hoveredProfileIndex(menu, layout, origin, selectedCategory, mouseX, mouseY);
-        if (hovered.isEmpty()) {
-            return;
-        }
-        SynthesisProfile profile = menu.profiles().get(hovered.get());
-        graphics.renderTooltip(font, SynthesisOutputItemFactory.previewStack(profile), mouseX, mouseY);
     }
 
     static Optional<Integer> hoveredProfileIndex(SynthesisStationMenu menu, SynthesisStationLayout layout, ScreenRect origin, String selectedCategory, int mouseX, int mouseY) {

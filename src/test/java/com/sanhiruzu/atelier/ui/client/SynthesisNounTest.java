@@ -212,7 +212,11 @@ class SynthesisNounTest {
 
         assertThat(state.mode()).isEqualTo(SynthesisStationScreen.ScreenMode.RECIPE_BOOK);
 
-        state = state.enterBoard(3);
+        state = state.selectProfile(3);
+        assertThat(state.mode()).isEqualTo(SynthesisStationScreen.ScreenMode.RECIPE_BOOK);
+        assertThat(state.selectedProfileIndex()).isEqualTo(3);
+
+        state = state.enterBoard();
         assertThat(state.mode()).isEqualTo(SynthesisStationScreen.ScreenMode.BOARD);
         assertThat(state.selectedProfileIndex()).isEqualTo(3);
 
@@ -269,10 +273,17 @@ class SynthesisNounTest {
 
     @Test
     void enteringDifferentRecipeRequiresBoardReset() {
-        SynthesisStationScreen.ModeState state = SynthesisStationScreen.ModeState.initial().enterBoard(1);
+        SynthesisStationScreen.ModeState state = SynthesisStationScreen.ModeState.initial().selectProfile(1).enterBoard();
 
-        assertThat(state.enterBoard(2).selectedProfileChangedFrom(state)).isTrue();
-        assertThat(state.enterBoard(1).selectedProfileChangedFrom(state)).isFalse();
+        assertThat(state.selectProfile(2).enterBoard().selectedProfileChangedFrom(state)).isTrue();
+        assertThat(state.selectProfile(1).enterBoard().selectedProfileChangedFrom(state)).isFalse();
+    }
+
+    @Test
+    void recipeDoubleClickStartsOnlySameRecipeWithinThreshold() {
+        assertThat(SynthesisStationScreen.isRecipeDoubleClick(2, 2, 1_200L, 1_000L)).isTrue();
+        assertThat(SynthesisStationScreen.isRecipeDoubleClick(3, 2, 1_200L, 1_000L)).isFalse();
+        assertThat(SynthesisStationScreen.isRecipeDoubleClick(2, 2, 1_401L, 1_000L)).isFalse();
     }
 
     @Test

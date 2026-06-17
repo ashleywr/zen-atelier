@@ -15,10 +15,19 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 final class SynthesisResultOverlay {
     static final int FAILURE_IMPACT_TICKS = 20;
+    private static final int PANEL_WIDTH = 320;
+    private static final int PANEL_MARGIN_X = 24;
+    private static final int PANEL_MARGIN_BOTTOM = 24;
+    private static final int PANEL_TOP = 46;
+    private static final int HEADER_HEIGHT = 40;
+    private static final int ROW_HEIGHT = 20;
+    private static final int SECTION_GAP = 8;
 
     private final OutcomeClass outcomeClass;
     private final List<SynthesisOutput> outputs;
@@ -35,98 +44,148 @@ final class SynthesisResultOverlay {
     }
 
     void render(GuiGraphics graphics, Font font, ScreenRect origin) {
-        int ox = origin.x();
-        int oy = origin.y();
-
-        // Darken the whole GUI area
+        Layout layout = layoutFor(outcomeClass, outputs, byproducts, origin);
         int screenW = SynthesisStationMetrics.DEFAULT.width();
         int screenH = SynthesisStationMetrics.DEFAULT.height();
-        graphics.fill(ox, oy, ox + screenW, oy + screenH, 0xDC0E0B08);
+        graphics.fill(origin.x(), origin.y(), origin.x() + screenW, origin.y() + screenH, 0xE20C0A08);
 
-        // Panel: centered horizontally over the main content area
-        int pw = 280;
-        int affixRows = outputs.stream().mapToInt(o -> o.affixes().isEmpty() ? 0 : 1).sum();
-        int ph = Math.max(90, 56 + outputs.size() * 18 + affixRows * 11 + (byproducts.isEmpty() ? 0 : 20 + byproducts.size() * 18));
-        int px = ox + (screenW - pw) / 2;
-        int py = oy + 55;
-        ScreenRect panel = new ScreenRect(px, py, pw, ph);
+        ScreenRect panel = layout.panel();
         SynthesisStationDrawing.panel(graphics, panel);
+        graphics.fill(panel.x() + 1, panel.y() + 1, panel.right() - 1, panel.y() + 4, titleColor());
         SynthesisStationDrawing.frame(graphics, panel, titleColor());
 
-        // Outcome title
-        int titleX = px + pw / 2;
-        int titleY = py + 12;
-        graphics.drawCenteredString(font, outcomeTitle(), titleX, titleY, titleColor());
+        ScreenRect title = layout.title();
+        SynthesisStationText.drawCenteredFit(graphics, font, outcomeTitle(), title, titleColor());
         if (!outcomeClass.successful()) {
-            graphics.drawCenteredString(font, failureDetail(), titleX, titleY + 11, SynthesisScreenTheme.MUTED);
+            SynthesisStationText.drawCenteredFit(graphics, font, failureDetail(), layout.detail().orElseThrow(), SynthesisScreenTheme.MUTED);
         }
 
-        // Divider
-        int dividerY = outcomeClass.successful() ? titleY + 14 : titleY + 24;
-        graphics.fill(px + 10, dividerY, px + pw - 10, dividerY + 1, 0x44EFE6D5);
+        graphics.fill(panel.x() + 12, layout.dividerY(), panel.right() - 12, layout.dividerY() + 1, 0x55EFE6D5);
 
-        // Outputs
-        int listY = dividerY + 8;
         if (outputs.isEmpty()) {
             graphics.drawCenteredString(font, emptyOutputText(),
-                    titleX, listY, SynthesisScreenTheme.MUTED);
+                    panel.x() + panel.width() / 2, layout.emptyTextY(), SynthesisScreenTheme.MUTED);
         } else {
-            for (SynthesisOutput output : outputs) {
-                ResourceLocation loc = ResourceLocation.tryParse(output.outputId());
-                Item item = (loc != null) ? BuiltInRegistries.ITEM.get(loc) : Items.AIR;
-                Component name = (item != Items.AIR) ? item.getDescription()
-                        : Component.literal(SynthesisStationText.shortLabel(output.outputId()));
-                ChatFormatting qualityFmt = output.quality() >= 100 ? ChatFormatting.GOLD
-                        : output.quality() >= 75 ? ChatFormatting.AQUA
-                        : output.quality() >= 50 ? ChatFormatting.GRAY
-                        : ChatFormatting.DARK_GRAY;
-                String qualityTierKey = output.quality() >= 100 ? "tooltip.zen_atelier.quality.masterwork"
-                        : output.quality() >= 75 ? "tooltip.zen_atelier.quality.superior"
-                        : output.quality() >= 50 ? "tooltip.zen_atelier.quality.fine"
-                        : "tooltip.zen_atelier.quality.crude";
-                MutableComponent statsComp = Component.literal(output.count() + "x  T" + output.tier() + "  ")
-                        .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED))
-                        .append(Component.translatable(qualityTierKey).withStyle(qualityFmt))
-                        .append(Component.literal(" " + output.quality()).withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
-                if (item != Items.AIR) {
-                    graphics.renderFakeItem(item.getDefaultInstance(), px + 12, listY);
-                }
-                graphics.drawString(font, name, px + 32, listY + 5, SynthesisScreenTheme.TEXT, false);
-                graphics.drawString(font, statsComp, px + pw - 10 - font.width(statsComp), listY + 5,
-                        SynthesisScreenTheme.TEXT, false);
-                listY += 18;
-                if (!output.affixes().isEmpty()) {
-                    MutableComponent affixLine = Component.empty();
-                    for (int i = 0; i < output.affixes().size(); i++) {
-                        if (i > 0) {
-                            affixLine.append(Component.literal("  ·  ").withStyle(ChatFormatting.DARK_GRAY));
-                        }
-                        String affixId = output.affixes().get(i);
-                        String affixKey = affixId.contains(":") ? affixId.replace(":", ".affix.") : "zen_atelier.affix." + affixId;
-                        affixLine.append(Component.translatable(affixKey)
-                                .withStyle(ChatFormatting.GOLD));
-                    }
-                    graphics.drawString(font, affixLine, px + 32, listY, SynthesisScreenTheme.TEXT, false);
-                    listY += 11;
-                }
+            graphics.drawString(font, Component.literal("Produced"), panel.x() + 14, layout.outputHeaderY(), SynthesisScreenTheme.ACCENT, false);
+            for (int i = 0; i < outputs.size(); i++) {
+                renderOutputRow(graphics, font, outputs.get(i), layout.outputRows().get(i));
             }
         }
         if (!byproducts.isEmpty()) {
-            graphics.fill(px + 10, listY + 1, px + pw - 10, listY + 2, 0x33EFE6D5);
-            listY += 9;
-            graphics.drawString(font, byproductHeading(), px + 14, listY, SynthesisScreenTheme.MUTED, false);
-            listY += 11;
-            for (ReagentStack bp : byproducts) {
-                ItemStack bpStack = ReagentItem.createStack(bp);
-                Component name = Component.literal(SynthesisStationText.shortLabel(bp.reagentId()));
-                String stats = bp.amount() + "x  T" + bp.tier() + (bp.quality() > 0 ? "  " + bp.quality() + "Q" : "");
-                graphics.renderFakeItem(bpStack, px + 12, listY);
-                graphics.drawString(font, name, px + 32, listY + 5, SynthesisScreenTheme.TEXT, false);
-                graphics.drawString(font, stats, px + pw - 10 - font.width(stats), listY + 5,
-                        SynthesisScreenTheme.MUTED, false);
-                listY += 18;
+            ScreenRect header = layout.byproductHeader().orElseThrow();
+            graphics.fill(panel.x() + 12, header.y() - 5, panel.right() - 12, header.y() - 4, 0x33EFE6D5);
+            graphics.drawString(font, byproductHeading(), header.x(), header.y(), SynthesisScreenTheme.MUTED, false);
+            for (int i = 0; i < byproducts.size(); i++) {
+                renderByproductRow(graphics, font, byproducts.get(i), layout.byproductRows().get(i));
             }
         }
+    }
+
+    static Layout layoutFor(OutcomeClass outcomeClass, List<SynthesisOutput> outputs, List<ReagentStack> byproducts, ScreenRect origin) {
+        int screenW = SynthesisStationMetrics.DEFAULT.width();
+        int screenH = SynthesisStationMetrics.DEFAULT.height();
+        int panelWidth = Math.min(PANEL_WIDTH, screenW - PANEL_MARGIN_X * 2);
+        int contentRows = outputs.isEmpty()
+                ? ROW_HEIGHT
+                : outputs.stream().mapToInt(SynthesisResultOverlay::outputRowHeight).sum();
+        if (!byproducts.isEmpty()) {
+            contentRows += SECTION_GAP + 10 + byproducts.size() * ROW_HEIGHT;
+        }
+        int panelHeight = Math.min(screenH - PANEL_TOP - PANEL_MARGIN_BOTTOM, Math.max(112, HEADER_HEIGHT + 18 + contentRows + 18));
+        int panelX = origin.x() + (screenW - panelWidth) / 2;
+        int panelY = origin.y() + PANEL_TOP;
+        ScreenRect panel = new ScreenRect(panelX, panelY, panelWidth, panelHeight);
+        ScreenRect title = new ScreenRect(panel.x() + 14, panel.y() + 12, panel.width() - 28, 11);
+        Optional<ScreenRect> detail = outcomeClass.successful()
+                ? Optional.empty()
+                : Optional.of(new ScreenRect(panel.x() + 14, panel.y() + 24, panel.width() - 28, 11));
+        int dividerY = outcomeClass.successful() ? panel.y() + 31 : panel.y() + 42;
+        int y = dividerY + 9;
+        int outputHeaderY = y;
+        y += outputs.isEmpty() ? 0 : 12;
+
+        ArrayList<ScreenRect> outputRows = new ArrayList<>();
+        if (outputs.isEmpty()) {
+            y += ROW_HEIGHT;
+        } else {
+            for (SynthesisOutput output : outputs) {
+                int rowHeight = outputRowHeight(output);
+                outputRows.add(new ScreenRect(panel.x() + 12, y, panel.width() - 24, rowHeight));
+                y += rowHeight;
+            }
+        }
+
+        Optional<ScreenRect> byproductHeader = Optional.empty();
+        ArrayList<ScreenRect> byproductRows = new ArrayList<>();
+        if (!byproducts.isEmpty()) {
+            y += SECTION_GAP;
+            byproductHeader = Optional.of(new ScreenRect(panel.x() + 14, y, panel.width() - 28, 9));
+            y += 11;
+            for (int i = 0; i < byproducts.size(); i++) {
+                byproductRows.add(new ScreenRect(panel.x() + 12, y, panel.width() - 24, ROW_HEIGHT));
+                y += ROW_HEIGHT;
+            }
+        }
+
+        return new Layout(panel, title, detail, dividerY, outputHeaderY, dividerY + 9, List.copyOf(outputRows), byproductHeader, List.copyOf(byproductRows));
+    }
+
+    private void renderOutputRow(GuiGraphics graphics, Font font, SynthesisOutput output, ScreenRect row) {
+        ResourceLocation loc = ResourceLocation.tryParse(output.outputId());
+        Item item = (loc != null) ? BuiltInRegistries.ITEM.get(loc) : Items.AIR;
+        Component name = (item != Items.AIR) ? item.getDescription()
+                : Component.literal(SynthesisStationText.shortLabel(output.outputId()));
+        MutableComponent statsComp = outputStats(output);
+        if (item != Items.AIR) {
+            graphics.renderFakeItem(item.getDefaultInstance(), row.x(), row.y() + 2);
+        }
+        int statsWidth = font.width(statsComp);
+        SynthesisStationText.drawFit(graphics, font, name, new ScreenRect(row.x() + 21, row.y() + 6, row.width() - statsWidth - 30, 9), SynthesisScreenTheme.TEXT);
+        graphics.drawString(font, statsComp, row.right() - statsWidth, row.y() + 6, SynthesisScreenTheme.TEXT, false);
+        if (!output.affixes().isEmpty()) {
+            SynthesisStationText.drawRichFit(graphics, font, affixLine(output), new ScreenRect(row.x() + 21, row.y() + 17, row.width() - 21, 9), SynthesisScreenTheme.ACCENT);
+        }
+    }
+
+    private static int outputRowHeight(SynthesisOutput output) {
+        return output.affixes().isEmpty() ? ROW_HEIGHT : ROW_HEIGHT + 10;
+    }
+
+    private void renderByproductRow(GuiGraphics graphics, Font font, ReagentStack byproduct, ScreenRect row) {
+        ItemStack bpStack = ReagentItem.createStack(byproduct);
+        Component name = Component.literal(SynthesisStationText.shortLabel(byproduct.reagentId()));
+        String stats = byproduct.amount() + "x  T" + byproduct.tier() + (byproduct.quality() > 0 ? "  " + byproduct.quality() + "Q" : "");
+        graphics.renderFakeItem(bpStack, row.x(), row.y() + 2);
+        SynthesisStationText.drawFit(graphics, font, name, new ScreenRect(row.x() + 21, row.y() + 6, row.width() - font.width(stats) - 30, 9), SynthesisScreenTheme.TEXT);
+        graphics.drawString(font, stats, row.right() - font.width(stats), row.y() + 6, SynthesisScreenTheme.MUTED, false);
+    }
+
+    private static MutableComponent outputStats(SynthesisOutput output) {
+        ChatFormatting qualityFmt = output.quality() >= 100 ? ChatFormatting.GOLD
+                : output.quality() >= 75 ? ChatFormatting.AQUA
+                : output.quality() >= 50 ? ChatFormatting.GRAY
+                : ChatFormatting.DARK_GRAY;
+        String qualityTierKey = output.quality() >= 100 ? "tooltip.zen_atelier.quality.masterwork"
+                : output.quality() >= 75 ? "tooltip.zen_atelier.quality.superior"
+                : output.quality() >= 50 ? "tooltip.zen_atelier.quality.fine"
+                : "tooltip.zen_atelier.quality.crude";
+        return Component.literal(output.count() + "x  T" + output.tier() + "  ")
+                .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED))
+                .append(Component.translatable(qualityTierKey).withStyle(qualityFmt))
+                .append(Component.literal(" " + output.quality()).withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
+    }
+
+    private static MutableComponent affixLine(SynthesisOutput output) {
+        MutableComponent affixLine = Component.empty();
+        for (int i = 0; i < output.affixes().size(); i++) {
+            if (i > 0) {
+                affixLine.append(Component.literal("  /  ").withStyle(ChatFormatting.DARK_GRAY));
+            }
+            String affixId = output.affixes().get(i);
+            String affixKey = affixId.contains(":") ? affixId.replace(":", ".affix.") : "zen_atelier.affix." + affixId;
+            affixLine.append(Component.translatable(affixKey).withStyle(ChatFormatting.GOLD));
+        }
+        return affixLine;
     }
 
     private Component outcomeTitle() {
@@ -175,6 +234,19 @@ final class SynthesisResultOverlay {
             case DUD, RECOVERABLE_FAILURE -> SynthesisScreenTheme.MUTED;
             case MESSY_FAILURE, CATASTROPHIC_FAILURE -> SynthesisScreenTheme.BAD;
         };
+    }
+
+    record Layout(
+            ScreenRect panel,
+            ScreenRect title,
+            Optional<ScreenRect> detail,
+            int dividerY,
+            int outputHeaderY,
+            int emptyTextY,
+            List<ScreenRect> outputRows,
+            Optional<ScreenRect> byproductHeader,
+            List<ScreenRect> byproductRows
+    ) {
     }
 
 }

@@ -60,23 +60,23 @@ final class SynthesisStationLayout {
     }
 
     ScreenRect boardModePalettePanel() {
-        return new ScreenRect(12, 49, 120, 166);
+        return new ScreenRect(12, 49, 122, 254);
     }
 
     ScreenRect boardModeBoardArea() {
-        return new ScreenRect(142, 45, 190, 190);
+        return new ScreenRect(146, 48, 166, 254);
     }
 
     ScreenRect boardModeProgressPanel() {
-        return new ScreenRect(342, 49, 126, 166);
+        return new ScreenRect(324, 49, 144, 254);
     }
 
-    ScreenRect boardModeBottomControls() {
-        return new ScreenRect(142, 242, 326, 40);
+    ScreenRect boardModeSynthesizeButton() {
+        return new ScreenRect(392, 274, 64, 22);
     }
 
     ScreenRect boardModeBackButton() {
-        return new ScreenRect(16, 199, 48, 18);
+        return new ScreenRect(16, 278, 48, 18);
     }
 
     ScreenRect core() {

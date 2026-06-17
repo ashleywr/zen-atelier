@@ -20,6 +20,7 @@ record SynthesisState(
         String displayName,
         boolean canSynthesize,
         boolean elementBudgetSatisfied,
+        SynthesisDisplayModel display,
         List<RequirementLine> requirements,
         ElementState elements,
         BoardState board,
@@ -34,6 +35,7 @@ record SynthesisState(
                 "",
                 false,
                 false,
+                new SynthesisDisplayModel(List.of(), List.of(), List.of(), List.of()),
                 List.of(),
                 new ElementState(Map.of(), Map.of(), Map.of(), false),
                 BoardState.EMPTY,
@@ -48,10 +50,36 @@ record SynthesisState(
                 SynthesisStationText.profileName(profile),
                 plan.canSynthesize(),
                 plan.elementBudgetSatisfied(),
+                SynthesisDisplayModel.from(plan, List.of(), List.of(), List.of()),
                 requirementLines(plan),
                 elementState(profile.requirements(), List.of(), plan.elementBudgetSatisfied()),
                 BoardState.EMPTY,
                 PaletteState.EMPTY
+        );
+    }
+
+    static SynthesisState fromProjection(
+            SynthesisBoardProjection projection,
+            SynthesisProfile profile,
+            BoardState board,
+            PaletteState palette
+    ) {
+        return new SynthesisState(
+                profile.id(),
+                profile.category(),
+                SynthesisStationText.profileName(profile),
+                projection.canSynthesize(),
+                projection.elementBudgetSatisfied(),
+                SynthesisDisplayModel.from(
+                        projection.placedPlan().or(() -> projection.sourcePlan()).orElseThrow(),
+                        projection.placedReagents().entries(),
+                        activeTraitLines(board),
+                        activeResonanceLines(board)
+                ),
+                projection.requirements(),
+                elementState(profile.requirements(), projection.placedReagents().entries(), projection.elementBudgetSatisfied()),
+                board,
+                palette
         );
     }
 
@@ -95,6 +123,29 @@ record SynthesisState(
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> sorted.put(entry.getKey(), entry.getValue()));
         return sorted;
+    }
+
+    private static List<String> activeTraitLines(BoardState board) {
+        LinkedHashMap<String, Integer> totals = new LinkedHashMap<>();
+        for (PlacedReagent reagent : board.placedReagents()) {
+            for (String trait : reagent.traits()) {
+                totals.merge(trait, 1, Integer::sum);
+            }
+        }
+        return totals.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> SynthesisNoun.label(entry.getKey()) + " +" + entry.getValue())
+                .toList();
+    }
+
+    private static List<String> activeResonanceLines(BoardState board) {
+        if (!board.fusions().isEmpty()) {
+            return board.fusions();
+        }
+        if (board.resonanceRisk() > 0) {
+            return List.of("Risk +" + board.resonanceRisk());
+        }
+        return List.of();
     }
 
     record RequirementLine(
@@ -169,6 +220,9 @@ record SynthesisState(
     record PaletteEntryState(
             String id,
             int amount,
+            int placedAmount,
+            int remainingAmount,
+            int placedCopies,
             boolean needNow,
             boolean fusionReady,
             boolean fitsBoard,

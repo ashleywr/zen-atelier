@@ -380,6 +380,10 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         return true;
     }
 
+    static boolean placedAvailableInForTest(ReagentContainer available, List<ReagentStack> placed) {
+        return placedAvailableIn(available, placed);
+    }
+
     private void execute(Player player) {
         if (player.level().isClientSide) {
             return;

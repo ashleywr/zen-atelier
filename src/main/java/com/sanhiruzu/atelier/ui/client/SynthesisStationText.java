@@ -129,6 +129,20 @@ final class SynthesisStationText {
         return shortId(id);
     }
 
+    static String paletteLabel(String id) {
+        String label = shortId(id);
+        label = label.replace(" Reagent", "")
+                .replace(" Residue", "")
+                .replace(" Essence", "")
+                .replace(" Solution", "")
+                .replace(" Compound", "");
+        String[] words = label.split(" ");
+        if (words.length <= 2) {
+            return label;
+        }
+        return words[0] + " " + words[1];
+    }
+
     static String compactOutcome(OutcomeWeight weight) {
         return outcomeName(weight) + " " + percent(weight.probability());
     }

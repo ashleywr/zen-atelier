@@ -38,6 +38,35 @@ class UiLayerUsageTest {
                 .isEmpty();
     }
 
+    @Test
+    void synthesisResultOverlayUsesPopupLayers() throws IOException {
+        String source = Files.readString(UI_CLIENT_ROOT.resolve("SynthesisStationScreen.java"));
+
+        assertThat(source)
+                .as("Result overlay backdrop/panel must render above item icons, which renderFakeItem raises in z.")
+                .contains("UiLayer.POPUP.run(graphics, () -> renderFailureImpact(graphics, partialTick))")
+                .contains("UiLayer.POPUP.run(graphics, () -> pendingResult.render(graphics, font, origin()))")
+                .contains("UiLayer.POPUP_CONTENT.run(graphics, () -> confirmButton.render(graphics, mouseX, mouseY, partialTick))");
+    }
+
+    @Test
+    void boardModeTooltipsDoNotFallBackToLegacyContainerSlots() throws IOException {
+        String source = Files.readString(UI_CLIENT_ROOT.resolve("SynthesisStationScreen.java"));
+        int methodStart = source.indexOf("private void renderSynthesisTooltips");
+        int boardBranchStart = source.indexOf("if (modeState.mode() == ScreenMode.BOARD", methodStart);
+        int recipeBranchStart = source.indexOf("} else if (modeState.mode() == ScreenMode.RECIPE_BOOK)", boardBranchStart);
+
+        assertThat(methodStart).isGreaterThanOrEqualTo(0);
+        assertThat(boardBranchStart).isGreaterThanOrEqualTo(0);
+        assertThat(recipeBranchStart).isGreaterThan(boardBranchStart);
+        String boardBranch = source.substring(boardBranchStart, recipeBranchStart);
+
+        assertThat(boardBranch)
+                .as("The board screen is a custom surface over hidden container slots; legacy slot/vault tooltips must not leak through it.")
+                .doesNotContain("renderRoomVaultTooltip")
+                .doesNotContain("renderTooltip(graphics, mouseX, mouseY)");
+    }
+
     private static void collectViolations(Path path, List<String> violations) throws IOException {
         String source = Files.readString(path);
         Matcher matcher = TRANSLATE_CALL.matcher(source);

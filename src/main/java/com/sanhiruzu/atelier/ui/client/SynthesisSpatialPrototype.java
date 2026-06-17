@@ -1,7 +1,6 @@
 package com.sanhiruzu.atelier.ui.client;
 
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
-import com.sanhiruzu.atelier.synthesis.core.ReagentShape;
 import com.sanhiruzu.atelier.synthesis.core.OutcomeClass;
 import com.sanhiruzu.atelier.synthesis.data.TraitFusionRegistry;
 import com.sanhiruzu.atelier.synthesis.data.TraitFusionRule;
@@ -10,11 +9,18 @@ import com.sanhiruzu.atelier.synthesis.engine.OutcomePreview;
 import com.sanhiruzu.atelier.synthesis.engine.RequirementStatus;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisBoard;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisPlan;
-import com.sanhiruzu.atelier.synthesis.engine.SynthesisPlanner;
+import com.sanhiruzu.atelier.synthesis.engine.SynthesisRequirement;
 import com.sanhiruzu.atelier.synthesis.engine.SynthesisRequirementMatcher;
 import com.sanhiruzu.atelier.synthesis.item.ReagentItem;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainer;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentQuery;
+import com.sanhiruzu.atelier.ui.client.SynthesisBoardSession.Cell;
+import com.sanhiruzu.atelier.ui.client.SynthesisBoardSession.PaletteSortMode;
+import com.sanhiruzu.atelier.ui.client.SynthesisBoardSession.PaletteSource;
+import com.sanhiruzu.atelier.ui.client.SynthesisBoardSession.Piece;
+import com.sanhiruzu.atelier.ui.client.SynthesisBoardSession.Placement;
+import com.sanhiruzu.atelier.ui.client.SynthesisBoardSession.PlacementPreview;
+import com.sanhiruzu.atelier.ui.client.SynthesisBoardSession.ShapeFilterMode;
 import com.sanhiruzu.atelier.ui.network.SynthesisBoardFusionPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -85,23 +91,14 @@ final class SynthesisSpatialPrototype {
     private static final int READOUT_SECTION_PAD = 2;
     private static final int READOUT_FILL_VALUE_WIDTH = 70;
     private static final int READOUT_FILL_SECONDARY_X = 80;
+    private static final int BOARD_MODE_OUTER_PADDING = 16;
+    private static final int BOARD_MODE_PLACEMENT_INSET = 6;
+    private static final int BOARD_MODE_PROGRESS_FOOTER_HEIGHT = 68;
+    private static final int BOARD_MODE_PALETTE_COLUMNS = 3;
+    private static final int BOARD_MODE_PALETTE_TILE_SIZE = 32;
+    private static final int BOARD_MODE_PALETTE_GAP = 4;
 
-    private final List<Placement> placements = new ArrayList<>();
-    private PaletteSource paletteSource = PaletteSource.STORAGE;
-    private int paletteScroll;
-    private Piece carried;
-    private int carriedRotation;
-    private Cell carriedCursorCell = new Cell(0, 0);
-    private int nextPlacementId = 1;
-    private String activeProfileId = "";
-    private final Set<String> paletteElementFilters = new LinkedHashSet<>();
-    private boolean paletteFiltersOpen;
-    private boolean filterNeedsOnly;
-    private boolean filterFusionOnly;
-    private boolean filterFitsOnly;
-    private ShapeFilterMode shapeFilterMode = ShapeFilterMode.ANY;
-    private PaletteSortMode paletteSortMode = PaletteSortMode.RELEVANCE;
-    private int selectedRequirementFilterIndex = -1;
+    private final SynthesisBoardSession session = new SynthesisBoardSession();
     private SpatialEvaluation lastEvaluation = null;
 
     void render(
@@ -173,71 +170,59 @@ final class SynthesisSpatialPrototype {
             return false;
         }
         Optional<Cell> boardCell = boardCell(board, localX, localY);
-        if (carried != null && boardCell.isEmpty()) {
+        if (session.hasCarried() && boardCell.isEmpty()) {
             clearCarried();
             return true;
         }
-        Optional<Integer> requirementFilter = clickedRequirementFilterIndex(plan, board, localX, localY);
+        Optional<Integer> requirementFilter = clickedRequirementFilterIndex(plan, board, localX, localY, storageReagents, inventoryReagents);
         if (requirementFilter.isPresent()) {
-            selectedRequirementFilterIndex = selectedRequirementFilterIndex == requirementFilter.get()
-                    ? -1
-                    : requirementFilter.get();
-            paletteScroll = 0;
+            session.toggleSelectedRequirementFilter(requirementFilter.get());
             return true;
         }
         if (PALETTE_STORAGE_TAB.contains(localX, localY)) {
-            paletteSource = PaletteSource.STORAGE;
-            paletteScroll = 0;
+            session.setPaletteSource(PaletteSource.STORAGE);
             return true;
         }
         if (PALETTE_INVENTORY_TAB.contains(localX, localY)) {
-            paletteSource = PaletteSource.INVENTORY;
-            paletteScroll = 0;
+            session.setPaletteSource(PaletteSource.INVENTORY);
             return true;
         }
         for (int i = 0; i < CHIP_ELEMENTS.size(); i++) {
             if (CHIP_ELEMENT_RECTS.get(i).contains(localX, localY)) {
-                togglePaletteElementFilter(CHIP_ELEMENTS.get(i));
-                paletteScroll = 0;
+                session.togglePaletteElementFilter(CHIP_ELEMENTS.get(i));
                 return true;
             }
         }
         if (CHIP_SORT.contains(localX, localY)) {
-            paletteSortMode = paletteSortMode.next();
-            paletteScroll = 0;
+            session.advancePaletteSortMode();
             return true;
         }
         if (CHIP_FILTER.contains(localX, localY)) {
-            paletteFiltersOpen = !paletteFiltersOpen;
+            session.togglePaletteFiltersOpen();
             return true;
         }
-        if (paletteFiltersOpen) {
+        if (session.paletteFiltersOpen()) {
             ScreenRect drawer = filterDrawerLocal(origin);
             if (drawerControlRect(FILTER_NEEDS, drawer).contains(localX, localY)) {
-                filterNeedsOnly = !filterNeedsOnly;
-                paletteScroll = 0;
+                session.toggleFilterNeedsOnly();
                 return true;
             }
             if (drawerControlRect(FILTER_FUSION, drawer).contains(localX, localY)) {
-                filterFusionOnly = !filterFusionOnly;
-                paletteScroll = 0;
+                session.toggleFilterFusionOnly();
                 return true;
             }
             if (drawerControlRect(FILTER_FITS, drawer).contains(localX, localY)) {
-                filterFitsOnly = !filterFitsOnly;
-                paletteScroll = 0;
+                session.toggleFilterFitsOnly();
                 return true;
             }
             for (int i = 0; i < ShapeFilterMode.VALUES.size(); i++) {
                 if (drawerControlRect(FILTER_SHAPE_RECTS.get(i), drawer).contains(localX, localY)) {
-                    shapeFilterMode = ShapeFilterMode.VALUES.get(i);
-                    paletteScroll = 0;
+                    session.setShapeFilterMode(ShapeFilterMode.VALUES.get(i));
                     return true;
                 }
             }
             if (drawerControlRect(FILTER_RESET, drawer).contains(localX, localY)) {
-                resetPaletteFilters();
-                paletteScroll = 0;
+                session.resetPaletteFilters();
                 return true;
             }
             // Drawer is open — consume any click inside it so widgets behind it can't fire.
@@ -248,7 +233,11 @@ final class SynthesisSpatialPrototype {
         PaletteView palette = paletteView(plan, storageReagents, inventoryReagents);
         Optional<Integer> paletteIndex = hoveredPaletteIndex(localX, localY, palette.entries());
         if (paletteIndex.isPresent()) {
-            Piece selected = palette.entries().get(paletteIndex.get()).piece();
+            PaletteEntry selectedEntry = palette.entries().get(paletteIndex.get());
+            if (selectedEntry.fullyPlaced()) {
+                return true;
+            }
+            Piece selected = selectedEntry.piece();
             if (shiftDown) {
                 if (!autoPlace(board, selected)) {
                     startCarrying(selected, 0);
@@ -264,19 +253,21 @@ final class SynthesisSpatialPrototype {
             return localX >= PALETTE.x() && localX < PALETTE.right()
                     && localY >= SLOTS_TOP && localY < PALETTE.bottom();
         }
-        if (carried != null) {
+        if (session.hasCarried()) {
+            Piece carried = session.carried().orElseThrow();
+            int carriedRotation = session.carriedRotation();
             if (shiftDown) {
                 Optional<PlacementPreview> preview = overwritePreview(board, carried, carriedRotation, boardCell.get());
                 if (preview.isPresent()) {
                     removeOverlappedPlacements(carried, carriedRotation, preview.get());
-                    placements.add(new Placement(nextPlacementId++, carried, carriedRotation, preview.get().anchorX(), preview.get().anchorY()));
+                    session.addPlacement(carried, carriedRotation, preview.get().anchorX(), preview.get().anchorY());
                     clearCarried();
                 }
                 return true;
             }
             PlacementPreview preview = placementPreview(board, carried, carriedRotation, boardCell.get());
             if (preview.valid()) {
-                placements.add(new Placement(nextPlacementId++, carried, carriedRotation, preview.anchorX(), preview.anchorY()));
+                session.addPlacement(carried, carriedRotation, preview.anchorX(), preview.anchorY());
                 clearCarried();
             }
             return true;
@@ -284,7 +275,7 @@ final class SynthesisSpatialPrototype {
         Optional<Placement> existing = placementAt(boardCell.get().x(), boardCell.get().y());
         if (existing.isPresent()) {
             Placement placement = existing.get();
-            placements.remove(placement);
+            session.removePlacement(placement);
             startCarrying(
                     placement.piece(),
                     placement.rotation(),
@@ -323,10 +314,17 @@ final class SynthesisSpatialPrototype {
             return false;
         }
         ScreenRect absolutePalette = palettePanel.offset(origin.x(), origin.y());
+        if (handleBoardModePaletteControlClick(absolutePalette, (int) mouseX, (int) mouseY)) {
+            return true;
+        }
         PaletteView palette = paletteView(plan, storageReagents, inventoryReagents);
         Optional<Integer> paletteIndex = hoveredBoardModePaletteIndex(absolutePalette, (int) mouseX, (int) mouseY, palette.entries());
         if (paletteIndex.isPresent()) {
-            Piece selected = palette.entries().get(paletteIndex.get()).piece();
+            PaletteEntry selectedEntry = palette.entries().get(paletteIndex.get());
+            if (selectedEntry.fullyPlaced()) {
+                return true;
+            }
+            Piece selected = selectedEntry.piece();
             if (shiftDown) {
                 if (!autoPlace(board, selected)) {
                     startCarrying(selected, 0);
@@ -336,7 +334,7 @@ final class SynthesisSpatialPrototype {
             }
             return true;
         }
-        if (carried != null) {
+        if (session.hasCarried()) {
             clearCarried();
             return true;
         }
@@ -358,12 +356,12 @@ final class SynthesisSpatialPrototype {
             return false;
         }
         List<PaletteEntry> pieces = paletteView(plan, storageReagents, inventoryReagents).entries();
-        int maxScroll = Math.max(0, pieces.size() - boardModePaletteVisibleRows(absolutePalette));
+        int maxScroll = Math.max(0, pieces.size() - boardModePaletteVisibleCount(absolutePalette));
         if (maxScroll <= 0) {
             return true;
         }
-        int step = scrollY < 0.0D ? 1 : -1;
-        paletteScroll = Math.clamp(paletteScroll + step, 0, maxScroll);
+        int step = scrollY < 0.0D ? BOARD_MODE_PALETTE_COLUMNS : -BOARD_MODE_PALETTE_COLUMNS;
+        session.adjustPaletteScroll(step, maxScroll);
         return true;
     }
 
@@ -379,7 +377,7 @@ final class SynthesisSpatialPrototype {
             return true;
         }
         int step = scrollY < 0.0D ? PALETTE_COLUMNS : -PALETTE_COLUMNS;
-        paletteScroll = Math.clamp(paletteScroll + step, 0, maxScroll);
+        session.adjustPaletteScroll(step, maxScroll);
         return true;
     }
 
@@ -395,25 +393,27 @@ final class SynthesisSpatialPrototype {
     }
 
     private boolean rotateCarried(SynthesisBoard board, Optional<Cell> hover) {
-        if (carried == null) {
+        if (!session.hasCarried()) {
             return false;
         }
+        Piece carried = session.carried().orElseThrow();
+        int carriedRotation = session.carriedRotation();
         if (hover.isPresent()) {
             Cell target = hover.get();
             for (int offset = 1; offset < 4; offset++) {
                 int candidateRotation = (carriedRotation + offset) & 3;
                 PlacementPreview preview = placementPreview(board, carried, candidateRotation, target);
                 if (preview.valid()) {
-                    carriedRotation = candidateRotation;
-                    carriedCursorCell = preview.cursorCell();
+                    session.setCarriedRotation(candidateRotation, preview.cursorCell());
                     return true;
                 }
             }
         }
-        carriedRotation = (carriedRotation + 1) & 3;
-        carriedCursorCell = hover
-                .map(cell -> placementPreview(board, carried, carriedRotation, cell).cursorCell())
-                .orElseGet(() -> defaultCursorCell(carried, carriedRotation));
+        int nextRotation = (carriedRotation + 1) & 3;
+        Cell nextCursorCell = hover
+                .map(cell -> placementPreview(board, carried, nextRotation, cell).cursorCell())
+                .orElseGet(() -> defaultCursorCell(carried, nextRotation));
+        session.setCarriedRotation(nextRotation, nextCursorCell);
         return true;
     }
 
@@ -421,7 +421,7 @@ final class SynthesisSpatialPrototype {
         SynthesisBoard board = currentBoard(plan);
         int localX = mouseX - origin.x();
         int localY = mouseY - origin.y();
-        if (paletteFiltersOpen && filterDrawerLocal(origin).contains(localX, localY)) {
+        if (session.paletteFiltersOpen() && filterDrawerLocal(origin).contains(localX, localY)) {
             return true;
         }
         PaletteView palette = paletteView(plan, storageReagents, inventoryReagents);
@@ -440,17 +440,47 @@ final class SynthesisSpatialPrototype {
         }
         Optional<Placement> placement = placementAt(boardCell.get().x(), boardCell.get().y());
         if (placement.isPresent()) {
-            graphics.renderComponentTooltip(font, pieceTooltip(new PaletteEntry(
-                    placement.get().piece(),
-                    false,
-                    false,
-                    primaryElementIndex(placement.get().piece()),
-                    true,
-                    placement.get().piece().shape().size()
-            )), mouseX, mouseY);
+            graphics.renderComponentTooltip(font, synthesisTooltip(placement.get().piece(), Optional.empty(), plan, true), mouseX, mouseY);
             return true;
         }
         return false;
+    }
+
+    boolean renderBoardModeTooltip(
+            GuiGraphics graphics,
+            Font font,
+            Optional<SynthesisPlan> plan,
+            List<ReagentStack> storageReagents,
+            List<ReagentStack> inventoryReagents,
+            ScreenRect origin,
+            ScreenRect boardArea,
+            ScreenRect palettePanel,
+            int mouseX,
+            int mouseY
+    ) {
+        Optional<List<Component>> tooltip = boardModeTooltip(plan, storageReagents, inventoryReagents, origin, boardArea, palettePanel, mouseX, mouseY);
+        if (tooltip.isEmpty()) {
+            return false;
+        }
+        graphics.renderComponentTooltip(font, tooltip.get(), mouseX, mouseY);
+        return true;
+    }
+
+    List<String> debugBoardModeTooltipLines(
+            Optional<SynthesisPlan> plan,
+            List<ReagentStack> storageReagents,
+            List<ReagentStack> inventoryReagents,
+            ScreenRect origin,
+            ScreenRect boardArea,
+            ScreenRect palettePanel,
+            int mouseX,
+            int mouseY
+    ) {
+        return boardModeTooltip(plan, storageReagents, inventoryReagents, origin, boardArea, palettePanel, mouseX, mouseY)
+                .orElse(List.of())
+                .stream()
+                .map(Component::getString)
+                .toList();
     }
 
     private void renderBoard(GuiGraphics graphics, Font font, SynthesisBoard synthesisBoard, ScreenRect origin) {
@@ -497,7 +527,7 @@ final class SynthesisSpatialPrototype {
             int color = fusion.rule().color() | 0xFF000000;
             graphics.fill(Math.min(ax, bx) - 1, Math.min(ay, by) - 1, Math.max(ax, bx) + 1, Math.max(ay, by) + 1, color);
         }
-        for (Placement placement : placements) {
+        for (Placement placement : session.placements()) {
             boolean resonant = evaluation.resonantPlacementIds().contains(placement.id());
             for (Cell cell : placement.cells()) {
                 ScreenRect rect = cellRect(origin, board, cell.x(), cell.y());
@@ -514,7 +544,7 @@ final class SynthesisSpatialPrototype {
             graphics.renderFakeItem(stack, rect.x() + 1, rect.y() + 1);
             graphics.drawString(font, Integer.toString(placement.piece().shape().size()), rect.x() + 11, rect.y() + 9, SynthesisScreenTheme.TEXT, false);
         }
-        for (Placement placement : placements) {
+        for (Placement placement : session.placements()) {
             List<String> traits = placement.piece().reagent().traits();
             if (traits.isEmpty()) {
                 continue;
@@ -577,7 +607,7 @@ final class SynthesisSpatialPrototype {
             int color = fusion.rule().color() | 0xFF000000;
             graphics.fill(Math.min(ax, bx) - 1, Math.min(ay, by) - 1, Math.max(ax, bx) + 1, Math.max(ay, by) + 1, color);
         }
-        for (Placement placement : placements) {
+        for (Placement placement : session.placements()) {
             boolean resonant = evaluation.resonantPlacementIds().contains(placement.id());
             for (Cell cell : placement.cells()) {
                 if (!within(board, cell.x(), cell.y())) {
@@ -585,12 +615,13 @@ final class SynthesisSpatialPrototype {
                 }
                 ScreenRect rect = cellRectInBoard(boardRect, board, cell.x(), cell.y());
                 int fill = resonant ? 0xFFE6B66A : pieceColor(placement.piece());
-                graphics.fill(rect.x() + 3, rect.y() + 3, rect.right() - 3, rect.bottom() - 3, fill);
-                SynthesisStationDrawing.frame(graphics, rect.inset(2), resonant ? 0xFFFFE0A0 : 0xAA7FD889);
+                int inset = Math.max(BOARD_MODE_PLACEMENT_INSET, rect.width() / 7);
+                graphics.fill(rect.x() + inset, rect.y() + inset, rect.right() - inset, rect.bottom() - inset, fill);
+                SynthesisStationDrawing.frame(graphics, rect.inset(Math.max(3, inset - 2)), resonant ? 0xFFFFE0A0 : 0xAA7FD889);
             }
-            Cell anchor = placement.cells().getFirst();
-            ScreenRect rect = cellRectInBoard(boardRect, board, anchor.x(), anchor.y());
-            SynthesisStationText.drawCenteredFit(graphics, font, Component.literal(placement.piece().label()), rect.inset(3), SynthesisScreenTheme.TEXT);
+            ScreenRect bounds = placementBoundsInBoard(boardRect, board, placement);
+            ItemStack stack = ReagentItem.createStack(placement.piece().reagent());
+            graphics.renderFakeItem(stack, bounds.x() + (bounds.width() - 16) / 2, bounds.y() + (bounds.height() - 16) / 2);
         }
     }
 
@@ -602,32 +633,39 @@ final class SynthesisSpatialPrototype {
             List<ReagentStack> inventoryReagents,
             ScreenRect panel
     ) {
-        SynthesisStationText.drawFit(graphics, font, "Useful Materials", panel.inset(5), SynthesisScreenTheme.ACCENT);
+        SynthesisStationDrawing.smallIcon(graphics, panel.x() + 5, panel.y() + 5, 0xFF8FC9FF);
+        SynthesisStationText.drawFit(graphics, font, "Materials", new ScreenRect(panel.x() + 18, panel.y() + 5, panel.width() - 61, 9), SynthesisScreenTheme.ACCENT);
+        renderBoardModePaletteControls(graphics, font, panel);
         List<PaletteEntry> entries = paletteView(plan, storageReagents, inventoryReagents).entries();
         if (entries.isEmpty()) {
-            graphics.drawString(font, "No matching reagents", panel.x() + 6, panel.y() + 24, SynthesisScreenTheme.MUTED, false);
+            graphics.drawString(font, "No matching reagents", panel.x() + 6, panel.y() + 44, SynthesisScreenTheme.MUTED, false);
             return;
         }
-        int visibleRows = boardModePaletteVisibleRows(panel);
-        int maxScroll = Math.max(0, entries.size() - visibleRows);
-        paletteScroll = Math.clamp(paletteScroll, 0, maxScroll);
-        int limit = Math.min(visibleRows, entries.size() - paletteScroll);
+        int visibleCount = boardModePaletteVisibleCount(panel);
+        int maxScroll = Math.max(0, entries.size() - visibleCount);
+        session.clampPaletteScroll(maxScroll);
+        int paletteScroll = session.paletteScroll();
+        int limit = Math.min(visibleCount, entries.size() - paletteScroll);
         for (int i = 0; i < limit; i++) {
             int entryIndex = paletteScroll + i;
-            ScreenRect row = boardModePaletteRow(panel, i);
+            ScreenRect tile = boardModePaletteTile(panel, i);
             PaletteEntry entry = entries.get(entryIndex);
             Piece piece = entry.piece();
-            graphics.fill(row.x(), row.y(), row.right(), row.bottom(), samePiece(carried, piece) ? 0xFF3B332D : 0xFF211D1A);
-            int borderColor = entry.matchesUnsatisfiedRequirement() ? SynthesisScreenTheme.GOOD
+            int face = entry.fullyPlaced() ? 0xFF151311
+                    : samePiece(session.carried().orElse(null), piece) ? 0xFF3B332D
+                    : 0xFF1C1917;
+            graphics.fill(tile.x(), tile.y(), tile.right(), tile.bottom(), face);
+            int borderColor = entry.fullyPlaced() ? 0xFF5A524A
+                    : entry.matchesUnsatisfiedRequirement() ? SynthesisScreenTheme.GOOD
                     : entry.hasFusionPotential() ? 0xFFFFB454
                     : 0xFF4A4037;
-            SynthesisStationDrawing.frame(graphics, row, borderColor);
-            graphics.renderFakeItem(ReagentItem.createStack(piece.reagent()), row.x() + 2, row.y() + 2);
-            SynthesisStationText.drawFit(graphics, font, Component.literal(piece.label()), new ScreenRect(row.x() + 22, row.y() + 5, row.width() - 48, 9), SynthesisScreenTheme.TEXT);
-            drawMiniShape(graphics, piece, row.right() - 20, row.y() + 5);
-            renderPaletteReasonPips(graphics, row, entry);
+            SynthesisStationDrawing.frame(graphics, tile, borderColor);
+            graphics.renderFakeItem(ReagentItem.createStack(piece.reagent()), tile.x() + (tile.width() - 16) / 2, tile.y() + 6);
+            renderPaletteReasonPips(graphics, tile, entry);
+            renderPaletteShapeBadge(graphics, tile, piece);
+            renderBoardModePotencyBadge(graphics, font, tile, entry);
         }
-        if (entries.size() > visibleRows) {
+        if (entries.size() > visibleCount) {
             String range = (paletteScroll + 1) + "-" + (paletteScroll + limit) + "/" + entries.size();
             graphics.drawString(font, range, panel.right() - font.width(range) - 6, panel.y() + 7, SynthesisScreenTheme.MUTED, false);
         }
@@ -642,49 +680,90 @@ final class SynthesisSpatialPrototype {
             SynthesisBoard board,
             ScreenRect panel
     ) {
-        SynthesisStationText.drawFit(graphics, font, "Requirements", panel.inset(5), SynthesisScreenTheme.ACCENT);
+        SynthesisStationDrawing.smallIcon(graphics, panel.x() + 6, panel.y() + 5, 0xFF8FD69A);
+        SynthesisStationText.drawFit(graphics, font, "Requirements", new ScreenRect(panel.x() + 18, panel.y() + 5, panel.width() - 24, 9), SynthesisScreenTheme.ACCENT);
         if (plan.isEmpty()) {
             graphics.drawString(font, "No recipe", panel.x() + 6, panel.y() + 24, SynthesisScreenTheme.MUTED, false);
             return;
         }
-        ReagentContainer placedReagents = placedReagentContainer(storageReagents, inventoryReagents);
-        SynthesisPlan placedPlan = new SynthesisPlanner().plan(plan.get().profile(), placedReagents, 0);
-        int y = panel.y() + 22;
-        for (RequirementStatus status : displayedRequirements(placedPlan)) {
-            if (y + 14 > panel.bottom() - 38) {
-                break;
-            }
-            ScreenRect line = new ScreenRect(panel.x() + 6, y, panel.width() - 12, 13);
-            renderRequirementProgress(graphics, font, status, line, status.satisfied() ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.BAD);
-            y += 16;
-        }
+        SynthesisBoardProjection projection = projection(plan, storageReagents, inventoryReagents);
+        SynthesisPlan placedPlan = projection.placedPlan().orElse(plan.get());
         SpatialEvaluation spatial = evaluate(board);
-        int occupied = occupiedCellCount();
-        String outcome = outcomeSummary(placedPlan.preview(), occupied > 0);
-        graphics.drawString(font, SynthesisStationText.fitWidth(font, outcome, panel.width() - 12), panel.x() + 6, panel.bottom() - 34, placedPlan.canSynthesize() ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.MUTED, false);
-        String fill = buildEmptyText(board.size() * board.size() - occupied, board);
-        graphics.drawString(font, SynthesisStationText.fitWidth(font, fill, panel.width() - 12), panel.x() + 6, panel.bottom() - 22, SynthesisScreenTheme.MUTED, false);
-        if (spatial.qualityBonus() > 0 || spatial.perfectBonus() > 0) {
-            graphics.drawString(font, SynthesisStationText.fitWidth(font, buildNodeBonusText(spatial.qualityBonus(), spatial.perfectBonus()), panel.width() - 12), panel.x() + 6, panel.bottom() - 11, SynthesisScreenTheme.ACCENT, false);
+        SynthesisDisplayModel display = SynthesisDisplayModel.from(
+                placedPlan,
+                projection.placedReagents().entries(),
+                traitTextLines(spatial),
+                resonanceTextLines(spatial)
+        );
+        BoardModeProgressLayout layout = buildBoardModeProgressLayout(panel, display);
+        SynthesisStationText.drawFit(graphics, font, "Essences", layout.essencesHeader(), SynthesisScreenTheme.ACCENT);
+        for (int i = 0; i < layout.essenceLines().size(); i++) {
+            SynthesisDisplayModel.Line line = display.essences().get(i);
+            renderDisplayProgress(graphics, font, line, layout.essenceLines().get(i), line.satisfied() ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.BAD);
         }
+        layout.elementsHeader().ifPresent(rect ->
+                SynthesisStationText.drawFit(graphics, font, "Elements", rect, display.elements().stream().allMatch(SynthesisDisplayModel.Line::satisfied) ? SynthesisScreenTheme.ACCENT : SynthesisScreenTheme.BAD));
+        for (int i = 0; i < layout.elementLines().size(); i++) {
+            SynthesisDisplayModel.Line line = display.elements().get(i);
+            renderDisplayProgress(graphics, font, line, layout.elementLines().get(i), line.satisfied() ? SynthesisScreenTheme.GOOD : SynthesisNoun.color(line.label().toLowerCase(Locale.ROOT), SynthesisScreenTheme.BAD));
+        }
+        graphics.fill(layout.divider().x(), layout.divider().y(), layout.divider().right(), layout.divider().bottom(), 0x885A4C40);
+        SynthesisStationText.drawFit(graphics, font, "Traits", layout.traitsHeader(), display.traits().stream().anyMatch(SynthesisDisplayModel.TextLine::active) ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.MUTED);
+        for (int i = 0; i < layout.traitLines().size(); i++) {
+            SynthesisDisplayModel.TextLine line = display.traits().get(i);
+            SynthesisStationText.drawFit(graphics, font, line.text(), layout.traitLines().get(i), line.active() ? SynthesisScreenTheme.TEXT : SynthesisScreenTheme.MUTED);
+        }
+        SynthesisStationText.drawFit(graphics, font, "Resonance", layout.resonanceHeader(), display.resonance().stream().anyMatch(SynthesisDisplayModel.TextLine::active) ? 0xFFFFB454 : SynthesisScreenTheme.MUTED);
+        for (int i = 0; i < layout.resonanceLines().size(); i++) {
+            SynthesisDisplayModel.TextLine line = display.resonance().get(i);
+            SynthesisStationText.drawFit(graphics, font, line.text(), layout.resonanceLines().get(i), line.active() ? 0xFFFFB454 : SynthesisScreenTheme.MUTED);
+        }
+        int occupied = occupiedCellCount();
+        graphics.drawString(font,
+                SynthesisStationText.fitWidth(font, footerOutcomeText(placedPlan.preview(), occupied > 0), panel.width() - 12),
+                panel.x() + 6,
+                layout.footerTop() + 4,
+                placedPlan.canSynthesize() ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.MUTED,
+                false);
+        graphics.drawString(font,
+                SynthesisStationText.fitWidth(font, buildEmptyText(board.size() * board.size() - occupied, board), panel.width() - 12),
+                panel.x() + 6,
+                layout.footerTop() + 16,
+                SynthesisScreenTheme.MUTED,
+                false);
+        if (spatial.qualityBonus() > 0 || spatial.perfectBonus() > 0) {
+            graphics.drawString(font,
+                    SynthesisStationText.fitWidth(font, buildNodeBonusText(spatial.qualityBonus(), spatial.perfectBonus()), panel.width() - 12),
+                    panel.x() + 6,
+                    layout.footerTop() + 28,
+                    SynthesisScreenTheme.ACCENT,
+                    false);
+        }
+    }
+
+    private void renderBoardModePaletteControls(GuiGraphics graphics, Font font, ScreenRect panel) {
+        renderPaletteChip(graphics, font, boardModeControlRect(panel, 0), "Need", session.filterNeedsOnly(), SynthesisScreenTheme.GOOD);
+        renderPaletteChip(graphics, font, boardModeControlRect(panel, 1), "Fit", session.filterFitsOnly(), 0xFF7FB7FF);
+        renderPaletteChip(graphics, font, boardModeControlRect(panel, 2), "Fuse", session.filterFusionOnly(), 0xFFFFB454);
+        renderPaletteChip(graphics, font, boardModeControlRect(panel, 3), session.paletteSortMode().label(), true, SynthesisScreenTheme.ACCENT_DIM);
     }
 
     private void renderPalette(GuiGraphics graphics, Font font, PaletteView paletteView, ScreenRect origin, int mouseX, int mouseY) {
         ScreenRect palette = PALETTE.offset(origin.x(), origin.y());
         graphics.fill(palette.x(), palette.y(), palette.right(), palette.bottom(), 0xFF171411);
         SynthesisStationDrawing.frame(graphics, palette, 0xFF4F453C);
-        renderPaletteTab(graphics, font, PALETTE_STORAGE_TAB.offset(origin.x(), origin.y()), "Storage", paletteSource == PaletteSource.STORAGE);
-        renderPaletteTab(graphics, font, PALETTE_INVENTORY_TAB.offset(origin.x(), origin.y()), "Inventory", paletteSource == PaletteSource.INVENTORY);
+        renderPaletteTab(graphics, font, PALETTE_STORAGE_TAB.offset(origin.x(), origin.y()), "Storage", session.paletteSource() == PaletteSource.STORAGE);
+        renderPaletteTab(graphics, font, PALETTE_INVENTORY_TAB.offset(origin.x(), origin.y()), "Inventory", session.paletteSource() == PaletteSource.INVENTORY);
         for (int i = 0; i < CHIP_ELEMENTS.size(); i++) {
             String element = CHIP_ELEMENTS.get(i);
             renderPaletteChip(graphics, font, CHIP_ELEMENT_RECTS.get(i).offset(origin.x(), origin.y()),
-                    capitalize(element), paletteElementFilters.contains(element), SynthesisNoun.color(element, SynthesisScreenTheme.ACCENT));
+                    capitalize(element), session.paletteElementFilters().contains(element), SynthesisNoun.color(element, SynthesisScreenTheme.ACCENT));
         }
         renderPaletteChip(graphics, font, CHIP_FILTER.offset(origin.x(), origin.y()),
-                "Filter", paletteFiltersOpen || hasAdvancedFilters(), 0xFFCFAE6A);
+                "Filter", session.paletteFiltersOpen() || hasAdvancedFilters(), 0xFFCFAE6A);
         renderPaletteChip(graphics, font, CHIP_SORT.offset(origin.x(), origin.y()),
-                paletteSortMode.label(), true, SynthesisScreenTheme.ACCENT_DIM);
-        if (paletteFiltersOpen) {
+                session.paletteSortMode().label(), true, SynthesisScreenTheme.ACCENT_DIM);
+        if (session.paletteFiltersOpen()) {
             renderFilterDrawer(graphics, font, origin);
         }
         List<PaletteEntry> pieces = paletteView.entries();
@@ -693,7 +772,8 @@ final class SynthesisSpatialPrototype {
             return;
         }
         int maxScroll = Math.max(0, pieces.size() - PALETTE_VISIBLE);
-        paletteScroll = Math.clamp(paletteScroll, 0, maxScroll);
+        session.clampPaletteScroll(maxScroll);
+        int paletteScroll = session.paletteScroll();
         int limit = Math.min(PALETTE_VISIBLE, pieces.size() - paletteScroll);
         for (int i = 0; i < limit; i++) {
             int pieceIndex = paletteScroll + i;
@@ -702,7 +782,7 @@ final class SynthesisSpatialPrototype {
             Piece piece = entry.piece();
             boolean hovered = tile.contains(mouseX, mouseY);
             graphics.fill(tile.x(), tile.y(), tile.right(), tile.bottom(), hovered ? 0xFF3B332D : 0xFF211D1A);
-            int borderColor = samePiece(carried, piece) ? SynthesisScreenTheme.ACCENT
+            int borderColor = samePiece(session.carried().orElse(null), piece) ? SynthesisScreenTheme.ACCENT
                     : entry.matchesUnsatisfiedRequirement() ? SynthesisScreenTheme.GOOD
                     : entry.hasFusionPotential() ? 0xFFFFB454
                     : 0xFF4A4037;
@@ -728,20 +808,61 @@ final class SynthesisSpatialPrototype {
         SynthesisStationText.drawCenteredFit(graphics, font, Component.literal(label), tab.inset(UiMetrics.INSET_SMALL), active ? SynthesisScreenTheme.TEXT : SynthesisScreenTheme.MUTED);
     }
 
+    private boolean handleBoardModePaletteControlClick(ScreenRect panel, int mouseX, int mouseY) {
+        if (boardModeControlRect(panel, 0).contains(mouseX, mouseY)) {
+            session.toggleFilterNeedsOnly();
+            return true;
+        }
+        if (boardModeControlRect(panel, 1).contains(mouseX, mouseY)) {
+            session.toggleFilterFitsOnly();
+            return true;
+        }
+        if (boardModeControlRect(panel, 2).contains(mouseX, mouseY)) {
+            session.toggleFilterFusionOnly();
+            return true;
+        }
+        if (boardModeControlRect(panel, 3).contains(mouseX, mouseY)) {
+            session.advancePaletteSortMode();
+            return true;
+        }
+        return false;
+    }
+
+    private static ScreenRect boardModeControlRect(ScreenRect panel, int index) {
+        int column = index % 2;
+        int row = index / 2;
+        return new ScreenRect(panel.x() + 6 + column * 55, panel.y() + 18 + row * 12, 51, 10);
+    }
+
+    private static void renderBoardModePotencyBadge(GuiGraphics graphics, Font font, ScreenRect tile, PaletteEntry entry) {
+        String text = "E" + entry.remainingPotency();
+        int width = Math.min(tile.width() - 4, 8 + font.width(text));
+        ScreenRect badge = new ScreenRect(tile.x() + 2, tile.y() + 2, width, 9);
+        graphics.fill(badge.x(), badge.y(), badge.right(), badge.bottom(), 0xCC080706);
+        SynthesisStationText.drawCenteredFit(graphics, font, Component.literal(text), badge, entry.fullyPlaced() ? SynthesisScreenTheme.MUTED : SynthesisScreenTheme.TEXT);
+        if (entry.placedCopies() > 0) {
+            String placed = "x" + entry.placedCopies();
+            int placedWidth = Math.min(tile.width() - 4, 8 + font.width(placed));
+            ScreenRect placedBadge = new ScreenRect(tile.right() - placedWidth - 2, tile.bottom() - 11, placedWidth, 9);
+            graphics.fill(placedBadge.x(), placedBadge.y(), placedBadge.right(), placedBadge.bottom(), 0xCC1C1208);
+            SynthesisStationText.drawCenteredFit(graphics, font, Component.literal(placed), placedBadge, 0xFFFFB454);
+        }
+    }
+
     private void renderFilterDrawer(GuiGraphics graphics, Font font, ScreenRect origin) {
         ScreenRect drawer = filterDrawerAbsolute(origin);
         graphics.fill(drawer.x(), drawer.y(), drawer.right(), drawer.bottom(), 0xF0191714);
         SynthesisStationDrawing.frame(graphics, drawer, 0xFF5B4F44);
         SynthesisStationText.drawFit(graphics, font, "Palette Filter", new ScreenRect(drawer.x() + UiMetrics.LABEL_PADDING, drawer.y() + UiMetrics.LABEL_PADDING, drawer.width() - UiMetrics.LABEL_PADDING * 2, UiMetrics.TEXT_HEIGHT), SynthesisScreenTheme.ACCENT);
         SynthesisStationText.drawFit(graphics, font, "Narrow for the current recipe and board.", new ScreenRect(drawer.x() + UiMetrics.LABEL_PADDING, drawer.y() + 18, drawer.width() - UiMetrics.LABEL_PADDING * 2, 16), SynthesisScreenTheme.MUTED);
-        renderPaletteChip(graphics, font, drawerControlRect(FILTER_NEEDS, drawer), "Need Now", filterNeedsOnly, SynthesisScreenTheme.GOOD);
-        renderPaletteChip(graphics, font, drawerControlRect(FILTER_FUSION, drawer), "Fusion Ready", filterFusionOnly, 0xFFFFB454);
-        renderPaletteChip(graphics, font, drawerControlRect(FILTER_FITS, drawer), "Fits Board", filterFitsOnly, 0xFF7FB7FF);
+        renderPaletteChip(graphics, font, drawerControlRect(FILTER_NEEDS, drawer), "Need Now", session.filterNeedsOnly(), SynthesisScreenTheme.GOOD);
+        renderPaletteChip(graphics, font, drawerControlRect(FILTER_FUSION, drawer), "Fusion Ready", session.filterFusionOnly(), 0xFFFFB454);
+        renderPaletteChip(graphics, font, drawerControlRect(FILTER_FITS, drawer), "Fits Board", session.filterFitsOnly(), 0xFF7FB7FF);
         SynthesisStationText.drawFit(graphics, font, "Shape", new ScreenRect(drawer.x() + 8, drawer.y() + 86, drawer.width() - 16, UiMetrics.TEXT_HEIGHT), SynthesisScreenTheme.TEXT);
         for (int i = 0; i < ShapeFilterMode.VALUES.size(); i++) {
             ShapeFilterMode mode = ShapeFilterMode.VALUES.get(i);
             renderPaletteChip(graphics, font, drawerControlRect(FILTER_SHAPE_RECTS.get(i), drawer),
-                    mode.label(), shapeFilterMode == mode, mode.accentColor());
+                    mode.label(), session.shapeFilterMode() == mode, mode.accentColor());
         }
         renderPaletteChip(graphics, font, drawerControlRect(FILTER_RESET, drawer), "Reset", false, 0xFF9E7E5E);
     }
@@ -788,16 +909,13 @@ final class SynthesisSpatialPrototype {
         }
 
         SynthesisPlan current = plan.get();
-        SynthesisPlan placedPlan = new SynthesisPlanner().plan(
-                current.profile(),
-                placedReagentContainer(storageReagents, inventoryReagents),
-                0);
+        SynthesisPlan placedPlan = projection(plan, storageReagents, inventoryReagents).placedPlan().orElse(current);
         SpatialEvaluation spatial = evaluate(board);
         int resonanceRisk = spatial.resonantPlacementIds().size() * 15;
         int occupied = occupiedCellCount();
         int totalCells = board.size() * board.size();
         ReadoutLayout layout = buildReadoutLayout(panel, placedPlan, spatial, board, occupied);
-        boolean hasPlaced = !placements.isEmpty();
+        boolean hasPlaced = !session.placements().isEmpty();
 
         SynthesisStationText.drawFit(graphics, font, "Needs", layout.needsHeader(), placedPlan.canSynthesize() ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.BAD);
         List<RequirementStatus> displayedRequirements = displayedRequirements(placedPlan);
@@ -805,7 +923,7 @@ final class SynthesisSpatialPrototype {
             RequirementStatus status = displayedRequirements.get(i);
             int color = status.satisfied() ? SynthesisScreenTheme.GOOD : SynthesisScreenTheme.BAD;
             ScreenRect lineRect = layout.requirementLines().get(i);
-            if (selectedRequirementFilterIndex == i) {
+            if (session.selectedRequirementFilterIndex() == i) {
                 SynthesisStationDrawing.frame(graphics, lineRect.inset(-1), SynthesisScreenTheme.ACCENT);
             }
             renderRequirementProgress(graphics, font, status, lineRect, color);
@@ -923,6 +1041,38 @@ final class SynthesisSpatialPrototype {
         graphics.fill(barRect.x(), barRect.y(), barRect.x() + (int) Math.round(barRect.width() * amount), barRect.bottom(), color);
     }
 
+    private void renderDisplayProgress(GuiGraphics graphics, Font font, SynthesisDisplayModel.Line line, ScreenRect rowRect, int color) {
+        SynthesisStationText.drawFit(graphics, font, displayLineText(line), rowRect, color);
+        ScreenRect barRect = new ScreenRect(rowRect.x(), rowRect.y() + READOUT_BAR_LABEL_GAP, rowRect.width(), REQUIREMENT_BAR_HEIGHT);
+        double amount = line.required() <= 0 ? 0.0D : Math.clamp(line.available() / (double) line.required(), 0.0D, 1.0D);
+        graphics.fill(barRect.x(), barRect.y(), barRect.right(), barRect.bottom(), SynthesisScreenTheme.PANEL_LIGHT);
+        graphics.fill(barRect.x(), barRect.y(), barRect.x() + (int) Math.round(barRect.width() * amount), barRect.bottom(), color);
+    }
+
+    private static String displayLineText(SynthesisDisplayModel.Line line) {
+        return line.available() + "/" + line.required() + " " + line.label();
+    }
+
+    private static List<String> traitTextLines(SpatialEvaluation spatial) {
+        return spatial.expectedTraits().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> SynthesisNoun.label(entry.getKey()) + " +" + entry.getValue())
+                .toList();
+    }
+
+    private static List<String> resonanceTextLines(SpatialEvaluation spatial) {
+        if (!spatial.fusionResults().isEmpty()) {
+            return spatial.fusionResults().stream()
+                    .map(fusion -> SynthesisNoun.label(fusion.traitA()) + " + " + SynthesisNoun.label(fusion.traitB()))
+                    .toList();
+        }
+        int risk = spatial.resonantPlacementIds().size() * 15;
+        if (risk > 0) {
+            return List.of("Risk +" + risk);
+        }
+        return List.of();
+    }
+
     private static String outcomeSummary(OutcomePreview preview, boolean hasPlaced) {
         if (!hasPlaced) {
             return "Outcome: place reagents";
@@ -933,10 +1083,20 @@ final class SynthesisSpatialPrototype {
                 + " perfect";
     }
 
+    private static String footerOutcomeText(OutcomePreview preview, boolean hasPlaced) {
+        if (!hasPlaced) {
+            return "Outcome: place";
+        }
+        return "Success " + SynthesisStationText.percent(preview.successProbability())
+                + "  Perfect " + SynthesisStationText.percent(preview.probabilityOf(OutcomeClass.PERFECT_SUCCESS));
+    }
+
     private void renderCarriedGhost(GuiGraphics graphics, Font font, SynthesisBoard board, ScreenRect origin, int mouseX, int mouseY) {
-        if (carried == null) {
+        if (!session.hasCarried()) {
             return;
         }
+        Piece carried = session.carried().orElseThrow();
+        int carriedRotation = session.carriedRotation();
         int localX = mouseX - origin.x();
         int localY = mouseY - origin.y();
         Optional<Cell> hover = boardCell(board, localX, localY);
@@ -959,9 +1119,11 @@ final class SynthesisSpatialPrototype {
     }
 
     private void renderCarriedGhostInRect(GuiGraphics graphics, Font font, SynthesisBoard board, ScreenRect boardRect, int mouseX, int mouseY) {
-        if (carried == null) {
+        if (!session.hasCarried()) {
             return;
         }
+        Piece carried = session.carried().orElseThrow();
+        int carriedRotation = session.carriedRotation();
         Optional<Cell> hover = boardModeCellAt(boardRect, board, mouseX, mouseY);
         if (hover.isEmpty()) {
             drawFloatingShape(graphics, font, carried, carriedRotation, mouseX + 5, mouseY + 5, true);
@@ -1004,25 +1166,26 @@ final class SynthesisSpatialPrototype {
         if (!canPlace(board, placement.piece(), nextRotation, placement.anchorX(), placement.anchorY(), placement.id())) {
             return true;
         }
-        int index = placements.indexOf(placement);
-        placements.set(index, new Placement(placement.id(), placement.piece(), nextRotation, placement.anchorX(), placement.anchorY()));
+        session.replacePlacement(placement, nextRotation, placement.anchorX(), placement.anchorY());
         return true;
     }
 
     private boolean handleBoardCellClick(SynthesisBoard board, Cell boardCell, boolean shiftDown) {
-        if (carried != null) {
+        if (session.hasCarried()) {
+            Piece carried = session.carried().orElseThrow();
+            int carriedRotation = session.carriedRotation();
             if (shiftDown) {
                 Optional<PlacementPreview> preview = overwritePreview(board, carried, carriedRotation, boardCell);
                 if (preview.isPresent()) {
                     removeOverlappedPlacements(carried, carriedRotation, preview.get());
-                    placements.add(new Placement(nextPlacementId++, carried, carriedRotation, preview.get().anchorX(), preview.get().anchorY()));
+                    session.addPlacement(carried, carriedRotation, preview.get().anchorX(), preview.get().anchorY());
                     clearCarried();
                 }
                 return true;
             }
             PlacementPreview preview = placementPreview(board, carried, carriedRotation, boardCell);
             if (preview.valid()) {
-                placements.add(new Placement(nextPlacementId++, carried, carriedRotation, preview.anchorX(), preview.anchorY()));
+                session.addPlacement(carried, carriedRotation, preview.anchorX(), preview.anchorY());
                 clearCarried();
             }
             return true;
@@ -1030,7 +1193,11 @@ final class SynthesisSpatialPrototype {
         Optional<Placement> existing = placementAt(boardCell.x(), boardCell.y());
         if (existing.isPresent()) {
             Placement placement = existing.get();
-            placements.remove(placement);
+            session.removePlacement(placement);
+            if (shiftDown) {
+                clearCarried();
+                return true;
+            }
             startCarrying(
                     placement.piece(),
                     placement.rotation(),
@@ -1046,15 +1213,11 @@ final class SynthesisSpatialPrototype {
     }
 
     private void startCarrying(Piece piece, int rotation, Cell cursorCell) {
-        carried = piece;
-        carriedRotation = rotation & 3;
-        carriedCursorCell = cursorCell;
+        session.startCarrying(piece, rotation, cursorCell);
     }
 
     private void clearCarried() {
-        carried = null;
-        carriedRotation = 0;
-        carriedCursorCell = new Cell(0, 0);
+        session.clearCarried();
     }
 
     private boolean autoPlace(SynthesisBoard board, Piece piece) {
@@ -1062,7 +1225,7 @@ final class SynthesisSpatialPrototype {
             for (int y = 0; y < board.size(); y++) {
                 for (int x = 0; x < board.size(); x++) {
                     if (canPlace(board, piece, rotation, x, y, -1)) {
-                        placements.add(new Placement(nextPlacementId++, piece, rotation, x, y));
+                        session.addPlacement(piece, rotation, x, y);
                         return true;
                     }
                 }
@@ -1072,7 +1235,7 @@ final class SynthesisSpatialPrototype {
     }
 
     private PlacementPreview placementPreview(SynthesisBoard board, Piece piece, int rotation, Cell hover) {
-        Optional<PlacementPreview> preferred = previewForCursorCell(board, piece, rotation, hover, carriedCursorCell);
+        Optional<PlacementPreview> preferred = previewForCursorCell(board, piece, rotation, hover, session.carriedCursorCell());
         if (preferred.isPresent() && preferred.get().valid()) {
             return preferred.get();
         }
@@ -1089,7 +1252,7 @@ final class SynthesisSpatialPrototype {
     }
 
     private Optional<PlacementPreview> overwritePreview(SynthesisBoard board, Piece piece, int rotation, Cell hover) {
-        Optional<PlacementPreview> preferred = overwritePreviewForCursorCell(board, piece, rotation, hover, carriedCursorCell);
+        Optional<PlacementPreview> preferred = overwritePreviewForCursorCell(board, piece, rotation, hover, session.carriedCursorCell());
         if (preferred.isPresent() && preferred.get().valid()) {
             return preferred;
         }
@@ -1124,7 +1287,7 @@ final class SynthesisSpatialPrototype {
 
     private void removeOverlappedPlacements(Piece piece, int rotation, PlacementPreview preview) {
         Set<Cell> targetCells = new HashSet<>(piece.rotatedCells(rotation, preview.anchorX(), preview.anchorY()));
-        placements.removeIf(placement -> placement.cells().stream().anyMatch(targetCells::contains));
+        session.removePlacementsIf(placement -> placement.cells().stream().anyMatch(targetCells::contains));
     }
 
     private boolean fitsBoard(SynthesisBoard board, Piece piece, int rotation, int anchorX, int anchorY) {
@@ -1157,13 +1320,13 @@ final class SynthesisSpatialPrototype {
         Set<String> seenFusionKeys = new HashSet<>();
         java.util.Map<Integer, Integer> fusionCountPerPlacement = new java.util.HashMap<>();
 
-        for (Placement placement : placements) {
+        for (Placement placement : session.placements()) {
             for (String trait : placement.piece().inheritableTraits()) {
                 expectedTraits.merge(trait, 1, Integer::sum);
             }
         }
-        for (Placement first : placements) {
-            for (Placement second : placements) {
+        for (Placement first : session.placements()) {
+            for (Placement second : session.placements()) {
                 if (first.id() >= second.id()) {
                     continue;
                 }
@@ -1258,30 +1421,62 @@ final class SynthesisSpatialPrototype {
         );
     }
 
+    SynthesisBoardFusionPayload buildFusionPayload(int containerId, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
+        List<ReagentStack> payloadReagents = projectedReagents(storageReagents, inventoryReagents);
+        if (lastEvaluation == null || lastEvaluation.fusionResults().isEmpty()) {
+            return new SynthesisBoardFusionPayload(containerId, List.of(), 0, payloadReagents);
+        }
+        java.util.LinkedHashSet<String> ruleIds = new java.util.LinkedHashSet<>();
+        for (FusionResult fr : lastEvaluation.fusionResults()) {
+            ruleIds.add(fr.rule().id());
+        }
+        return new SynthesisBoardFusionPayload(
+                containerId,
+                new ArrayList<>(ruleIds),
+                lastEvaluation.resonantPlacementIds().size(),
+                payloadReagents
+        );
+    }
+
+    SynthesisBoardFusionPayload buildFusionPayload(
+            int containerId,
+            Optional<SynthesisPlan> plan,
+            List<ReagentStack> storageReagents,
+            List<ReagentStack> inventoryReagents
+    ) {
+        List<ReagentStack> payloadReagents = projection(plan, storageReagents, inventoryReagents).payloadReagents();
+        if (lastEvaluation == null || lastEvaluation.fusionResults().isEmpty()) {
+            return new SynthesisBoardFusionPayload(containerId, List.of(), 0, payloadReagents);
+        }
+        java.util.LinkedHashSet<String> ruleIds = new java.util.LinkedHashSet<>();
+        for (FusionResult fr : lastEvaluation.fusionResults()) {
+            ruleIds.add(fr.rule().id());
+        }
+        return new SynthesisBoardFusionPayload(
+                containerId,
+                new ArrayList<>(ruleIds),
+                lastEvaluation.resonantPlacementIds().size(),
+                payloadReagents
+        );
+    }
+
     void resetAfterSynthesis() {
-        placements.clear();
-        clearCarried();
+        session.resetAfterSynthesis();
         lastEvaluation = null;
-        selectedRequirementFilterIndex = -1;
     }
 
     boolean canSynthesizePlaced(Optional<SynthesisPlan> plan, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
-        if (plan.isEmpty()) {
-            return false;
-        }
-        ReagentContainer placed = placedReagentContainer(storageReagents, inventoryReagents);
-        return !placed.entries().isEmpty()
-                && new SynthesisPlanner().plan(plan.get().profile(), placed, 0).canSynthesize();
+        return projection(plan, storageReagents, inventoryReagents).canSynthesize();
     }
 
     private List<ReagentStack> placedReagentsForPayload() {
-        return placements.stream()
+        return session.placements().stream()
                 .map(placement -> placement.piece().reagent())
                 .toList();
     }
 
     private Optional<Placement> placementAt(int x, int y) {
-        for (Placement placement : placements) {
+        for (Placement placement : session.placements()) {
             if (placement.occupies(x, y)) {
                 return Optional.of(placement);
             }
@@ -1291,7 +1486,7 @@ final class SynthesisSpatialPrototype {
 
     private int occupiedCellCount() {
         Set<Cell> occupied = new HashSet<>();
-        for (Placement placement : placements) {
+        for (Placement placement : session.placements()) {
             occupied.addAll(placement.cells());
         }
         return occupied.size();
@@ -1299,7 +1494,7 @@ final class SynthesisSpatialPrototype {
 
     private ReagentContainer placedReagentContainer() {
         ReagentContainer container = new ReagentContainer();
-        for (Placement placement : placements) {
+        for (Placement placement : session.placements()) {
             container.insert(placement.piece().reagent());
         }
         return container;
@@ -1312,7 +1507,7 @@ final class SynthesisSpatialPrototype {
 
         ReagentContainer bounded = new ReagentContainer();
         ArrayList<ReagentStack> accepted = new ArrayList<>();
-        for (Placement placement : placements) {
+        for (Placement placement : session.placements()) {
             ReagentStack reagent = placement.piece().reagent();
             int remainingAvailable = totalAmountForProfile(available, reagent) - totalAmountForProfile(accepted, reagent);
             if (remainingAvailable <= 0) {
@@ -1325,24 +1520,54 @@ final class SynthesisSpatialPrototype {
         return bounded;
     }
 
+    SynthesisBoardProjection projection(
+            Optional<SynthesisPlan> plan,
+            List<ReagentStack> storageReagents,
+            List<ReagentStack> inventoryReagents
+    ) {
+        return SynthesisBoardProjection.fromPlacedReagents(
+                plan,
+                placedReagentsForProjection(),
+                storageReagents,
+                inventoryReagents
+        );
+    }
+
+    private List<ReagentStack> projectedReagents(List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
+        return SynthesisBoardProjection.payloadReagents(
+                placedReagentsForProjection(),
+                storageReagents,
+                inventoryReagents
+        );
+    }
+
+    private List<ReagentStack> placedReagentsForProjection() {
+        return session.placements().stream()
+                .map(placement -> placement.piece().reagent())
+                .toList();
+    }
+
     private PaletteView paletteView(Optional<SynthesisPlan> plan, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
-        List<ReagentStack> reagents = paletteSource == PaletteSource.STORAGE
+        List<ReagentStack> reagents = session.paletteSource() == PaletteSource.STORAGE
                 ? storageReagents
                 : inventoryReagents;
-        List<RequirementStatus> unsatisfied = unsatisfiedRequirements(plan);
-        List<ReagentStack> currentInputs = placedReagentContainer(storageReagents, inventoryReagents).entries();
+        SynthesisBoardProjection projection = projection(plan, storageReagents, inventoryReagents);
+        List<RequirementStatus> unsatisfied = unsatisfiedRequirements(plan, storageReagents, inventoryReagents);
+        List<ReagentStack> currentInputs = projection.payloadReagents();
         List<PaletteEntry> entries = reagents.stream()
                 .map(Piece::new)
                 .filter(this::matchesPaletteFilters)
                 .map(piece -> new PaletteEntry(
                         piece,
+                        placedAmountFor(piece),
+                        placedCopiesFor(piece),
                         matchesNeedNow(piece, plan, unsatisfied, currentInputs),
                         hasFusionPotentialWithPlaced(piece),
                         primaryElementIndex(piece),
                         canFitOnCurrentBoard(piece, plan),
                         piece.shape().size()
                 ))
-                .filter(entry -> matchesAdvancedFilters(entry, plan))
+                .filter(entry -> matchesAdvancedFilters(entry, plan, storageReagents, inventoryReagents))
                 .sorted(paletteComparator(plan.isPresent()))
                 .toList();
         String emptyMessage = reagents.isEmpty() ? "No reagents"
@@ -1366,20 +1591,14 @@ final class SynthesisSpatialPrototype {
             return SynthesisState.empty();
         }
         SynthesisBoard board = currentBoard(plan);
-        ReagentContainer placedReagents = placedReagentContainer(storageReagents, inventoryReagents);
-        SynthesisPlan placedPlan = new SynthesisPlanner().plan(plan.get().profile(), placedReagents, 0);
+        SynthesisBoardProjection projection = projection(plan, storageReagents, inventoryReagents);
         SpatialEvaluation spatial = evaluate(board);
         PaletteView palette = paletteView(plan, storageReagents, inventoryReagents);
         int occupied = occupiedCellCount();
         int totalCells = board.size() * board.size();
-        return new SynthesisState(
-                plan.get().profile().id(),
-                plan.get().profile().category(),
-                SynthesisStationText.profileName(plan.get().profile()),
-                placedPlan.canSynthesize(),
-                placedPlan.elementBudgetSatisfied(),
-                SynthesisState.requirementLines(placedPlan),
-                SynthesisState.elementState(plan.get().profile().requirements(), placedReagents.entries(), placedPlan.elementBudgetSatisfied()),
+        return SynthesisState.fromProjection(
+                projection,
+                plan.get().profile(),
                 new SynthesisState.BoardState(
                         occupied,
                         totalCells,
@@ -1387,8 +1606,8 @@ final class SynthesisSpatialPrototype {
                         spatial.qualityBonus(),
                         spatial.perfectBonus(),
                         spatial.resonantPlacementIds().size() * 15,
-                        placements.isEmpty() ? 0.0D : plan.get().preview().successProbability(),
-                        placements.isEmpty() ? 0.0D : plan.get().preview().probabilityOf(OutcomeClass.PERFECT_SUCCESS),
+                        projection.successProbability(),
+                        projection.perfectProbability(),
                         placedReagentsForState(),
                         spatial.fusionResults().stream()
                                 .map(fusion -> fusion.traitA() + "+" + fusion.traitB()
@@ -1396,11 +1615,11 @@ final class SynthesisSpatialPrototype {
                                 .toList()
                 ),
                 new SynthesisState.PaletteState(
-                        paletteSource.name().toLowerCase(Locale.ROOT),
-                        filterNeedsOnly,
-                        filterFusionOnly,
-                        filterFitsOnly,
-                        shapeFilterMode.name().toLowerCase(Locale.ROOT),
+                        session.paletteSource().name().toLowerCase(Locale.ROOT),
+                        session.filterNeedsOnly(),
+                        session.filterFusionOnly(),
+                        session.filterFitsOnly(),
+                        session.shapeFilterMode().name().toLowerCase(Locale.ROOT),
                         palette.entries().stream()
                                 .map(this::paletteEntryState)
                                 .toList()
@@ -1409,7 +1628,7 @@ final class SynthesisSpatialPrototype {
     }
 
     private List<SynthesisState.PlacedReagent> placedReagentsForState() {
-        return placements.stream()
+        return session.placements().stream()
                 .map(placement -> new SynthesisState.PlacedReagent(
                         placement.piece().reagent().reagentId(),
                         placement.piece().reagent().amount(),
@@ -1442,6 +1661,9 @@ final class SynthesisSpatialPrototype {
         return new SynthesisState.PaletteEntryState(
                 entry.piece().reagent().reagentId(),
                 entry.piece().reagent().amount(),
+                entry.placedAmount(),
+                entry.remainingAmount(),
+                entry.placedCopies(),
                 entry.matchesUnsatisfiedRequirement(),
                 entry.hasFusionPotential(),
                 entry.fitsCurrentBoard(),
@@ -1459,6 +1681,7 @@ final class SynthesisSpatialPrototype {
     }
 
     private Optional<Integer> hoveredPaletteIndex(int localX, int localY, List<PaletteEntry> pieces) {
+        int paletteScroll = session.paletteScroll();
         int limit = Math.min(PALETTE_VISIBLE, Math.max(0, pieces.size() - paletteScroll));
         for (int i = 0; i < limit; i++) {
             if (paletteTile(new ScreenRect(0, 0, 0, 0), i).contains(localX, localY)) {
@@ -1469,11 +1692,12 @@ final class SynthesisSpatialPrototype {
     }
 
     private Optional<Integer> hoveredBoardModePaletteIndex(ScreenRect panel, int mouseX, int mouseY, List<PaletteEntry> pieces) {
-        int visibleRows = boardModePaletteVisibleRows(panel);
-        paletteScroll = Math.clamp(paletteScroll, 0, Math.max(0, pieces.size() - visibleRows));
-        int limit = Math.min(visibleRows, pieces.size() - paletteScroll);
+        int visibleCount = boardModePaletteVisibleCount(panel);
+        session.clampPaletteScroll(Math.max(0, pieces.size() - visibleCount));
+        int paletteScroll = session.paletteScroll();
+        int limit = Math.min(visibleCount, pieces.size() - paletteScroll);
         for (int i = 0; i < limit; i++) {
-            if (boardModePaletteRow(panel, i).contains(mouseX, mouseY)) {
+            if (boardModePaletteTile(panel, i).contains(mouseX, mouseY)) {
                 return Optional.of(paletteScroll + i);
             }
         }
@@ -1489,24 +1713,21 @@ final class SynthesisSpatialPrototype {
     }
 
     static BoardModeDebugLayout debugBoardModeLayout(ScreenRect boardArea, SynthesisBoard board) {
-        return new BoardModeDebugLayout(boardRectForArea(boardArea, board));
+        return new BoardModeDebugLayout(SynthesisBoardGeometry.boardRectForArea(boardArea, board));
+    }
+
+    static BoardModePaletteDebugLayout debugBoardModePaletteLayout(ScreenRect palettePanel, int itemCount) {
+        return new BoardModePaletteDebugLayout(SynthesisBoardGeometry.paletteTiles(palettePanel, itemCount));
     }
 
     static Optional<DebugCell> debugBoardModeCellAt(ScreenRect boardArea, SynthesisBoard board, int mouseX, int mouseY) {
-        return boardModeCellAt(boardArea, board, mouseX, mouseY)
+        return SynthesisBoardGeometry.boardCellAt(boardArea, board, mouseX, mouseY)
                 .map(cell -> new DebugCell(cell.x(), cell.y()));
     }
 
     private static Optional<Cell> boardModeCellAt(ScreenRect boardArea, SynthesisBoard board, int mouseX, int mouseY) {
-        ScreenRect boardRect = boardRectForArea(boardArea, board);
-        if (!boardRect.contains(mouseX, mouseY)) {
-            return Optional.empty();
-        }
-        int cellSize = boardRect.width() / Math.max(1, board.size());
-        return Optional.of(new Cell(
-                Math.clamp((mouseX - boardRect.x()) / cellSize, 0, board.size() - 1),
-                Math.clamp((mouseY - boardRect.y()) / cellSize, 0, board.size() - 1)
-        ));
+        return SynthesisBoardGeometry.boardCellAt(boardArea, board, mouseX, mouseY)
+                .map(cell -> new Cell(cell.x(), cell.y()));
     }
 
     private static ScreenRect cellRect(ScreenRect origin, SynthesisBoard board, int x, int y) {
@@ -1515,8 +1736,22 @@ final class SynthesisSpatialPrototype {
     }
 
     private static ScreenRect cellRectInBoard(ScreenRect boardRect, SynthesisBoard board, int x, int y) {
-        int cellSize = boardRect.width() / Math.max(1, board.size());
-        return new ScreenRect(boardRect.x() + x * cellSize, boardRect.y() + y * cellSize, cellSize, cellSize);
+        return SynthesisBoardGeometry.cellRectInBoard(boardRect, board, x, y);
+    }
+
+    private static ScreenRect placementBoundsInBoard(ScreenRect boardRect, SynthesisBoard board, Placement placement) {
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        for (Cell cell : placement.cells()) {
+            ScreenRect rect = cellRectInBoard(boardRect, board, cell.x(), cell.y());
+            minX = Math.min(minX, rect.x());
+            minY = Math.min(minY, rect.y());
+            maxX = Math.max(maxX, rect.right());
+            maxY = Math.max(maxY, rect.bottom());
+        }
+        return new ScreenRect(minX, minY, maxX - minX, maxY - minY);
     }
 
     private static ScreenRect paletteTile(ScreenRect origin, int index) {
@@ -1531,11 +1766,15 @@ final class SynthesisSpatialPrototype {
     }
 
     private static int boardModePaletteVisibleRows(ScreenRect panel) {
-        return Math.max(0, (panel.height() - 25) / 22);
+        return SynthesisBoardGeometry.paletteVisibleRows(panel);
     }
 
-    private static ScreenRect boardModePaletteRow(ScreenRect panel, int index) {
-        return new ScreenRect(panel.x() + 5, panel.y() + 21 + index * 22, panel.width() - 10, 20);
+    private static int boardModePaletteVisibleCount(ScreenRect panel) {
+        return SynthesisBoardGeometry.paletteVisibleCount(panel);
+    }
+
+    private static ScreenRect boardModePaletteTile(ScreenRect panel, int index) {
+        return SynthesisBoardGeometry.paletteTile(panel, index);
     }
 
     private static void drawMiniShape(GuiGraphics graphics, Piece piece, int x, int y) {
@@ -1546,7 +1785,7 @@ final class SynthesisSpatialPrototype {
     }
 
     private static void renderPaletteReasonPips(GuiGraphics graphics, ScreenRect tile, PaletteEntry entry) {
-        int x = tile.x() + 19;
+        int x = tile.x() + 24;
         int y = tile.bottom() - 6;
         if (entry.matchesUnsatisfiedRequirement()) {
             renderReasonPip(graphics, x, y, SynthesisScreenTheme.GOOD);
@@ -1558,6 +1797,24 @@ final class SynthesisSpatialPrototype {
         }
         if (entry.fitsCurrentBoard()) {
             renderReasonPip(graphics, x, y, 0xFF7FB7FF);
+        }
+    }
+
+    private static void renderPaletteShapeBadge(GuiGraphics graphics, ScreenRect row, Piece piece) {
+        ScreenRect badge = new ScreenRect(row.right() - 13, row.y() + 3, 9, 9);
+        graphics.fill(badge.x(), badge.y(), badge.right(), badge.bottom(), 0xFF2B241E);
+        SynthesisStationDrawing.frame(graphics, badge, 0xFF6E5E50);
+        int cell = 2;
+        int startX = badge.x() + 2;
+        int startY = badge.y() + 2;
+        for (Cell shapeCell : piece.shapeCells()) {
+            graphics.fill(
+                    startX + shapeCell.x() * cell,
+                    startY + shapeCell.y() * cell,
+                    startX + shapeCell.x() * cell + cell,
+                    startY + shapeCell.y() * cell + cell,
+                    SynthesisScreenTheme.TEXT
+            );
         }
     }
 
@@ -1591,12 +1848,44 @@ final class SynthesisSpatialPrototype {
         return 0xFFB78AE4;
     }
 
+    private Optional<List<Component>> boardModeTooltip(
+            Optional<SynthesisPlan> plan,
+            List<ReagentStack> storageReagents,
+            List<ReagentStack> inventoryReagents,
+            ScreenRect origin,
+            ScreenRect boardArea,
+            ScreenRect palettePanel,
+            int mouseX,
+            int mouseY
+    ) {
+        ScreenRect absolutePalette = palettePanel.offset(origin.x(), origin.y());
+        PaletteView palette = paletteView(plan, storageReagents, inventoryReagents);
+        Optional<Integer> paletteIndex = hoveredBoardModePaletteIndex(absolutePalette, mouseX, mouseY, palette.entries());
+        if (paletteIndex.isPresent()) {
+            PaletteEntry entry = palette.entries().get(paletteIndex.get());
+            return Optional.of(synthesisTooltip(entry.piece(), Optional.of(entry), plan, false));
+        }
+        Optional<Cell> boardCell = boardModeCellAt(boardArea.offset(origin.x(), origin.y()), currentBoard(plan), mouseX, mouseY);
+        if (boardCell.isEmpty()) {
+            return Optional.empty();
+        }
+        return placementAt(boardCell.get().x(), boardCell.get().y())
+                .map(placement -> synthesisTooltip(placement.piece(), Optional.empty(), plan, true));
+    }
+
     private static List<Component> pieceTooltip(PaletteEntry entry) {
         Piece piece = entry.piece();
         ArrayList<Component> lines = new ArrayList<>();
         lines.add(Component.literal(piece.label()));
         lines.add(Component.literal("Shape: " + piece.shape().id()));
         lines.add(Component.literal("Tier " + piece.reagent().tier() + "  Quality " + piece.reagent().quality()));
+        if (entry.placedPotency() > 0) {
+            lines.add(Component.literal("Potency: " + entry.remainingPotency() + "/" + entry.totalPotency()
+                    + " essence available"));
+            lines.add(Component.literal("Placed: " + entry.placedCopies() + " reagent"));
+        } else {
+            lines.add(Component.literal("Potency: " + entry.totalPotency() + " essence"));
+        }
         lines.add(elementTooltipLine(piece.reagent()));
         lines.add(nounListLine("Fusion: ", piece.fusionTraits()));
         List<String> reasons = new ArrayList<>(3);
@@ -1613,6 +1902,38 @@ final class SynthesisSpatialPrototype {
             lines.add(Component.literal("Why here: " + String.join(", ", reasons)));
         }
         return lines;
+    }
+
+    private static List<Component> synthesisTooltip(Piece piece, Optional<PaletteEntry> entry, Optional<SynthesisPlan> plan, boolean placed) {
+        ArrayList<Component> lines = new ArrayList<>(pieceTooltip(entry.orElseGet(() -> new PaletteEntry(
+                piece,
+                0,
+                0,
+                false,
+                false,
+                primaryElementIndex(piece),
+                true,
+                piece.shape().size()
+        ))));
+        lines.add(1, Component.literal(placed ? "Placed in synthesis board" : "Available for synthesis"));
+        contributionTooltipLine(piece.reagent(), plan).ifPresent(lines::add);
+        return lines;
+    }
+
+    private static Optional<Component> contributionTooltipLine(ReagentStack reagent, Optional<SynthesisPlan> plan) {
+        if (plan.isEmpty()) {
+            return Optional.empty();
+        }
+        List<String> contributions = plan.get().profile().requirements().stream()
+                .map(SynthesisRequirement::query)
+                .filter(query -> SynthesisRequirementMatcher.reagentQuery(query).matches(reagent))
+                .map(query -> "Contributes " + reagent.amount() + " " + summarizeRequirement(query).getString() + " essence")
+                .distinct()
+                .toList();
+        if (contributions.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(Component.literal(String.join(", ", contributions)));
     }
 
     private static Component elementTooltipLine(ReagentStack reagent) {
@@ -1698,35 +2019,29 @@ final class SynthesisSpatialPrototype {
                 && left.sourceHints().equals(right.sourceHints());
     }
 
-    private void togglePaletteElementFilter(String element) {
-        if (!paletteElementFilters.add(element)) {
-            paletteElementFilters.remove(element);
-        }
-    }
-
     private boolean matchesPaletteFilters(Piece piece) {
-        for (String element : paletteElementFilters) {
+        for (String element : session.paletteElementFilters()) {
             if (!piece.hasElement(element)) {
                 return false;
             }
         }
-        if (shapeFilterMode != ShapeFilterMode.ANY && !shapeFilterMode.matches(piece.shape())) {
+        if (session.shapeFilterMode() != ShapeFilterMode.ANY && !session.shapeFilterMode().matches(piece.shape())) {
             return false;
         }
         return true;
     }
 
-    private boolean matchesAdvancedFilters(PaletteEntry entry, Optional<SynthesisPlan> plan) {
-        if (filterNeedsOnly && !entry.matchesUnsatisfiedRequirement()) {
+    private boolean matchesAdvancedFilters(PaletteEntry entry, Optional<SynthesisPlan> plan, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
+        if (session.filterNeedsOnly() && !entry.matchesUnsatisfiedRequirement()) {
             return false;
         }
-        if (filterFusionOnly && !entry.hasFusionPotential()) {
+        if (session.filterFusionOnly() && !entry.hasFusionPotential()) {
             return false;
         }
-        if (filterFitsOnly && !entry.fitsCurrentBoard()) {
+        if (session.filterFitsOnly() && !entry.fitsCurrentBoard()) {
             return false;
         }
-        Optional<RequirementStatus> selectedRequirement = selectedRequirementFilter(plan);
+        Optional<RequirementStatus> selectedRequirement = selectedRequirementFilter(plan, storageReagents, inventoryReagents);
         if (selectedRequirement.isPresent()
                 && !SynthesisRequirementMatcher.reagentQuery(selectedRequirement.get().requirement().query())
                 .matches(entry.piece().reagent())) {
@@ -1735,18 +2050,19 @@ final class SynthesisSpatialPrototype {
         return true;
     }
 
-    private Optional<RequirementStatus> selectedRequirementFilter(Optional<SynthesisPlan> plan) {
-        List<RequirementStatus> displayed = displayedRequirements(plan);
+    private Optional<RequirementStatus> selectedRequirementFilter(Optional<SynthesisPlan> plan, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
+        List<RequirementStatus> displayed = displayedRequirements(plan, storageReagents, inventoryReagents);
+        int selectedRequirementFilterIndex = session.selectedRequirementFilterIndex();
         if (selectedRequirementFilterIndex < 0 || selectedRequirementFilterIndex >= displayed.size()) {
             return Optional.empty();
         }
         return Optional.of(displayed.get(selectedRequirementFilterIndex));
     }
 
-    private Optional<Integer> clickedRequirementFilterIndex(Optional<SynthesisPlan> plan, SynthesisBoard board, int localX, int localY) {
-        List<ScreenRect> rects = requirementFilterRects(plan, board);
+    private Optional<Integer> clickedRequirementFilterIndex(Optional<SynthesisPlan> plan, SynthesisBoard board, int localX, int localY, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
+        List<ScreenRect> rects = requirementFilterRects(plan, board, storageReagents, inventoryReagents);
         for (int i = 0; i < rects.size(); i++) {
-            RequirementStatus status = displayedRequirements(plan).get(i);
+            RequirementStatus status = displayedRequirements(plan, storageReagents, inventoryReagents).get(i);
             if (!status.satisfied() && rects.get(i).contains(localX, localY)) {
                 return Optional.of(i);
             }
@@ -1754,18 +2070,18 @@ final class SynthesisSpatialPrototype {
         return Optional.empty();
     }
 
-    private List<RequirementStatus> displayedRequirements(Optional<SynthesisPlan> plan) {
+    private List<RequirementStatus> displayedRequirements(Optional<SynthesisPlan> plan, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
         if (plan.isEmpty()) {
             return List.of();
         }
-        return displayedRequirements(new SynthesisPlanner().plan(plan.get().profile(), placedReagentContainer(), 0));
+        return displayedRequirements(projection(plan, storageReagents, inventoryReagents).placedPlan().orElse(plan.get()));
     }
 
-    private List<ScreenRect> requirementFilterRects(Optional<SynthesisPlan> plan, SynthesisBoard board) {
+    private List<ScreenRect> requirementFilterRects(Optional<SynthesisPlan> plan, SynthesisBoard board, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
         if (plan.isEmpty()) {
             return List.of();
         }
-        SynthesisPlan placedPlan = new SynthesisPlanner().plan(plan.get().profile(), placedReagentContainer(), 0);
+        SynthesisPlan placedPlan = projection(plan, storageReagents, inventoryReagents).placedPlan().orElse(plan.get());
         return buildReadoutLayout(READOUT, placedPlan, evaluate(board), board, occupiedCellCount()).requirementLines();
     }
 
@@ -1784,6 +2100,77 @@ final class SynthesisSpatialPrototype {
         return new ReadoutDebugLayout(
                 layout.requirementLines().isEmpty() ? -1 : layout.requirementLines().getFirst().y(),
                 layout.outcomeSummary().y()
+        );
+    }
+
+    static BoardModeProgressDebugLayout debugBoardModeProgressLayout(ScreenRect panel, SynthesisDisplayModel model) {
+        BoardModeProgressLayout layout = buildBoardModeProgressLayout(panel, model);
+        return new BoardModeProgressDebugLayout(
+                layout.essencesHeader().y(),
+                layout.essenceLines().isEmpty() ? -1 : layout.essenceLines().getFirst().y(),
+                layout.elementsHeader().map(ScreenRect::y).orElse(-1),
+                layout.elementLines().isEmpty() ? -1 : layout.elementLines().getFirst().y(),
+                layout.divider().y(),
+                layout.traitsHeader().y(),
+                layout.resonanceHeader().y()
+        );
+    }
+
+    private static BoardModeProgressLayout buildBoardModeProgressLayout(ScreenRect panel, SynthesisDisplayModel model) {
+        int footerTop = panel.bottom() - BOARD_MODE_PROGRESS_FOOTER_HEIGHT;
+        int y = panel.y() + 22;
+        ScreenRect essencesHeader = new ScreenRect(panel.x() + 6, y, panel.width() - 12, READOUT_TEXT_HEIGHT);
+        y += 12;
+        ArrayList<ScreenRect> essenceLines = new ArrayList<>();
+        int visibleEssences = Math.min(4, model.essences().size());
+        for (int i = 0; i < visibleEssences && y + 13 <= footerTop - 62; i++) {
+            essenceLines.add(new ScreenRect(panel.x() + 6, y, panel.width() - 12, 13));
+            y += 16;
+        }
+
+        y += 2;
+        Optional<ScreenRect> elementsHeader = Optional.empty();
+        ArrayList<ScreenRect> elementLines = new ArrayList<>();
+        if (!model.elements().isEmpty() && y + 25 <= footerTop - 38) {
+            elementsHeader = Optional.of(new ScreenRect(panel.x() + 6, y, panel.width() - 12, READOUT_TEXT_HEIGHT));
+            y += 12;
+            int visibleElements = Math.min(3, model.elements().size());
+            for (int i = 0; i < visibleElements && y + 13 <= footerTop - 30; i++) {
+                elementLines.add(new ScreenRect(panel.x() + 6, y, panel.width() - 12, 13));
+                y += 16;
+            }
+        }
+
+        y += 4;
+        ScreenRect divider = new ScreenRect(panel.x() + 6, y, panel.width() - 12, 1);
+        y += 8;
+        ScreenRect traitsHeader = new ScreenRect(panel.x() + 6, y, panel.width() - 12, READOUT_TEXT_HEIGHT);
+        y += 11;
+        ArrayList<ScreenRect> traitLines = new ArrayList<>();
+        int visibleTraits = Math.min(2, model.traits().size());
+        for (int i = 0; i < visibleTraits && y + READOUT_TEXT_HEIGHT <= footerTop - 16; i++) {
+            traitLines.add(new ScreenRect(panel.x() + 6, y, panel.width() - 12, READOUT_TEXT_HEIGHT));
+            y += 10;
+        }
+        ScreenRect resonanceHeader = new ScreenRect(panel.x() + 6, y, panel.width() - 12, READOUT_TEXT_HEIGHT);
+        y += 11;
+        ArrayList<ScreenRect> resonanceLines = new ArrayList<>();
+        int visibleResonance = Math.min(1, model.resonance().size());
+        for (int i = 0; i < visibleResonance && y + READOUT_TEXT_HEIGHT <= footerTop - 4; i++) {
+            resonanceLines.add(new ScreenRect(panel.x() + 6, y, panel.width() - 12, READOUT_TEXT_HEIGHT));
+            y += 10;
+        }
+        return new BoardModeProgressLayout(
+                essencesHeader,
+                List.copyOf(essenceLines),
+                elementsHeader,
+                List.copyOf(elementLines),
+                divider,
+                traitsHeader,
+                List.copyOf(traitLines),
+                resonanceHeader,
+                List.copyOf(resonanceLines),
+                footerTop
         );
     }
 
@@ -1896,11 +2283,11 @@ final class SynthesisSpatialPrototype {
         );
     }
 
-    private List<RequirementStatus> unsatisfiedRequirements(Optional<SynthesisPlan> plan) {
+    private List<RequirementStatus> unsatisfiedRequirements(Optional<SynthesisPlan> plan, List<ReagentStack> storageReagents, List<ReagentStack> inventoryReagents) {
         if (plan.isEmpty()) {
             return List.of();
         }
-        return new SynthesisPlanner().plan(plan.get().profile(), placedReagentContainer(), 0).requirements().stream()
+        return projection(plan, storageReagents, inventoryReagents).placedPlan().orElse(plan.get()).requirements().stream()
                 .filter(status -> !status.satisfied())
                 .toList();
     }
@@ -1931,7 +2318,7 @@ final class SynthesisSpatialPrototype {
     }
 
     private boolean hasFusionPotentialWithPlaced(Piece piece) {
-        for (Placement placement : placements) {
+        for (Placement placement : session.placements()) {
             Set<String> shared = new HashSet<>(piece.fusionTraits());
             shared.retainAll(placement.piece().fusionTraits());
             if (!shared.isEmpty()) {
@@ -1948,6 +2335,21 @@ final class SynthesisSpatialPrototype {
         return false;
     }
 
+    private int placedAmountFor(Piece piece) {
+        return session.placements().stream()
+                .map(placement -> placement.piece().reagent())
+                .filter(reagent -> sameReagentProfile(reagent, piece.reagent()))
+                .mapToInt(ReagentStack::amount)
+                .sum();
+    }
+
+    private int placedCopiesFor(Piece piece) {
+        return (int) session.placements().stream()
+                .map(placement -> placement.piece().reagent())
+                .filter(reagent -> sameReagentProfile(reagent, piece.reagent()))
+                .count();
+    }
+
     private Comparator<PaletteEntry> paletteComparator(boolean hasPlan) {
         Comparator<PaletteEntry> tierThenId = Comparator
                 .comparingInt((PaletteEntry entry) -> entry.piece().reagent().tier()).reversed()
@@ -1955,7 +2357,7 @@ final class SynthesisSpatialPrototype {
                 .thenComparingInt((PaletteEntry entry) -> entry.fitsCurrentBoard() ? 0 : 1)
                 .thenComparingInt((PaletteEntry entry) -> entry.shapeCellCount())
                 .thenComparing(entry -> entry.piece().reagent().reagentId());
-        return switch (paletteSortMode) {
+        return switch (session.paletteSortMode()) {
             case TIER -> tierThenId;
             case ELEMENT -> Comparator
                     .comparingInt(PaletteEntry::primaryElementIndex)
@@ -1983,15 +2385,7 @@ final class SynthesisSpatialPrototype {
     }
 
     private boolean hasAdvancedFilters() {
-        return filterNeedsOnly || filterFusionOnly || filterFitsOnly || shapeFilterMode != ShapeFilterMode.ANY;
-    }
-
-    private void resetPaletteFilters() {
-        paletteElementFilters.clear();
-        filterNeedsOnly = false;
-        filterFusionOnly = false;
-        filterFitsOnly = false;
-        shapeFilterMode = ShapeFilterMode.ANY;
+        return session.hasAdvancedFilters();
     }
 
     private boolean canFitOnCurrentBoard(Piece piece, Optional<SynthesisPlan> plan) {
@@ -2026,14 +2420,7 @@ final class SynthesisSpatialPrototype {
     }
 
     private static ScreenRect boardRectForArea(ScreenRect area, SynthesisBoard board) {
-        int cellSize = Math.max(18, Math.min(area.width(), area.height()) / Math.max(1, board.size()));
-        int size = cellSize * board.size();
-        return new ScreenRect(
-                area.x() + (area.width() - size) / 2,
-                area.y() + (area.height() - size) / 2,
-                size,
-                size
-        );
+        return SynthesisBoardGeometry.boardRectForArea(area, board);
     }
 
     private static boolean within(SynthesisBoard board, int x, int y) {
@@ -2041,14 +2428,7 @@ final class SynthesisSpatialPrototype {
     }
 
     private void syncSelectedBoard(Optional<SynthesisPlan> plan) {
-        String profileId = plan.map(value -> value.profile().id()).orElse("");
-        if (profileId.equals(activeProfileId)) {
-            return;
-        }
-        activeProfileId = profileId;
-        placements.clear();
-        clearCarried();
-        selectedRequirementFilterIndex = -1;
+        session.syncSelectedPlan(plan);
     }
 
     private static SynthesisBoard currentBoard(Optional<SynthesisPlan> plan) {
@@ -2076,155 +2456,36 @@ final class SynthesisSpatialPrototype {
         return "E";
     }
 
-    private record Piece(ReagentStack reagent) {
-        String label() {
-            return SynthesisStationText.shortLabel(reagent.reagentId());
-        }
-
-        ReagentShape shape() {
-            return reagent.shape();
-        }
-
-        List<Cell> shapeCells() {
-            return shape().cells().stream()
-                    .map(cell -> new Cell(cell.x(), cell.y()))
-                    .toList();
-        }
-
-        List<Cell> rotatedCells(int rotation, int anchorX, int anchorY) {
-            return shape().rotated(rotation).stream()
-                    .map(cell -> new Cell(anchorX + cell.x(), anchorY + cell.y()))
-                    .toList();
-        }
-
-        boolean hasElement(String element) {
-            return reagent.elements().containsKey(element);
-        }
-
-        List<String> fusionTraits() {
-            if (!reagent.traits().isEmpty()) {
-                return reagent.traits();
-            }
-            if (!reagent.elements().isEmpty()) {
-                return reagent.elements().keySet().stream().sorted().toList();
-            }
-            return List.of(reagent.reagentId().toLowerCase(Locale.ROOT));
-        }
-
-        List<String> inheritableTraits() {
-            return reagent.traits();
-        }
-    }
-
-    private record Placement(int id, Piece piece, int rotation, int anchorX, int anchorY) {
-        List<Cell> cells() {
-            return piece.rotatedCells(rotation, anchorX, anchorY);
-        }
-
-        boolean occupies(int x, int y) {
-            return cells().stream().anyMatch(cell -> cell.x() == x && cell.y() == y);
-        }
-
-        Optional<Cell> localCellAt(Cell absoluteCell) {
-            return piece.rotatedCells(rotation, 0, 0).stream()
-                    .filter(cell -> anchorX + cell.x() == absoluteCell.x() && anchorY + cell.y() == absoluteCell.y())
-                    .findFirst();
-        }
-    }
-
-    private record Cell(int x, int y) {
-    }
-
-    private record PlacementPreview(int anchorX, int anchorY, Cell cursorCell, boolean valid) {
-    }
-
-    private enum PaletteSource {
-        STORAGE,
-        INVENTORY
-    }
-
-    private enum PaletteSortMode {
-        RELEVANCE("Rel"),
-        TIER("Tier"),
-        ELEMENT("Elem");
-
-        private final String label;
-
-        PaletteSortMode(String label) {
-            this.label = label;
-        }
-
-        PaletteSortMode next() {
-            return values()[(ordinal() + 1) % values().length];
-        }
-
-        String label() {
-            return label;
-        }
-    }
-
-    private enum ShapeFilterMode {
-        ANY("Any", 0xFF9E8F80) {
-            @Override
-            boolean matches(ReagentShape shape) {
-                return true;
-            }
-        },
-        SINGLE("Single", 0xFFB9C3D0) {
-            @Override
-            boolean matches(ReagentShape shape) {
-                return shape.size() == 1;
-            }
-        },
-        LINE("Line", 0xFF7FB7FF) {
-            @Override
-            boolean matches(ReagentShape shape) {
-                String id = shape.id();
-                return id.startsWith("line") || isLine(shape.cells());
-            }
-        },
-        ANGLE("Angle", 0xFFE7A86B) {
-            @Override
-            boolean matches(ReagentShape shape) {
-                String id = shape.id();
-                return id.contains("elbow") || id.contains("l_") || hasCorner(shape.cells());
-            }
-        },
-        WIDE("Wide", 0xFF8FD69A) {
-            @Override
-            boolean matches(ReagentShape shape) {
-                return shape.size() >= 4 || shape.id().contains("tee") || shape.id().contains("square");
-            }
-        };
-
-        private static final List<ShapeFilterMode> VALUES = List.of(values());
-        private final String label;
-        private final int accentColor;
-
-        ShapeFilterMode(String label, int accentColor) {
-            this.label = label;
-            this.accentColor = accentColor;
-        }
-
-        abstract boolean matches(ReagentShape shape);
-
-        String label() {
-            return label;
-        }
-
-        int accentColor() {
-            return accentColor;
-        }
-    }
-
     private record PaletteEntry(
             Piece piece,
+            int placedAmount,
+            int placedCopies,
             boolean matchesUnsatisfiedRequirement,
             boolean hasFusionPotential,
             int primaryElementIndex,
             boolean fitsCurrentBoard,
             int shapeCellCount
     ) {
+        int remainingAmount() {
+            return Math.max(0, piece.reagent().amount() - placedAmount);
+        }
+
+        int totalPotency() {
+            return piece.reagent().amount();
+        }
+
+        int placedPotency() {
+            return placedAmount;
+        }
+
+        int remainingPotency() {
+            return remainingAmount();
+        }
+
+        boolean fullyPlaced() {
+            return remainingAmount() <= 0;
+        }
+
         int usefulnessScore() {
             int score = 0;
             if (matchesUnsatisfiedRequirement) {
@@ -2281,16 +2542,38 @@ final class SynthesisSpatialPrototype {
     record ReadoutDebugLayout(int firstRequirementY, int outcomeSummaryY) {
     }
 
+    private record BoardModeProgressLayout(
+            ScreenRect essencesHeader,
+            List<ScreenRect> essenceLines,
+            Optional<ScreenRect> elementsHeader,
+            List<ScreenRect> elementLines,
+            ScreenRect divider,
+            ScreenRect traitsHeader,
+            List<ScreenRect> traitLines,
+            ScreenRect resonanceHeader,
+            List<ScreenRect> resonanceLines,
+            int footerTop
+    ) {
+    }
+
+    record BoardModeProgressDebugLayout(
+            int essencesHeaderY,
+            int firstEssenceLineY,
+            int elementsHeaderY,
+            int firstElementLineY,
+            int dividerY,
+            int traitsHeaderY,
+            int resonanceHeaderY
+    ) {
+    }
+
     record BoardModeDebugLayout(ScreenRect boardRect) {
     }
 
-    record DebugCell(int x, int y) {
+    record BoardModePaletteDebugLayout(List<ScreenRect> tiles) {
     }
 
-    private static boolean isLine(List<ReagentShape.Cell> cells) {
-        boolean sameX = cells.stream().mapToInt(ReagentShape.Cell::x).distinct().count() == 1;
-        boolean sameY = cells.stream().mapToInt(ReagentShape.Cell::y).distinct().count() == 1;
-        return sameX || sameY;
+    record DebugCell(int x, int y) {
     }
 
     private static String buildEmptyText(int empty, SynthesisBoard board) {
@@ -2299,10 +2582,10 @@ final class SynthesisSpatialPrototype {
         }
         StringBuilder sb = new StringBuilder("Empty ").append(empty);
         if (board.emptyCellSuccessPenalty() > 0) {
-            sb.append("  -").append(empty * board.emptyCellSuccessPenalty()).append("s");
+            sb.append("  S-").append(empty * board.emptyCellSuccessPenalty());
         }
         if (board.emptyCellPerfectPenalty() > 0) {
-            sb.append("  -").append(empty * board.emptyCellPerfectPenalty()).append("p");
+            sb.append("  P-").append(empty * board.emptyCellPerfectPenalty());
         }
         return sb.toString();
     }
@@ -2321,23 +2604,6 @@ final class SynthesisSpatialPrototype {
         return "Morph → " + morphTargets.stream()
                 .map(SynthesisStationText::shortLabel)
                 .collect(java.util.stream.Collectors.joining(", "));
-    }
-
-    private static boolean hasCorner(List<ReagentShape.Cell> cells) {
-        Set<String> set = new HashSet<>();
-        for (ReagentShape.Cell cell : cells) {
-            set.add(cell.x() + "," + cell.y());
-        }
-        for (ReagentShape.Cell cell : cells) {
-            boolean right = set.contains((cell.x() + 1) + "," + cell.y());
-            boolean left = set.contains((cell.x() - 1) + "," + cell.y());
-            boolean up = set.contains(cell.x() + "," + (cell.y() - 1));
-            boolean down = set.contains(cell.x() + "," + (cell.y() + 1));
-            if ((right || left) && (up || down)) {
-                return true;
-            }
-        }
-        return false;
     }
 
 }

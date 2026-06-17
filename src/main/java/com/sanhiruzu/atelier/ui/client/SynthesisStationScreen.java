@@ -27,11 +27,13 @@ import java.util.Optional;
 public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisStationMenu> {
     private static final boolean DEBUG_LAYOUT = Boolean.getBoolean("zen_atelier.debugSynthesisLayout");
     private static final ScreenRect CATALYST_SLOT = new ScreenRect(372, 190, 18, 18);
-    private static final ScreenRect CATALYST_LABEL = new ScreenRect(372, 181, 40, 8);
+    private static final ScreenRect CATALYST_LABEL = new ScreenRect(336, 181, 40, 8);
     private final SynthesisStationLayout layout = new SynthesisStationLayout();
     private final SynthesisSpatialPrototype spatialPrototype = new SynthesisSpatialPrototype();
     private Button synthesizeButton;
     private Button confirmButton;
+    private Button previousButton;
+    private Button nextButton;
     private SynthesisResultOverlay pendingResult;
     private int failureImpactTicks;
     private int lastMouseX;
@@ -49,9 +51,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     @Override
     protected void init() {
         super.init();
-        addButton(Component.literal("◄"), layout.previousButton, SynthesisStationMenu.BUTTON_PREVIOUS);
-        addButton(Component.literal("►"), layout.nextButton, SynthesisStationMenu.BUTTON_NEXT);
-        ScreenRect synthesize = absolute(layout.synthesizeButton);
+        previousButton = addButton(Component.literal("◄"), layout.previousButton, SynthesisStationMenu.BUTTON_PREVIOUS);
+        nextButton = addButton(Component.literal("►"), layout.nextButton, SynthesisStationMenu.BUTTON_NEXT);
+        ScreenRect synthesize = absolute(layout.boardModeSynthesizeButton());
         synthesizeButton = addRenderableWidget(SynthesisStationButton.build(Button.builder(
                         Component.literal("Craft"),
                         button -> clickMenuButton(SynthesisStationMenu.BUTTON_SYNTHESIZE)
@@ -75,12 +77,26 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             failureImpactTicks--;
         }
         if (synthesizeButton != null) {
-            boolean canCraft = spatialPrototype.canSynthesizePlaced(currentPlan(), menu.roomVaultReagents(), playerInventoryReagents())
+            boolean canCraft = spatialPrototype.projection(currentPlan(), menu.roomVaultReagents(), playerInventoryReagents()).canSynthesize()
                     || (menu.selectedProfile().isPresent() && minecraft != null
                             && minecraft.player != null && minecraft.player.getAbilities().instabuild);
             boolean boardMode = modeState.mode() == ScreenMode.BOARD;
+            ScreenRect synthesizeBounds = absolute(layout.boardModeSynthesizeButton());
+            synthesizeButton.setX(synthesizeBounds.x());
+            synthesizeButton.setY(synthesizeBounds.y());
+            synthesizeButton.setWidth(synthesizeBounds.width());
+            synthesizeButton.setHeight(synthesizeBounds.height());
             synthesizeButton.active = boardMode && canCraft && !hasResult;
             synthesizeButton.visible = boardMode && !hasResult;
+        }
+        boolean recipeBookMode = modeState.mode() == ScreenMode.RECIPE_BOOK;
+        if (previousButton != null) {
+            previousButton.visible = recipeBookMode;
+            previousButton.active = recipeBookMode;
+        }
+        if (nextButton != null) {
+            nextButton.visible = recipeBookMode;
+            nextButton.active = recipeBookMode;
         }
         if (confirmButton != null) {
             confirmButton.visible = hasResult && failureImpactTicks <= 0;
@@ -116,6 +132,12 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.boardModePalettePanel()));
         SynthesisStationDrawing.recessedPanel(graphics, absolute(layout.boardModeProgressPanel()));
         SynthesisStationDrawing.searchBox(graphics, absolute(layout.boardModeBackButton()));
+        ScreenRect paletteFill = absolute(layout.boardModePalettePanel()).inset(UiMetrics.INSET_MEDIUM);
+        ScreenRect progressFill = absolute(layout.boardModeProgressPanel()).inset(UiMetrics.INSET_MEDIUM);
+        ScreenRect boardFill = absolute(layout.boardModeBoardArea()).inset(2);
+        graphics.fill(paletteFill.x(), paletteFill.y(), paletteFill.right(), paletteFill.bottom(), 0xCC18130F);
+        graphics.fill(progressFill.x(), progressFill.y(), progressFill.right(), progressFill.bottom(), 0xCC171411);
+        graphics.fill(boardFill.x(), boardFill.y(), boardFill.right(), boardFill.bottom(), 0xCC14171B);
         spatialPrototype.renderBoardMode(
                 graphics,
                 font,
@@ -146,9 +168,8 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.fill(8, 226, imageWidth - 8, imageHeight - 7, SynthesisScreenTheme.PANEL_DARKEST);
-
         if (modeState.mode() == ScreenMode.RECIPE_BOOK) {
+            graphics.fill(8, 226, imageWidth - 8, imageHeight - 7, SynthesisScreenTheme.PANEL_DARKEST);
             renderRecipeBookLabels(graphics);
             return;
         }
@@ -158,7 +179,8 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
                 layout.boardModeBackButton().inset(3), SynthesisScreenTheme.TEXT);
         menu.selectedProfile().ifPresent(profile ->
                 graphics.drawCenteredString(font, SynthesisStationText.fitWidth(font, SynthesisStationText.profileName(profile), 180), imageWidth / 2, 28, SynthesisScreenTheme.ACCENT));
-        SynthesisStationText.drawFit(graphics, font, Component.literal("Catalyst"),
+        SynthesisStationDrawing.smallIcon(graphics, CATALYST_LABEL.x() - 10, CATALYST_LABEL.y() - 1, catalystActive ? 0xFFA5E9FF : 0xFF7C736B);
+        SynthesisStationText.drawFit(graphics, font, Component.literal("Cat."),
                 CATALYST_LABEL, catalystActive ? SynthesisScreenTheme.ACCENT_DIM : SynthesisScreenTheme.MUTED);
 
         Optional<SynthesisProfile> selected = menu.selectedProfile();
@@ -204,24 +226,39 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             );
         }
         if (pendingResult != null && failureImpactTicks > 0) {
-            renderFailureImpact(graphics, partialTick);
+            UiLayer.POPUP.run(graphics, () -> renderFailureImpact(graphics, partialTick));
         } else if (pendingResult != null) {
-            pendingResult.render(graphics, font, origin());
+            UiLayer.POPUP.run(graphics, () -> pendingResult.render(graphics, font, origin()));
             if (confirmButton != null) {
-                confirmButton.render(graphics, mouseX, mouseY, partialTick);
+                UiLayer.POPUP_CONTENT.run(graphics, () -> confirmButton.render(graphics, mouseX, mouseY, partialTick));
             }
         }
         UiLayer.TOOLTIP.run(graphics, () -> renderSynthesisTooltips(graphics, mouseX, mouseY));
     }
 
     private void renderSynthesisTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (modeState.mode() == ScreenMode.BOARD && !spatialPrototype.renderTooltip(graphics, font, currentPlan(), menu.roomVaultReagents(), playerInventoryReagents(), origin(), mouseX, mouseY)) {
-            renderRoomVaultTooltip(graphics, mouseX, mouseY);
-            renderCategoryTooltip(graphics, mouseX, mouseY);
+        if (UiModalInputGate.blockUnderlyingTooltips(pendingResult != null)) {
+            return;
+        }
+        if (modeState.mode() == ScreenMode.BOARD) {
+            boolean renderedBoardTooltip = spatialPrototype.renderBoardModeTooltip(
+                    graphics,
+                    font,
+                    currentPlan(),
+                    menu.roomVaultReagents(),
+                    playerInventoryReagents(),
+                    origin(),
+                    layout.boardModeBoardArea(),
+                    layout.boardModePalettePanel(),
+                    mouseX,
+                    mouseY
+            );
+            if (renderedBoardTooltip) {
+                return;
+            }
             renderCraftReasonTooltip(graphics, mouseX, mouseY);
             renderCatalystTooltip(graphics, mouseX, mouseY);
-            SynthesisRecipeGrid.renderTooltip(graphics, font, menu, layout, origin(), selectedCategory(), mouseX, mouseY);
-            renderTooltip(graphics, mouseX, mouseY);
+            return;
         } else if (modeState.mode() == ScreenMode.RECIPE_BOOK) {
             renderCategoryTooltip(graphics, mouseX, mouseY);
             SynthesisRecipeGrid.renderTooltip(graphics, font, menu, layout, origin(), selectedCategory(), mouseX, mouseY);
@@ -268,33 +305,28 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     }
 
     private void renderCraftReasonTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (menu.canSynthesize()) {
+        SynthesisBoardProjection projection = spatialPrototype.projection(
+                currentPlan(),
+                menu.roomVaultReagents(),
+                playerInventoryReagents()
+        );
+        if (projection.canSynthesize()) {
             return;
         }
-        if (!absolute(layout.synthesizeButton).contains(mouseX, mouseY)) {
+        if (!absolute(layout.boardModeSynthesizeButton()).contains(mouseX, mouseY)) {
             return;
         }
         List<Component> lines = new ArrayList<>();
-        Optional<SynthesisPlan> plan = currentPlan();
-        if (plan.isEmpty()) {
+        if (projection.placedPlan().isEmpty()) {
             lines.add(Component.literal("No recipe selected."));
         } else {
-            lines.add(Component.literal("Cannot craft:").withStyle(s -> s.withColor(SynthesisScreenTheme.BAD)));
-            for (var status : plan.get().requirements()) {
-                if (!status.satisfied()) {
-                    lines.add(Component.literal(SynthesisStationText.requirementLine(status))
-                            .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
-                    String qualifier = SynthesisStationText.queryQualifier(status.requirement().query());
-                    if (!qualifier.isBlank()) {
-                        lines.add(Component.literal("  " + qualifier)
-                                .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
-                    }
-                }
-            }
-            if (!plan.get().elementBudgetSatisfied()) {
-                lines.add(Component.literal("Missing required elements.")
-                        .withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
-            }
+            SynthesisPlan placedPlan = projection.placedPlan().get();
+            lines.addAll(craftBlockerText(SynthesisDisplayModel.from(
+                    placedPlan,
+                    projection.placedReagents().entries(),
+                    List.of(),
+                    List.of()
+            )));
             if (lines.size() == 1) {
                 lines.add(Component.literal("Not enough reagents in storage or inventory.").withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
             }
@@ -302,11 +334,43 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
     }
 
+    static List<Component> craftBlockerText(SynthesisDisplayModel display) {
+        ArrayList<Component> lines = new ArrayList<>();
+        lines.add(Component.literal("Cannot craft:").withStyle(s -> s.withColor(SynthesisScreenTheme.BAD)));
+        List<SynthesisDisplayModel.Line> missingEssences = display.essences().stream()
+                .filter(line -> !line.satisfied())
+                .toList();
+        if (!missingEssences.isEmpty()) {
+            lines.add(Component.literal("Essences").withStyle(s -> s.withColor(SynthesisScreenTheme.ACCENT)));
+            for (SynthesisDisplayModel.Line line : missingEssences) {
+                lines.add(Component.literal(craftBlockerLine(line)).withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
+            }
+        }
+        List<SynthesisDisplayModel.Line> missingElements = display.elements().stream()
+                .filter(line -> !line.satisfied())
+                .toList();
+        if (!missingElements.isEmpty()) {
+            lines.add(Component.literal("Elements").withStyle(s -> s.withColor(SynthesisScreenTheme.ACCENT)));
+            for (SynthesisDisplayModel.Line line : missingElements) {
+                lines.add(Component.literal(craftBlockerLine(line)).withStyle(s -> s.withColor(SynthesisScreenTheme.MUTED)));
+            }
+        }
+        return lines;
+    }
+
+    private static String craftBlockerLine(SynthesisDisplayModel.Line line) {
+        return line.available() + "/" + line.required() + " " + line.label();
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (pendingResult != null) {
-            // Only the confirm button (rendered above the overlay) should receive clicks
-            return super.mouseClicked(mouseX, mouseY, button);
+            Optional<ScreenRect> confirmBounds = resultConfirmBounds();
+            if (confirmBounds.isPresent()
+                    && UiModalInputGate.allowsClick(true, confirmBounds.get(), mouseX, mouseY)) {
+                return super.mouseClicked(mouseX, mouseY, button);
+            }
+            return true;
         }
         if (modeState.mode() == ScreenMode.BOARD) {
             if (absolute(layout.boardModeBackButton()).contains((int) mouseX, (int) mouseY)) {
@@ -325,6 +389,12 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
                     origin(),
                     layout.boardModeBoardArea(),
                     layout.boardModePalettePanel())) {
+                return true;
+            }
+            if (allowsBoardModeSuperClick(absolute(layout.boardModeSynthesizeButton()), absolute(CATALYST_SLOT), mouseX, mouseY)) {
+                return super.mouseClicked(mouseX, mouseY, button);
+            }
+            if (absolute(layout.root).contains((int) mouseX, (int) mouseY)) {
                 return true;
             }
             return super.mouseClicked(mouseX, mouseY, button);
@@ -350,6 +420,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (UiModalInputGate.consumeScroll(pendingResult != null)) {
+            return true;
+        }
         if (modeState.mode() == ScreenMode.BOARD && spatialPrototype.mouseScrolledBoardMode(
                 mouseX,
                 mouseY,
@@ -362,6 +435,13 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    private Optional<ScreenRect> resultConfirmBounds() {
+        if (confirmButton == null || !confirmButton.visible) {
+            return Optional.empty();
+        }
+        return Optional.of(new ScreenRect(confirmButton.getX(), confirmButton.getY(), confirmButton.getWidth(), confirmButton.getHeight()));
     }
 
     @Override
@@ -401,9 +481,9 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         }
     }
 
-    private void addButton(Component label, ScreenRect localBounds, int buttonId) {
+    private Button addButton(Component label, ScreenRect localBounds, int buttonId) {
         ScreenRect bounds = absolute(localBounds);
-        addRenderableWidget(SynthesisStationButton.build(Button.builder(label, button -> clickMenuButton(buttonId))
+        return addRenderableWidget(SynthesisStationButton.build(Button.builder(label, button -> clickMenuButton(buttonId))
                 .bounds(bounds.x(), bounds.y(), bounds.width(), bounds.height()),
                 SynthesisScreenTheme.ACCENT_DIM));
     }
@@ -411,7 +491,12 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     private void clickMenuButton(int button) {
         if (minecraft != null && minecraft.gameMode != null) {
             if (button == SynthesisStationMenu.BUTTON_SYNTHESIZE) {
-                PacketDistributor.sendToServer(spatialPrototype.buildFusionPayload(menu.containerId));
+                PacketDistributor.sendToServer(spatialPrototype.buildFusionPayload(
+                        menu.containerId,
+                        currentPlan(),
+                        menu.roomVaultReagents(),
+                        playerInventoryReagents()
+                ));
             } else if (button == SynthesisStationMenu.BUTTON_PREVIOUS) {
                 menu.moveSelection(-1);
             } else if (button == SynthesisStationMenu.BUTTON_NEXT) {
@@ -547,6 +632,11 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             return inventorySlot - 9;
         }
         return 27 + inventorySlot;
+    }
+
+    static boolean allowsBoardModeSuperClick(ScreenRect synthesizeButton, ScreenRect catalystSlot, double mouseX, double mouseY) {
+        return synthesizeButton.contains((int) mouseX, (int) mouseY)
+                || catalystSlot.contains((int) mouseX, (int) mouseY);
     }
 
     private String roomStorageSummary() {

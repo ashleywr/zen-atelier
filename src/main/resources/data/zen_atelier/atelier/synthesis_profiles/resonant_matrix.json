@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:resonant_matrix",
+  "category": "materials",
+  "recipe_tier_cap": 3,
+  "board": {
+    "size": 5,
+    "empty_cell_success_penalty": 2,
+    "empty_cell_perfect_penalty": 4,
+    "nodes": [
+      {
+        "x": 2,
+        "y": 1,
+        "type": "element",
+        "required_element": "light",
+        "required_element_value": 1,
+        "perfect_bonus": 5
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "type": "element",
+        "required_element": "wind",
+        "required_element_value": 1,
+        "quality_bonus": 6
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 35,
+      "query": {
+        "required_categories": [
+          "zen_atelier:resonant"
+        ],
+        "required_traits": [
+          "zen_atelier:resonant"
+        ],
+        "min_elements": {
+          "light": 1
+        }
+      }
+    },
+    {
+      "amount": 25,
+      "query": {
+        "required_categories": [
+          "zen_atelier:conductive"
+        ],
+        "min_elements": {
+          "wind": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:crystalline"
+        ]
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 86,
+      "outputs": [
+        {
+          "output": "zen_atelier:resonant_matrix",
+          "count": 1,
+          "tier": 3,
+          "quality": 68,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:resonant",
+            "zen_atelier:stable"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 6,
+      "outputs": [
+        {
+          "output": "zen_atelier:resonant_matrix",
+          "count": 1,
+          "tier": 3,
+          "quality": 88,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:resonant",
+            "zen_atelier:stable",
+            "zen_atelier:crystalline"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 8,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:crystal_dust",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:crystalline",
+            "zen_atelier:resonant"
+          ],
+          "amount": 10,
+          "tier": 2,
+          "elements": {
+            "light": 1
+          },
+          "traits": [
+            "zen_atelier:resonant"
+          ]
+        }
+      ]
+    }
+  ]
+}

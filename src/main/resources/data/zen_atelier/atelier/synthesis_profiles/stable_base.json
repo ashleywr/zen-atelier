@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "id": "zen_atelier:stable_base",
+  "category": "materials",
+  "recipe_tier_cap": 2,
+  "board": {
+    "size": 3,
+    "empty_cell_success_penalty": 1,
+    "empty_cell_perfect_penalty": 2,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 1,
+        "type": "element",
+        "required_element": "water",
+        "required_element_value": 1,
+        "quality_bonus": 5
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "amount": 30,
+      "query": {
+        "required_categories": [
+          "zen_atelier:binding"
+        ],
+        "min_purity": 45,
+        "min_elements": {
+          "water": 1
+        }
+      }
+    },
+    {
+      "amount": 20,
+      "query": {
+        "required_categories": [
+          "zen_atelier:preserving"
+        ],
+        "min_purity": 45
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "outcome": "success",
+      "weight": 93,
+      "outputs": [
+        {
+          "output": "zen_atelier:stable_base",
+          "count": 1,
+          "tier": 2,
+          "quality": 58,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:stable"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "perfect_success",
+      "weight": 4,
+      "outputs": [
+        {
+          "output": "zen_atelier:stable_base",
+          "count": 1,
+          "tier": 2,
+          "quality": 78,
+          "virtual": true,
+          "affixes": [
+            "zen_atelier:stable",
+            "zen_atelier:dormant"
+          ]
+        }
+      ]
+    },
+    {
+      "outcome": "recoverable_failure",
+      "weight": 3,
+      "byproducts": [
+        {
+          "reagent": "zen_atelier:sticky_residue",
+          "categories": [
+            "zen_atelier:filler",
+            "zen_atelier:waste",
+            "zen_atelier:binding"
+          ],
+          "amount": 8,
+          "tier": 1,
+          "elements": {
+            "water": 1
+          }
+        }
+      ]
+    }
+  ]
+}

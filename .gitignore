@@ -4,7 +4,11 @@
 !.gitignore
 
 ### AI/agent files ###
+AGENTS.md
 CLAUDE.md
+docs/superpowers/
+.claude/
+.codex/
 
 ### Gradle ###
 build/
@@ -41,6 +45,8 @@ repo/
 
 ### Development ###
 internal/
+scripts/
+build_output.txt
 
 ### Environment & Secrets ###
 *.env
@@ -64,5 +70,7 @@ venv/
 *.swp
 *.swo
 *~
+.classpath
+.project
 .DS_Store
 

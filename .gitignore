@@ -3,13 +3,6 @@
 !.github/
 !.gitignore
 
-### AI/agent files ###
-AGENTS.md
-CLAUDE.md
-docs/superpowers/
-.claude/
-.codex/
-
 ### Gradle ###
 build/
 !gradle/wrapper/gradle-wrapper.jar

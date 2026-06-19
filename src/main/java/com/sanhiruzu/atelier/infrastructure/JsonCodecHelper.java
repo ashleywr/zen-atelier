@@ -7,8 +7,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import net.minecraft.util.GsonHelper;
+import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +19,7 @@ import java.nio.file.Path;
  * Simplifies serialization and deserialization of complex objects.
  */
 public class JsonCodecHelper {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JsonCodecHelper.class);
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     /**

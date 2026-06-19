@@ -7,7 +7,6 @@ import com.sanhiruzu.atelier.synthesis.gathering.client.GatheringPointRenderer;
 import com.sanhiruzu.atelier.synthesis.vfx.ScaledParticleOptions;
 import com.sanhiruzu.atelier.synthesis.vfx.data.Anchor;
 import com.sanhiruzu.atelier.synthesis.vfx.data.Blend;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
@@ -18,7 +17,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
@@ -29,12 +27,6 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 public class ZenAtelierClient {
     public ZenAtelierClient(ModContainer container) {
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
-    }
-
-    @SubscribeEvent
-    static void onClientSetup(FMLClientSetupEvent event) {
-        ZenAtelier.LOGGER.info("HELLO FROM CLIENT SETUP");
-        ZenAtelier.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
     }
 
     @SubscribeEvent

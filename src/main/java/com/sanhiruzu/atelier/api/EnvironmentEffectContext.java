@@ -17,6 +17,10 @@ public record EnvironmentEffectContext(String kind, String id, BlockState blockS
         return new EnvironmentEffectContext("block", blockId.toString(), state);
     }
 
+    public static EnvironmentEffectContext recipeCategory(String categoryId) {
+        return new EnvironmentEffectContext("recipe_category", categoryId, null);
+    }
+
     public EnvironmentEffectContext {
         if (kind == null || kind.isBlank()) {
             throw new IllegalArgumentException("kind must not be blank");
@@ -41,5 +45,12 @@ public record EnvironmentEffectContext(String kind, String id, BlockState blockS
             throw new IllegalArgumentException("block must not be null");
         }
         return "block".equals(kind) && blockState != null && blockState.is(block);
+    }
+
+    public boolean matchesRecipeCategory(String categoryId) {
+        if (categoryId == null || categoryId.isBlank()) {
+            throw new IllegalArgumentException("categoryId must not be blank");
+        }
+        return "recipe_category".equals(kind) && id.equals(categoryId);
     }
 }

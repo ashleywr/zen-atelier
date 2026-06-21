@@ -2,6 +2,7 @@ package com.sanhiruzu.atelier.api;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.fml.loading.LoadingModList;
@@ -158,6 +159,57 @@ class EnvironmentEffectRegistryTest {
     }
 
     @Test
+    void registryEvaluatesMatchingRecipeCategoryRules() {
+        EnvironmentEffectRegistry registry = new EnvironmentEffectRegistry();
+        registry.register(registrar -> registrar
+                .forRecipeCategory("zen_atelier:food")
+                .then(EnvironmentEffects.label("kitchen")));
+
+        List<EnvironmentEffect> foodEffects = registry.evaluate(
+                EnvironmentEffectContext.recipeCategory("zen_atelier:food"),
+                SNAPSHOT
+        );
+        List<EnvironmentEffect> metalEffects = registry.evaluate(
+                EnvironmentEffectContext.recipeCategory("zen_atelier:metal"),
+                SNAPSHOT
+        );
+
+        assertThat(foodEffects).containsExactly(EnvironmentEffects.label("kitchen"));
+        assertThat(metalEffects).isEmpty();
+    }
+
+    @Test
+    void blockTagRulesAcceptVanillaTags() {
+        EnvironmentEffectRegistry registry = new EnvironmentEffectRegistry();
+        registry.register(registrar -> registrar
+                .forBlockTag(BlockTags.MINEABLE_WITH_PICKAXE)
+                .then(EnvironmentEffects.label("pickaxe_work")));
+
+        assertThat(registry.evaluate(EnvironmentEffectContext.action("zen_atelier:mine"), SNAPSHOT)).isEmpty();
+    }
+
+    @Test
+    void registryEvaluatesCustomTargetRules() {
+        EnvironmentEffectRegistry registry = new EnvironmentEffectRegistry();
+        registry.register(registrar -> registrar
+                .forTarget(context -> context.kind().equals("recipe_category")
+                        && context.id().startsWith("zen_atelier:"))
+                .then(EnvironmentEffects.label("atelier_recipe")));
+
+        List<EnvironmentEffect> atelierEffects = registry.evaluate(
+                EnvironmentEffectContext.recipeCategory("zen_atelier:food"),
+                SNAPSHOT
+        );
+        List<EnvironmentEffect> vanillaEffects = registry.evaluate(
+                EnvironmentEffectContext.recipeCategory("minecraft:crafting"),
+                SNAPSHOT
+        );
+
+        assertThat(atelierEffects).containsExactly(EnvironmentEffects.label("atelier_recipe"));
+        assertThat(vanillaEffects).isEmpty();
+    }
+
+    @Test
     void blockContextsRequireBlockState() {
         assertThatThrownBy(() -> new EnvironmentEffectContext("block", "minecraft:stone", null))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -178,6 +230,34 @@ class EnvironmentEffectRegistryTest {
         EnvironmentEffectContext context = EnvironmentEffectContext.block(Blocks.STONE.defaultBlockState());
 
         assertThatThrownBy(() -> context.matchesBlock(null))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void recipeCategoryContextMatchingRejectsInvalidCategoryIds() {
+        EnvironmentEffectContext context = EnvironmentEffectContext.recipeCategory("zen_atelier:test");
+
+        assertThatThrownBy(() -> EnvironmentEffectContext.recipeCategory(null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> EnvironmentEffectContext.recipeCategory(""))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> context.matchesRecipeCategory(null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> context.matchesRecipeCategory(""))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void registrarRejectsInvalidTargetArguments() {
+        EnvironmentEffectRegistrar registrar = new EnvironmentEffectRegistrar();
+
+        assertThatThrownBy(() -> registrar.forRecipeCategory(null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> registrar.forRecipeCategory(""))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> registrar.forBlockTag(null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> registrar.forTarget(null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

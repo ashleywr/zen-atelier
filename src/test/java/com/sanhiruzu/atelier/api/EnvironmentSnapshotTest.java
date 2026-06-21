@@ -1,5 +1,6 @@
 package com.sanhiruzu.atelier.api;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.SharedConstants;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.server.Bootstrap;
@@ -48,6 +49,31 @@ class EnvironmentSnapshotTest {
         assertThat(snapshot.nearEntity(EntityType.CAT)).isTrue();
         assertThat(snapshot.nearEntityAtLeast(EntityType.CAT, 2)).isTrue();
         assertThat(snapshot.nearEntityAtLeast(EntityType.FROG, 1)).isFalse();
+    }
+
+    @Test
+    void ambientSnapshotRemainsNeutral() {
+        assertThat(EnvironmentSnapshot.AMBIENT.temperatureBand()).isEqualTo(EnvironmentTemperatureBand.PLEASANT);
+        assertThat(EnvironmentSnapshot.AMBIENT.isCovered()).isFalse();
+        assertThat(EnvironmentSnapshot.AMBIENT.signalCounts()).isEmpty();
+        assertThat(EnvironmentSnapshot.AMBIENT.airHazards()).isEmpty();
+    }
+
+    @Test
+    void zoneApiValidatesEnvironmentArguments() {
+        assertThatThrownBy(() -> ZoneAPI.environmentAt(null, BlockPos.ZERO, 1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("level must not be null");
+        assertThatThrownBy(() -> ZoneAPI.requireEnvironmentPos(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("pos must not be null");
+    }
+
+    @Test
+    void zoneApiClampsScanRadiusForCacheAndScanner() {
+        assertThat(ZoneAPI.clampScanRadius(-1)).isZero();
+        assertThat(ZoneAPI.clampScanRadius(8)).isEqualTo(8);
+        assertThat(ZoneAPI.clampScanRadius(17)).isEqualTo(16);
     }
 
     @Test

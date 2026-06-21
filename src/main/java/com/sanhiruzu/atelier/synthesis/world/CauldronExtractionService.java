@@ -2,6 +2,7 @@ package com.sanhiruzu.atelier.synthesis.world;
 
 import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.synthesis.core.ApparatusState;
+import com.sanhiruzu.atelier.synthesis.core.EnvironmentAlchemyContext;
 import com.sanhiruzu.atelier.synthesis.core.AttemptContext;
 import com.sanhiruzu.atelier.synthesis.core.OutcomeClass;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
@@ -381,7 +382,7 @@ public final class CauldronExtractionService {
     private static AttemptContext attemptContext(ServerLevel level, BlockPos pos) {
         return new AttemptContext(
                 ApparatusState.crude("zen_atelier:heated_cauldron"),
-                com.sanhiruzu.atelier.synthesis.core.RoomAlchemyContext.neutral(),
+                EnvironmentAlchemyContext.forAction(level, pos, EnvironmentAlchemyContext.EXTRACTION_ACTION),
                 6,
                 0
         );

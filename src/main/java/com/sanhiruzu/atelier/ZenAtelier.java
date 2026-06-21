@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.sanhiruzu.atelier.command.CommandEventHandler;
 import com.sanhiruzu.atelier.data.DataReloadEventHandler;
 import com.sanhiruzu.atelier.event.AtelierEvents;
+import com.sanhiruzu.atelier.integration.ami.AtelierAmiEnvironmentFacets;
 import com.sanhiruzu.atelier.integration.minecolonies.MineColoniesIntegration;
 import com.sanhiruzu.atelier.integration.thermoo.ThermooIntegration;
 import com.sanhiruzu.atelier.network.NetworkHandler;
@@ -32,6 +33,7 @@ import com.sanhiruzu.atelier.synthesis.menu.SynthesisStationMenu;
 import com.sanhiruzu.atelier.synthesis.storage.ReagentContainerSnapshot;
 import com.sanhiruzu.atelier.synthesis.world.ExtractionCauldronBlock;
 import com.sanhiruzu.atelier.synthesis.world.ReagentStorageBlock;
+import com.sanhiruzu.atelier.synthesis.world.SleepComfortEffects;
 import com.sanhiruzu.atelier.synthesis.world.StarterIngredientEvents;
 import com.sanhiruzu.atelier.synthesis.world.SynthesisStationBlock;
 import com.sanhiruzu.atelier.ui.UiBootstrap;
@@ -263,6 +265,7 @@ public class ZenAtelier {
         NeoForge.EVENT_BUS.register(StarterIngredientEvents.class);
         NeoForge.EVENT_BUS.register(SynthesisItemEvents.class);
         NeoForge.EVENT_BUS.register(GatheringPointSpawner.class);
+        NeoForge.EVENT_BUS.register(SleepComfortEffects.class);
 
         UiBootstrap.registerClientIfPresent(modEventBus);
 
@@ -282,6 +285,10 @@ public class ZenAtelier {
     private void commonSetup(FMLCommonSetupEvent event) {
         MineColoniesIntegration.initialize();
         ThermooIntegration.initialize();
+        SleepComfortEffects.initialize();
+        if (ModList.get().isLoaded("ami")) {
+            AtelierAmiEnvironmentFacets.initialize();
+        }
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {

@@ -4,6 +4,7 @@ import com.sanhiruzu.atelier.synthesis.data.ExtractionProfileReloadListener;
 import com.sanhiruzu.atelier.synthesis.data.SynthesisProfileReloadListener;
 import com.sanhiruzu.atelier.synthesis.data.TraitFusionReloadListener;
 import com.sanhiruzu.atelier.synthesis.vfx.ImpactVfxReloadListener;
+import com.sanhiruzu.atelier.environment.EnvironmentFacetMappingReloadListener;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 
@@ -17,5 +18,6 @@ public class DataReloadEventHandler {
         event.addListener(new RoomProfileReloadListener());
         event.addListener(new TraitFusionReloadListener());
         event.addListener(new ImpactVfxReloadListener());
+        event.addListener(new EnvironmentFacetMappingReloadListener());
     }
 }

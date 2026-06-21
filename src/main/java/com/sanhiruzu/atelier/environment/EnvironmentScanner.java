@@ -56,6 +56,9 @@ public final class EnvironmentScanner {
                     counts.merge(signal, 1, Integer::sum);
                 }
             });
+            for (String signal : EnvironmentFacetSignals.signalsFor(state)) {
+                counts.merge(signal, 1, Integer::sum);
+            }
         }
         return counts;
     }

@@ -1,0 +1,108 @@
+{
+  "facets": {
+    "ami:decor.soft": [
+      "sleep_soft_bedding"
+    ],
+    "ami:decorative_block": [
+      "sleep_restful_decor"
+    ],
+    "ami:material.wool": [
+      "wool",
+      "sleep_soft_bedding"
+    ],
+    "ami:furniture.bed": [
+      "bed"
+    ],
+    "ami:decor.plant": [
+      "plant",
+      "sleep_natural_accent"
+    ],
+    "ami:decor.flower": [
+      "plant",
+      "flower_pots",
+      "sleep_natural_accent"
+    ],
+    "ami:flower": [
+      "plant",
+      "flower_pots",
+      "sleep_natural_accent"
+    ],
+    "ami:leaves": [
+      "plant"
+    ],
+    "ami:crop": [
+      "plant"
+    ],
+    "ami:light.candle": [
+      "candle"
+    ],
+    "ami:light.source": [
+      "heat_source"
+    ],
+    "ami:light_source": [
+      "candle"
+    ],
+    "ami:storage.container": [
+      "storage"
+    ],
+    "ami:storage": [
+      "storage"
+    ],
+    "ami:storage.shelf": [
+      "storage",
+      "bookshelf"
+    ],
+    "ami:crafting.smithing": [
+      "metallurgy",
+      "smithing_or_repair_block"
+    ],
+    "ami:crafting.workstation": [
+      "crafting_table",
+      "tool_blocks"
+    ],
+    "ami:workstation": [
+      "crafting_table",
+      "tool_blocks"
+    ],
+    "ami:machine": [
+      "factory_block",
+      "industrial_blocks"
+    ],
+    "ami:material.metal": [
+      "stone_or_metal_materials",
+      "metallurgy"
+    ],
+    "ami:material.stone": [
+      "stone_or_metal_materials",
+      "rough_stone"
+    ],
+    "ami:material.wood": [
+      "wood_materials"
+    ],
+    "ami:wood_block": [
+      "wood_materials"
+    ],
+    "ami:stone_block": [
+      "stone_or_metal_materials",
+      "rough_stone"
+    ],
+    "ami:glass_block": [
+      "glass",
+      "urban_block"
+    ],
+    "ami:has_block_entity": [
+      "villager_workstation"
+    ],
+    "ami:interactive_block": [
+      "tool_blocks"
+    ],
+    "ami:fluid.water": [
+      "damp_source",
+      "water_coverage"
+    ],
+    "ami:heat.fire": [
+      "heat_source",
+      "smoke_source"
+    ]
+  }
+}

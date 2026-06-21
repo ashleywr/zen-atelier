@@ -3,7 +3,9 @@ package com.sanhiruzu.atelier.synthesis.menu;
 import com.sanhiruzu.atelier.ZenAtelier;
 import com.sanhiruzu.atelier.synthesis.core.ApparatusState;
 import com.sanhiruzu.atelier.synthesis.core.AttemptContext;
+import com.sanhiruzu.atelier.synthesis.core.EnvironmentAlchemyContext;
 import com.sanhiruzu.atelier.synthesis.core.ReagentStack;
+import com.sanhiruzu.atelier.synthesis.core.RoomAlchemyContext;
 import com.sanhiruzu.atelier.synthesis.core.SynthesisRecipeCategory;
 import com.sanhiruzu.atelier.synthesis.data.SynthesisProfileRegistry;
 import com.sanhiruzu.atelier.synthesis.engine.ResolvedFusionData;
@@ -503,9 +505,13 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
             new ApparatusState("zen_atelier:synthesis_station", 4, 0);
 
     private AttemptContext currentAttemptContext() {
+        RoomAlchemyContext room = access.evaluate(
+                (level, pos) -> EnvironmentAlchemyContext.forAction(level, pos, EnvironmentAlchemyContext.SYNTHESIS_ACTION),
+                RoomAlchemyContext.neutral()
+        );
         return new AttemptContext(
                 SYNTHESIS_APPARATUS,
-                com.sanhiruzu.atelier.synthesis.core.RoomAlchemyContext.neutral(),
+                room,
                 6,
                 0
         );

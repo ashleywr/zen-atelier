@@ -1,5 +1,6 @@
 package com.sanhiruzu.atelier.event;
 
+import com.sanhiruzu.atelier.api.ZoneAPI;
 import com.sanhiruzu.atelier.network.ToggleDebugPayload;
 import com.sanhiruzu.atelier.synthesis.world.CauldronExtractionService;
 import com.sanhiruzu.atelier.synthesis.world.PlayerExtractionKnowledge;
@@ -9,6 +10,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -47,6 +50,34 @@ public class AtelierEvents {
         event.getRelevantPlayers().forEach(player -> {
             PacketDistributor.sendToPlayer(player, synthesisPayload);
         });
+    }
+
+    @SubscribeEvent
+    public static void onBlockPlaced(BlockEvent.EntityPlaceEvent event) {
+        if (event.getLevel() instanceof ServerLevel level) {
+            ZoneAPI.markEnvironmentDirty(level, event.getPos());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onBlockBroken(BlockEvent.BreakEvent event) {
+        if (event.getLevel() instanceof ServerLevel level) {
+            ZoneAPI.markEnvironmentDirty(level, event.getPos());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onNeighborNotify(BlockEvent.NeighborNotifyEvent event) {
+        if (event.getLevel() instanceof ServerLevel level) {
+            ZoneAPI.markEnvironmentDirty(level, event.getPos());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLevelUnload(LevelEvent.Unload event) {
+        if (event.getLevel() instanceof ServerLevel level) {
+            ZoneAPI.clearEnvironmentCache(level);
+        }
     }
 
     @SubscribeEvent

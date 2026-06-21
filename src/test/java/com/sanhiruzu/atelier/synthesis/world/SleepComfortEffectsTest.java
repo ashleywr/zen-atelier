@@ -8,9 +8,14 @@ import com.sanhiruzu.atelier.api.EnvironmentSnapshot;
 import com.sanhiruzu.atelier.api.EnvironmentTemperatureBand;
 import org.junit.jupiter.api.Test;
 
+import net.minecraft.core.BlockPos;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -102,6 +107,54 @@ class SleepComfortEffectsTest {
     }
 
     @Test
+    void dailyBoonsAreStableForSamePlayerDayAndBed() {
+        var effects = exceptionalComfortEffects();
+        UUID playerId = new UUID(1L, 2L);
+        BlockPos bedPos = new BlockPos(10, 64, -5);
+
+        SleepComfortEffects.SleepReward first = SleepComfortEffects.rewardFor(effects, playerId, 42L, bedPos);
+        SleepComfortEffects.SleepReward second = SleepComfortEffects.rewardFor(effects, playerId, 42L, bedPos);
+
+        assertThat(first.boons()).isEqualTo(second.boons());
+        assertThat(first.boons()).hasSize(3);
+    }
+
+    @Test
+    void dailyBoonsVaryAcrossDays() {
+        var effects = exceptionalComfortEffects();
+        UUID playerId = new UUID(1L, 2L);
+        BlockPos bedPos = new BlockPos(10, 64, -5);
+
+        Set<List<SleepComfortEffects.SleepBoon>> rolledBoons = LongStream.range(0, 20)
+                .mapToObj(day -> SleepComfortEffects.rewardFor(effects, playerId, day, bedPos).boons())
+                .collect(Collectors.toSet());
+
+        assertThat(rolledBoons).hasSizeGreaterThan(1);
+    }
+
+    @Test
+    void rewardTierControlsBoonCount() {
+        UUID playerId = new UUID(1L, 2L);
+        BlockPos bedPos = new BlockPos(10, 64, -5);
+
+        SleepComfortEffects.SleepReward tierOne = SleepComfortEffects.rewardFor(List.of(
+                EnvironmentEffects.modifyComfort("sleep_shelter_covered", 0.20f),
+                EnvironmentEffects.modifyComfort("sleep_bedding_soft", 0.20f),
+                EnvironmentEffects.modifyComfort("sleep_decor_restful", 0.20f)
+        ), playerId, 42L, bedPos);
+        SleepComfortEffects.SleepReward tierTwo = SleepComfortEffects.rewardFor(List.of(
+                EnvironmentEffects.modifyComfort("sleep_shelter_covered", 0.35f),
+                EnvironmentEffects.modifyComfort("sleep_bedding_soft", 0.35f),
+                EnvironmentEffects.modifyComfort("sleep_decor_restful", 0.35f)
+        ), playerId, 42L, bedPos);
+        SleepComfortEffects.SleepReward tierThree = SleepComfortEffects.rewardFor(exceptionalComfortEffects(), playerId, 42L, bedPos);
+
+        assertThat(tierOne.boons()).hasSize(1);
+        assertThat(tierTwo.boons()).hasSize(2);
+        assertThat(tierThree.boons()).hasSize(3);
+    }
+
+    @Test
     void lowComfortDoesNotGrantReward() {
         SleepComfortEffects.SleepReward reward = SleepComfortEffects.rewardFor(List.of(
                 EnvironmentEffects.modifyComfort("single_signal", 0.10f)
@@ -115,5 +168,15 @@ class SleepComfortEffectsTest {
     void sleepRewardsRequireRestingLongEnough() {
         assertThat(SleepComfortEffects.restedLongEnough(1_000L, 1_099L)).isFalse();
         assertThat(SleepComfortEffects.restedLongEnough(1_000L, 1_100L)).isTrue();
+    }
+
+    private static List<com.sanhiruzu.atelier.api.EnvironmentEffect> exceptionalComfortEffects() {
+        return List.of(
+                EnvironmentEffects.modifyComfort("sleep_shelter_covered", 0.35f),
+                EnvironmentEffects.modifyComfort("sleep_bedding_soft", 0.35f),
+                EnvironmentEffects.modifyComfort("sleep_decor_restful", 0.35f),
+                EnvironmentEffects.modifyComfort("sleep_lighting_pleasant", 0.25f),
+                EnvironmentEffects.modifyComfort("sleep_nature_plants", 0.25f)
+        );
     }
 }

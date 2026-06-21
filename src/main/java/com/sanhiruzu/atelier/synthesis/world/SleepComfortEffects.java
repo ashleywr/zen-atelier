@@ -22,7 +22,11 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerWakeUpEvent;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.SplittableRandom;
+import java.util.UUID;
 
 public final class SleepComfortEffects {
     public static final String SLEEP_ACTION = "zen_atelier:sleep";
@@ -90,8 +94,16 @@ public final class SleepComfortEffects {
     }
 
     public static SleepReward rewardFor(List<EnvironmentEffect> effects) {
-        int tier = comfortResultFor(effects).tier();
-        return tier <= 0 ? SleepReward.NONE : new SleepReward(tier, REWARD_DURATION_TICKS);
+        return rewardFor(effects, new UUID(0L, 0L), 0L, BlockPos.ZERO);
+    }
+
+    public static SleepReward rewardFor(List<EnvironmentEffect> effects, UUID playerId, long day, BlockPos bedPos) {
+        EnvironmentInfluenceResult comfort = comfortResultFor(effects);
+        int tier = comfort.tier();
+        if (tier <= 0) {
+            return SleepReward.NONE;
+        }
+        return new SleepReward(tier, REWARD_DURATION_TICKS, selectDailyBoons(comfort, playerId, day, bedPos, tier));
     }
 
     public static EnvironmentInfluenceResult comfortResultFor(List<EnvironmentEffect> effects) {
@@ -129,7 +141,8 @@ public final class SleepComfortEffects {
                 bedPos,
                 ENVIRONMENT_RADIUS
         );
-        SleepReward reward = rewardFor(effects);
+        long day = level.getGameTime() / REWARD_DURATION_TICKS;
+        SleepReward reward = rewardFor(effects, player.getUUID(), day, bedPos);
         if (reward.tier() <= 0) {
             return;
         }
@@ -140,14 +153,55 @@ public final class SleepComfortEffects {
         CompoundTag data = player.getPersistentData();
         data.putInt(WELL_RESTED_TIER_KEY, reward.tier());
         data.putLong(WELL_RESTED_UNTIL_KEY, gameTime + reward.durationTicks());
-        player.addEffect(new MobEffectInstance(MobEffects.LUCK, reward.durationTicks(), 0));
-        if (reward.tier() >= 2) {
-            player.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, reward.durationTicks(), 0));
-        }
-        if (reward.tier() >= 3) {
-            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 30, 0));
+        for (SleepBoon boon : reward.boons()) {
+            boon.apply(player, reward.durationTicks());
         }
         player.displayClientMessage(Component.translatable("message.zen_atelier.sleep_comfort.reward", reward.tier()), true);
+    }
+
+    private static List<SleepBoon> selectDailyBoons(
+            EnvironmentInfluenceResult comfort,
+            UUID playerId,
+            long day,
+            BlockPos bedPos,
+            int tier
+    ) {
+        int count = Math.clamp(tier, 1, 3);
+        List<SleepBoon> available = new ArrayList<>(List.of(SleepBoon.values()));
+        List<SleepBoon> selected = new ArrayList<>();
+        SplittableRandom random = new SplittableRandom(rewardSeed(playerId, day, bedPos));
+        while (selected.size() < count && !available.isEmpty()) {
+            SleepBoon boon = removeWeightedBoon(available, comfort, random);
+            selected.add(boon);
+        }
+        return selected;
+    }
+
+    private static SleepBoon removeWeightedBoon(
+            List<SleepBoon> available,
+            EnvironmentInfluenceResult comfort,
+            SplittableRandom random
+    ) {
+        int totalWeight = 0;
+        for (SleepBoon boon : available) {
+            totalWeight += boon.weightFor(comfort);
+        }
+        int roll = random.nextInt(totalWeight);
+        for (int index = 0; index < available.size(); index++) {
+            SleepBoon boon = available.get(index);
+            roll -= boon.weightFor(comfort);
+            if (roll < 0) {
+                return available.remove(index);
+            }
+        }
+        return available.removeLast();
+    }
+
+    private static long rewardSeed(UUID playerId, long day, BlockPos bedPos) {
+        long seed = playerId.getMostSignificantBits() ^ Long.rotateLeft(playerId.getLeastSignificantBits(), 17);
+        seed ^= Long.rotateLeft(day, 31);
+        seed ^= Long.rotateLeft(bedPos.asLong(), 7);
+        return seed;
     }
 
     private static void storeSleepBed(ServerPlayer player, BlockPos pos, long gameTime) {
@@ -181,7 +235,45 @@ public final class SleepComfortEffects {
         return startedAt;
     }
 
-    public record SleepReward(int tier, int durationTicks) {
-        public static final SleepReward NONE = new SleepReward(0, 0);
+    public enum SleepBoon {
+        LUCK(Set.of("decor", "nature")),
+        HASTE(Set.of("lighting", "decor")),
+        JUMP(Set.of("bedding", "nature")),
+        SATURATION(Set.of("bedding", "shelter", "nature")),
+        REGENERATION(Set.of("bedding", "nature"));
+
+        private final Set<String> categories;
+
+        SleepBoon(Set<String> categories) {
+            this.categories = categories;
+        }
+
+        private int weightFor(EnvironmentInfluenceResult comfort) {
+            int weight = 1;
+            for (String category : categories) {
+                if (comfort.category(category).contribution() > 0.0F) {
+                    weight += 3;
+                }
+            }
+            return weight;
+        }
+
+        private void apply(ServerPlayer player, int dayDurationTicks) {
+            switch (this) {
+                case LUCK -> player.addEffect(new MobEffectInstance(MobEffects.LUCK, dayDurationTicks, 0));
+                case HASTE -> player.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, dayDurationTicks, 0));
+                case JUMP -> player.addEffect(new MobEffectInstance(MobEffects.JUMP, dayDurationTicks, 0));
+                case SATURATION -> player.addEffect(new MobEffectInstance(MobEffects.SATURATION, 20 * 30, 0));
+                case REGENERATION -> player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 30, 0));
+            }
+        }
+    }
+
+    public record SleepReward(int tier, int durationTicks, List<SleepBoon> boons) {
+        public static final SleepReward NONE = new SleepReward(0, 0, List.of());
+
+        public SleepReward {
+            boons = List.copyOf(boons == null ? List.of() : boons);
+        }
     }
 }

@@ -17,6 +17,8 @@ import java.util.function.Predicate;
  * There are no room/zone objects. Callers sample a location when an event fires.
  */
 public final class ZoneAPI {
+    static final long ENTITY_SENSITIVE_CACHE_TTL_NANOS = 1_000_000_000L;
+
     private static final EnvironmentSnapshotCache SNAPSHOT_CACHE = new EnvironmentSnapshotCache();
 
     private ZoneAPI() {
@@ -34,6 +36,7 @@ public final class ZoneAPI {
                 pos.getZ(),
                 clampedRadius,
                 profile,
+                ENTITY_SENSITIVE_CACHE_TTL_NANOS,
                 () -> EnvironmentScanner.scan(level, pos, clampedRadius, profile)
         );
     }

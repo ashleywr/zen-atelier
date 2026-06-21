@@ -6,10 +6,20 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 public final class EnvironmentSnapshotCache {
     private final Map<Key, Entry> entries = new HashMap<>();
+    private final LongSupplier ticker;
+
+    public EnvironmentSnapshotCache() {
+        this(System::nanoTime);
+    }
+
+    EnvironmentSnapshotCache(LongSupplier ticker) {
+        this.ticker = Objects.requireNonNull(ticker, "ticker");
+    }
 
     public synchronized EnvironmentSnapshot getOrCompute(
             Object levelKey,
@@ -20,16 +30,47 @@ public final class EnvironmentSnapshotCache {
             EnvironmentScanProfile profile,
             Supplier<EnvironmentSnapshot> scanner
     ) {
+        return getOrCompute(levelKey, x, y, z, radius, profile, -1L, false, scanner);
+    }
+
+    public synchronized EnvironmentSnapshot getOrCompute(
+            Object levelKey,
+            int x,
+            int y,
+            int z,
+            int radius,
+            EnvironmentScanProfile profile,
+            long ttlNanos,
+            Supplier<EnvironmentSnapshot> scanner
+    ) {
+        if (ttlNanos < 0) {
+            throw new IllegalArgumentException("ttlNanos must be non-negative");
+        }
+        return getOrCompute(levelKey, x, y, z, radius, profile, ttlNanos, true, scanner);
+    }
+
+    private EnvironmentSnapshot getOrCompute(
+            Object levelKey,
+            int x,
+            int y,
+            int z,
+            int radius,
+            EnvironmentScanProfile profile,
+            long ttlNanos,
+            boolean expires,
+            Supplier<EnvironmentSnapshot> scanner
+    ) {
         if (scanner == null) {
             throw new IllegalArgumentException("scanner must not be null");
         }
+        long now = expires ? ticker.getAsLong() : 0L;
         Key key = new Key(levelKey, x, y, z, radius, profile);
         Entry entry = entries.get(key);
-        if (entry != null && !entry.dirty) {
+        if (entry != null && !entry.dirty && !entry.isExpired(expires, now, ttlNanos)) {
             return entry.snapshot;
         }
         EnvironmentSnapshot snapshot = Objects.requireNonNull(scanner.get(), "scanner returned null");
-        entries.put(key, new Entry(snapshot, false));
+        entries.put(key, new Entry(snapshot, false, now));
         return snapshot;
     }
 
@@ -103,11 +144,17 @@ public final class EnvironmentSnapshotCache {
 
     private static final class Entry {
         private final EnvironmentSnapshot snapshot;
+        private final long cachedAtNanos;
         private boolean dirty;
 
-        private Entry(EnvironmentSnapshot snapshot, boolean dirty) {
+        private Entry(EnvironmentSnapshot snapshot, boolean dirty, long cachedAtNanos) {
             this.snapshot = snapshot;
             this.dirty = dirty;
+            this.cachedAtNanos = cachedAtNanos;
+        }
+
+        private boolean isExpired(boolean expires, long now, long ttlNanos) {
+            return expires && now - cachedAtNanos >= ttlNanos;
         }
     }
 }

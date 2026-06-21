@@ -225,6 +225,33 @@ public class Signals {
         PREDICATES.put("ice_block", s ->
                 s.is(Blocks.ICE) || s.is(Blocks.PACKED_ICE) || s.is(Blocks.BLUE_ICE)
                 || s.is(Blocks.SNOW_BLOCK) || s.is(Blocks.POWDER_SNOW));
+        PREDICATES.put("dirt_like", s ->
+                s.is(Blocks.DIRT) || s.is(Blocks.COARSE_DIRT) || s.is(Blocks.ROOTED_DIRT)
+                        || s.is(Blocks.MUD) || s.is(Blocks.CLAY));
+        PREDICATES.put("mossy", s ->
+                s.is(Blocks.MOSS_BLOCK) || s.is(Blocks.MOSS_CARPET)
+                        || s.is(Blocks.MOSSY_COBBLESTONE) || s.is(Blocks.MOSSY_COBBLESTONE_SLAB)
+                        || s.is(Blocks.MOSSY_COBBLESTONE_STAIRS) || s.is(Blocks.MOSSY_COBBLESTONE_WALL)
+                        || s.is(Blocks.MOSSY_STONE_BRICKS) || s.is(Blocks.MOSSY_STONE_BRICK_SLAB)
+                        || s.is(Blocks.MOSSY_STONE_BRICK_STAIRS) || s.is(Blocks.MOSSY_STONE_BRICK_WALL));
+        PREDICATES.put("rough_stone", s ->
+                s.is(Tags.Blocks.COBBLESTONES) || s.is(Blocks.COBBLESTONE)
+                        || s.is(Blocks.COBBLED_DEEPSLATE) || s.is(Blocks.BLACKSTONE));
+        PREDICATES.put("metallurgy", s ->
+                Signals.matches("smithing_or_repair_block", s)
+                        || Signals.matches("stone_or_metal_materials", s));
+        PREDICATES.put("kitchen", s ->
+                Signals.matches("cooking_block", s)
+                        || s.is(Blocks.CAKE) || s.is(Blocks.COMPOSTER));
+        PREDICATES.put("lava_heat", s ->
+                s.is(Blocks.LAVA_CAULDRON) || s.getFluidState().is(FluidTags.LAVA));
+        PREDICATES.put("smoke_source", s ->
+                s.is(CAMPFIRES) || s.is(Blocks.CAMPFIRE) || s.is(Blocks.SOUL_CAMPFIRE));
+        PREDICATES.put("damp_source", s ->
+                s.getFluidState().is(FluidTags.WATER) || s.is(Blocks.WET_SPONGE) || s.is(Blocks.MUD));
+        PREDICATES.put("dust_source", s ->
+                s.is(Blocks.SAND) || s.is(Blocks.RED_SAND) || s.is(Blocks.GRAVEL)
+                        || s.is(Blocks.SUSPICIOUS_SAND) || s.is(Blocks.SUSPICIOUS_GRAVEL));
     }
 
     public static void register(String signal, Predicate<BlockState> predicate) {

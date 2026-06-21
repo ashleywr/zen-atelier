@@ -99,17 +99,14 @@ public final class AlchemyVfx {
         Vec3 center = Vec3.atCenterOf(pos).add(0.0D, 0.82D, 0.0D);
         AlchemyVfxStyle categoryStyle = styleForCategory(profile.category());
         AlchemyVfxStyle reagentStyle = styleForReagents(result.consumedReagents());
-        int richness = result.result().successful() ? 24 : 10;
+        SynthesisCompletionVfxPlan plan = SynthesisCompletionVfxPlan.forOutcome(result.result().outcomeClass());
 
-        particleBurst(level, center, categoryStyle.accent(), Math.max(6, richness / 3), 0.35D, 0.22D, 0.35D, 0.05D);
-        dustBurst(level, center, categoryStyle, richness, 0.36D, 0.18D, 0.36D, 0.05D);
-        dustBurst(level, center, reagentStyle, Math.max(8, richness / 2), 0.28D, 0.12D, 0.28D, 0.035D);
-        if (!result.result().successful()) {
-            particleBurst(level, center.add(0.0D, 0.06D, 0.0D), ParticleTypes.SMOKE, 30, 0.5D, 0.18D, 0.5D, 0.035D);
-            particleBurst(level, center.add(0.0D, -0.08D, 0.0D), ParticleTypes.CLOUD, 18, 0.62D, 0.12D, 0.62D, 0.012D);
-            dustBurst(level, center.add(0.0D, 0.03D, 0.0D), REJECT, 26, 0.46D, 0.2D, 0.46D, 0.055D);
+        if (result.result().successful()) {
+            emitSynthesisResonance(level, center, categoryStyle, reagentStyle, plan);
+        } else {
+            emitSynthesisFailure(level, center, categoryStyle, reagentStyle, plan);
         }
-        emitSynthesisAfterglow(level, center, categoryStyle, result.result().successful());
+        emitSynthesisAfterglow(level, center, categoryStyle, plan, result.result().successful());
     }
 
     private static AlchemyVfxStyle styleForReagents(Collection<ReagentStack> reagents) {
@@ -227,14 +224,45 @@ public final class AlchemyVfx {
         }
     }
 
-    private static void emitSynthesisAfterglow(ServerLevel level, Vec3 center, AlchemyVfxStyle style, boolean successful) {
+    private static void emitSynthesisResonance(ServerLevel level, Vec3 center, AlchemyVfxStyle categoryStyle,
+                                               AlchemyVfxStyle reagentStyle, SynthesisCompletionVfxPlan plan) {
+        particleBurst(level, center.add(0.0D, 0.05D, 0.0D), ParticleTypes.FLASH, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        particleBurst(level, center.add(0.0D, 0.1D, 0.0D), ParticleTypes.GLOW, plan.corePulse(), 0.24D, 0.14D, 0.24D, 0.045D);
+        dustBurst(level, center.add(0.0D, 0.03D, 0.0D), categoryStyle, plan.outerRing(), plan.outerRadius(), 0.025D, plan.outerRadius(), 0.018D);
+        dustBurst(level, center.add(0.0D, 0.16D, 0.0D), reagentStyle, plan.innerRing(), plan.innerRadius(), 0.035D, plan.innerRadius(), 0.024D);
+        particleBurst(level, center.add(0.0D, plan.liftHeight() * 0.45D, 0.0D), categoryStyle.accent(),
+                plan.motes(), plan.outerRadius() * 0.62D, plan.liftHeight() * 0.45D, plan.outerRadius() * 0.62D, 0.075D);
+        particleBurst(level, center.add(0.0D, plan.liftHeight(), 0.0D), ParticleTypes.END_ROD,
+                plan.liftSparks(), plan.innerRadius(), 0.18D, plan.innerRadius(), 0.04D);
+    }
+
+    private static void emitSynthesisFailure(ServerLevel level, Vec3 center, AlchemyVfxStyle categoryStyle,
+                                             AlchemyVfxStyle reagentStyle, SynthesisCompletionVfxPlan plan) {
+        particleBurst(level, center, categoryStyle.accent(), Math.max(1, plan.corePulse()), 0.34D, 0.18D, 0.34D, 0.032D);
+        dustBurst(level, center, categoryStyle, plan.motes(), 0.34D, 0.14D, 0.34D, 0.035D);
+        dustBurst(level, center, reagentStyle, Math.max(1, plan.motes() / 2), 0.24D, 0.1D, 0.24D, 0.024D);
+        particleBurst(level, center.add(0.0D, 0.04D, 0.0D), ParticleTypes.SMOKE, plan.smoke(), 0.42D, 0.16D, 0.42D, 0.026D);
+        particleBurst(level, center.add(0.0D, -0.08D, 0.0D), ParticleTypes.CLOUD, Math.max(2, plan.smoke() / 3), 0.56D, 0.1D, 0.56D, 0.01D);
+        dustBurst(level, center.add(0.0D, 0.02D, 0.0D), REJECT, Math.max(1, plan.smoke() / 2), 0.42D, 0.18D, 0.42D, 0.045D);
+
+        if (plan.salvageGlints() > 0) {
+            particleBurst(level, center.add(0.0D, 0.16D, 0.0D), ParticleTypes.GLOW, plan.salvageGlints(), 0.28D, 0.14D, 0.28D, 0.035D);
+            particleBurst(level, center.add(0.0D, 0.22D, 0.0D), ParticleTypes.ENCHANT, Math.max(1, plan.salvageGlints() / 2), 0.24D, 0.12D, 0.24D, 0.045D);
+        }
+        if (plan.crackle() > 0) {
+            particleBurst(level, center.add(0.0D, 0.12D, 0.0D), ParticleTypes.ELECTRIC_SPARK, plan.crackle(), 0.36D, 0.18D, 0.36D, 0.07D);
+        }
+    }
+
+    private static void emitSynthesisAfterglow(ServerLevel level, Vec3 center, AlchemyVfxStyle style,
+                                               SynthesisCompletionVfxPlan plan, boolean successful) {
         particleBurst(level, center.add(0.0D, 0.12D, 0.0D), successful ? ParticleTypes.GLOW : ParticleTypes.SMOKE,
-                successful ? 8 : 12, 0.5D, 0.22D, 0.5D, successful ? 0.04D : 0.015D);
+                plan.afterglow(), 0.5D, 0.22D, 0.5D, successful ? 0.04D : 0.015D);
         if (!successful) {
-            dustBurst(level, center.add(0.0D, 0.04D, 0.0D), REJECT, 14, 0.42D, 0.18D, 0.42D, 0.04D);
-            particleBurst(level, center.add(0.0D, -0.2D, 0.0D), ParticleTypes.CLOUD, 8, 0.55D, 0.08D, 0.55D, 0.005D);
+            dustBurst(level, center.add(0.0D, 0.04D, 0.0D), REJECT, Math.max(1, plan.smoke() / 4), 0.42D, 0.18D, 0.42D, 0.04D);
+            particleBurst(level, center.add(0.0D, -0.2D, 0.0D), ParticleTypes.CLOUD, Math.max(1, plan.smoke() / 6), 0.55D, 0.08D, 0.55D, 0.005D);
         } else {
-            dustBurst(level, center.add(0.0D, 0.02D, 0.0D), style, 10, 0.48D, 0.12D, 0.48D, 0.025D);
+            dustBurst(level, center.add(0.0D, 0.02D, 0.0D), style, plan.afterglow(), 0.48D, 0.12D, 0.48D, 0.025D);
         }
     }
 

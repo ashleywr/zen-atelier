@@ -19,7 +19,6 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.Direction;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -37,6 +36,7 @@ import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -295,32 +295,31 @@ public class AtelierGameTests {
 
     @PrefixGameTestTemplate(false)
     @GameTest(template = "ateliergametests.testmodloads")
-    public static void testStarterIngredientForageDropsCanAppear(GameTestHelper helper) {
+    public static void testStarterIngredientForageDropsDoNotAppear(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 1, 1));
 
         ArrayList<ItemEntity> uniDrops = new ArrayList<>();
-        rollBlockDrop(helper, pos, Blocks.OAK_LEAVES.defaultBlockState(), uniDrops, 400, 11L);
-        helper.assertTrue(containsDrop(uniDrops, ZenAtelier.UNI.get()), "Expected oak leaves to be able to drop Uni");
+        rollBlockDrop(helper, pos, Blocks.OAK_LEAVES.defaultBlockState(), uniDrops, 400);
+        helper.assertFalse(containsDrop(uniDrops, ZenAtelier.UNI.get()), "Oak leaves should not drop Uni now that gathering uses baskets");
 
         ArrayList<ItemEntity> taunDrops = new ArrayList<>();
-        rollBlockDrop(helper, pos, Blocks.SHORT_GRASS.defaultBlockState(), taunDrops, 120, 12L);
-        helper.assertTrue(containsDrop(taunDrops, ZenAtelier.TAUN_HERB.get()), "Expected grass forage to be able to drop Taun Herb");
+        rollBlockDrop(helper, pos, Blocks.SHORT_GRASS.defaultBlockState(), taunDrops, 120);
+        helper.assertFalse(containsDrop(taunDrops, ZenAtelier.TAUN_HERB.get()), "Grass forage should not drop Taun Herb now that gathering uses baskets");
 
         ArrayList<ItemEntity> phlogistonDrops = new ArrayList<>();
-        rollBlockDrop(helper, pos, Blocks.NETHERRACK.defaultBlockState(), phlogistonDrops, 80, 13L);
-        helper.assertTrue(containsDrop(phlogistonDrops, ZenAtelier.PHLOGISTON_PEBBLE.get()), "Expected Netherrack to be able to drop Phlogiston Pebbles");
+        rollBlockDrop(helper, pos, Blocks.NETHERRACK.defaultBlockState(), phlogistonDrops, 80);
+        helper.assertFalse(containsDrop(phlogistonDrops, ZenAtelier.PHLOGISTON_PEBBLE.get()), "Netherrack should not drop Phlogiston Pebbles now that gathering uses baskets");
 
         Slime slime = new Slime(EntityType.SLIME, helper.getLevel());
         slime.setSize(3, false);
         slime.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
         ArrayList<ItemEntity> gelDrops = new ArrayList<>();
-        RandomSource random = RandomSource.create(14L);
         for (int i = 0; i < 40; i++) {
-            StarterIngredientEvents.maybeAddSlimeDrop(slime, gelDrops, random);
+            NeoForge.EVENT_BUS.post(new LivingDropsEvent(slime, slime.damageSources().generic(), gelDrops, true));
         }
-        helper.assertTrue(
+        helper.assertFalse(
                 containsDrop(gelDrops, ZenAtelier.AQUA_GEL.get()) || containsDrop(gelDrops, ZenAtelier.EMBER_GEL.get()),
-                "Expected slimes to be able to drop elemental gels"
+                "Slimes should not drop elemental gels now that gathering uses baskets"
         );
         helper.succeed();
     }
@@ -399,10 +398,17 @@ public class AtelierGameTests {
         return false;
     }
 
-    private static void rollBlockDrop(GameTestHelper helper, BlockPos pos, net.minecraft.world.level.block.state.BlockState state, ArrayList<ItemEntity> drops, int attempts, long seed) {
-        RandomSource random = RandomSource.create(seed);
+    private static void rollBlockDrop(GameTestHelper helper, BlockPos pos, net.minecraft.world.level.block.state.BlockState state, ArrayList<ItemEntity> drops, int attempts) {
         for (int i = 0; i < attempts; i++) {
-            StarterIngredientEvents.maybeAddBlockDrop(helper.getLevel(), pos, state, drops, random);
+            NeoForge.EVENT_BUS.post(new BlockDropsEvent(
+                    helper.getLevel(),
+                    pos,
+                    state,
+                    null,
+                    drops,
+                    null,
+                    ItemStack.EMPTY
+            ));
         }
     }
 

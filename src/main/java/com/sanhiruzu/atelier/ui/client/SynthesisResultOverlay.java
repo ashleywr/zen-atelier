@@ -21,6 +21,8 @@ import java.util.Optional;
 
 final class SynthesisResultOverlay {
     static final int FAILURE_IMPACT_TICKS = 20;
+    static final int SUCCESS_REVEAL_TICKS = 10;
+    static final int PERFECT_REVEAL_TICKS = 16;
     private static final int PANEL_WIDTH = 320;
     private static final int PANEL_MARGIN_X = 24;
     private static final int PANEL_MARGIN_BOTTOM = 24;
@@ -39,8 +41,15 @@ final class SynthesisResultOverlay {
         this.byproducts = List.copyOf(byproducts);
     }
 
-    static int impactTicksFor(OutcomeClass outcomeClass) {
-        return outcomeClass.successful() ? 0 : FAILURE_IMPACT_TICKS;
+    static int revealTicksFor(OutcomeClass outcomeClass) {
+        if (!outcomeClass.successful()) {
+            return FAILURE_IMPACT_TICKS;
+        }
+        return outcomeClass == OutcomeClass.PERFECT_SUCCESS ? PERFECT_REVEAL_TICKS : SUCCESS_REVEAL_TICKS;
+    }
+
+    boolean successful() {
+        return outcomeClass.successful();
     }
 
     void render(GuiGraphics graphics, Font font, ScreenRect origin) {
@@ -79,6 +88,21 @@ final class SynthesisResultOverlay {
                 renderByproductRow(graphics, font, byproducts.get(i), layout.byproductRows().get(i));
             }
         }
+    }
+
+    void renderSuccessReveal(GuiGraphics graphics, Font font, ScreenRect origin, float progress) {
+        int screenW = SynthesisStationMetrics.DEFAULT.width();
+        int screenH = SynthesisStationMetrics.DEFAULT.height();
+        int centerX = origin.x() + screenW / 2;
+        int centerY = origin.y() + screenH / 2 - 18;
+        int pulse = (int) (progress * 42.0F);
+        int color = titleColor();
+
+        graphics.fill(origin.x(), origin.y(), origin.x() + screenW, origin.y() + screenH, 0xB80C0A08);
+        graphics.fill(centerX - 70 - pulse, centerY - 8, centerX + 70 + pulse, centerY + 8, 0x22F7E4A8);
+        graphics.fill(centerX - 42 - pulse / 2, centerY - 34 - pulse / 3, centerX + 42 + pulse / 2, centerY + 34 + pulse / 3, 0x18FFFFFF);
+        graphics.drawCenteredString(font, revealText(), centerX, centerY - 4, color);
+        graphics.drawCenteredString(font, Component.literal("The result settles into form..."), centerX, centerY + 13, SynthesisScreenTheme.MUTED);
     }
 
     static Layout layoutFor(OutcomeClass outcomeClass, List<SynthesisOutput> outputs, List<ReagentStack> byproducts, ScreenRect origin) {
@@ -209,6 +233,20 @@ final class SynthesisResultOverlay {
             case MESSY_FAILURE -> Component.literal("The reaction fouled the apparatus.");
             case CATASTROPHIC_FAILURE -> Component.literal("The reaction burned out violently.");
             default -> Component.empty();
+        };
+    }
+
+    private Component revealText() {
+        return switch (outcomeClass) {
+            case PERFECT_SUCCESS -> Component.literal("Perfect synthesis");
+            case UNSTABLE_SUCCESS -> Component.literal("Unstable result forming");
+            case PARTIAL_SUCCESS -> Component.literal("Partial result forming");
+            case MUTATED_SUCCESS -> Component.literal("Mutated result forming");
+            case SUCCESS -> Component.literal("Synthesis complete");
+            case DUD -> Component.literal("Reaction fizzled");
+            case RECOVERABLE_FAILURE -> Component.literal("Residue crystallizing");
+            case MESSY_FAILURE -> Component.literal("Mixture fouling");
+            case CATASTROPHIC_FAILURE -> Component.literal("Reaction rupturing");
         };
     }
 

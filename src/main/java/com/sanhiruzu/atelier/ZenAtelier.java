@@ -256,7 +256,6 @@ public class ZenAtelier {
         RECIPE_SERIALIZERS.register(modEventBus);
         ENTITY_TYPES.register(modEventBus);
         PARTICLE_TYPES.register(modEventBus);
-        NeoForge.EVENT_BUS.register(this);
         NeoForge.EVENT_BUS.register(CommandEventHandler.class);
         NeoForge.EVENT_BUS.register(DataReloadEventHandler.class);
         NeoForge.EVENT_BUS.register(AtelierEvents.class);

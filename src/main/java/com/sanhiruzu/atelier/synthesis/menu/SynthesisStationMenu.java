@@ -408,7 +408,12 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
         }
 
         boolean creative = player.getAbilities().instabuild;
-        SynthesisPlan plan = new SynthesisPlanner().plan(input);
+        boolean usingPlacedReagents = !input.reagents().entries().isEmpty();
+        boolean usingDebugReagents = false;
+        ReagentContainer availableReagents = usingPlacedReagents ? input.reagents() : availableReagents();
+        SynthesisPlan plan = usingPlacedReagents
+                ? new SynthesisPlanner().plan(input)
+                : new SynthesisPlanner().plan(input.effectiveProfile(), availableReagents, input.effectiveRisk());
         if (!plan.canSynthesize()) {
             if (!creative) {
                 return;
@@ -436,10 +441,14 @@ public class SynthesisStationMenu extends AbstractContainerMenu {
             if (!plan.canSynthesize()) {
                 return;
             }
+            usingDebugReagents = true;
         }
 
         long seed = player.level().getGameTime() ^ player.getUUID().getLeastSignificantBits();
-        SynthesisExecutionResult result = new SynthesisExecutor().execute(input, seed);
+        SynthesisExecutor executor = new SynthesisExecutor();
+        SynthesisExecutionResult result = usingPlacedReagents || usingDebugReagents
+                ? executor.execute(input, seed)
+                : executor.execute(input.effectiveProfile(), availableReagents, input.context(), input.effectiveRisk(), seed);
 
         if (!creative) {
             ReagentContainer carried = CarriedReagentInventory.snapshot(player.getInventory());

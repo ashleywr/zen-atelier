@@ -12,19 +12,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SynthesisResultOverlayTest {
     @Test
     void failedOutcomesUseSmokeImpactDelay() {
-        assertThat(SynthesisResultOverlay.impactTicksFor(OutcomeClass.RECOVERABLE_FAILURE))
+        assertThat(SynthesisResultOverlay.revealTicksFor(OutcomeClass.RECOVERABLE_FAILURE))
                 .isEqualTo(SynthesisResultOverlay.FAILURE_IMPACT_TICKS);
-        assertThat(SynthesisResultOverlay.impactTicksFor(OutcomeClass.MESSY_FAILURE))
+        assertThat(SynthesisResultOverlay.revealTicksFor(OutcomeClass.MESSY_FAILURE))
                 .isEqualTo(SynthesisResultOverlay.FAILURE_IMPACT_TICKS);
-        assertThat(SynthesisResultOverlay.impactTicksFor(OutcomeClass.DUD))
+        assertThat(SynthesisResultOverlay.revealTicksFor(OutcomeClass.DUD))
                 .isEqualTo(SynthesisResultOverlay.FAILURE_IMPACT_TICKS);
     }
 
     @Test
-    void successfulOutcomesShowResultImmediately() {
-        assertThat(SynthesisResultOverlay.impactTicksFor(OutcomeClass.SUCCESS)).isZero();
-        assertThat(SynthesisResultOverlay.impactTicksFor(OutcomeClass.PERFECT_SUCCESS)).isZero();
-        assertThat(SynthesisResultOverlay.impactTicksFor(OutcomeClass.UNSTABLE_SUCCESS)).isZero();
+    void successfulOutcomesWaitForRewardReveal() {
+        assertThat(SynthesisResultOverlay.revealTicksFor(OutcomeClass.SUCCESS))
+                .isEqualTo(SynthesisResultOverlay.SUCCESS_REVEAL_TICKS);
+        assertThat(SynthesisResultOverlay.revealTicksFor(OutcomeClass.UNSTABLE_SUCCESS))
+                .isEqualTo(SynthesisResultOverlay.SUCCESS_REVEAL_TICKS);
+        assertThat(SynthesisResultOverlay.revealTicksFor(OutcomeClass.PERFECT_SUCCESS))
+                .isGreaterThan(SynthesisResultOverlay.SUCCESS_REVEAL_TICKS);
     }
 
     @Test

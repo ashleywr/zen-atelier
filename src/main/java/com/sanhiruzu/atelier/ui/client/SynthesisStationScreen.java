@@ -38,7 +38,8 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     private Button previousButton;
     private Button nextButton;
     private SynthesisResultOverlay pendingResult;
-    private int failureImpactTicks;
+    private int resultRevealTicks;
+    private int resultRevealDuration;
     private int lastMouseX;
     private int lastMouseY;
     private int lastClickedRecipeProfileIndex = -1;
@@ -85,8 +86,8 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     protected void containerTick() {
         super.containerTick();
         boolean hasResult = pendingResult != null;
-        if (failureImpactTicks > 0) {
-            failureImpactTicks--;
+        if (resultRevealTicks > 0) {
+            resultRevealTicks--;
         }
         if (synthesizeButton != null) {
             boolean canCraft = spatialPrototype.projection(currentPlan(), menu.roomVaultReagents(), playerInventoryReagents()).canSynthesize()
@@ -120,7 +121,7 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
             nextButton.active = recipeBookMode;
         }
         if (confirmButton != null) {
-            confirmButton.visible = hasResult && failureImpactTicks <= 0;
+            confirmButton.visible = hasResult && resultRevealTicks <= 0;
         }
     }
 
@@ -246,8 +247,8 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
                     mouseY
             );
         }
-        if (pendingResult != null && failureImpactTicks > 0) {
-            UiLayer.POPUP.run(graphics, () -> renderFailureImpact(graphics, partialTick));
+        if (pendingResult != null && resultRevealTicks > 0) {
+            UiLayer.POPUP.run(graphics, () -> renderResultReveal(graphics, partialTick));
         } else if (pendingResult != null) {
             UiLayer.POPUP.run(graphics, () -> pendingResult.render(graphics, font, origin()));
             if (confirmButton != null) {
@@ -287,13 +288,23 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
         }
     }
 
+    private void renderResultReveal(GuiGraphics graphics, float partialTick) {
+        if (pendingResult != null && pendingResult.successful()) {
+            float elapsed = resultRevealDuration - resultRevealTicks + partialTick;
+            float progress = Math.clamp(elapsed / Math.max(1, resultRevealDuration), 0.0F, 1.0F);
+            pendingResult.renderSuccessReveal(graphics, font, origin(), progress);
+            return;
+        }
+        renderFailureImpact(graphics, partialTick);
+    }
+
     private void renderFailureImpact(GuiGraphics graphics, float partialTick) {
         ScreenRect root = absolute(layout.root);
-        float elapsed = SynthesisResultOverlay.FAILURE_IMPACT_TICKS - failureImpactTicks + partialTick;
+        float elapsed = resultRevealDuration - resultRevealTicks + partialTick;
         float progress = Math.clamp(elapsed / SynthesisResultOverlay.FAILURE_IMPACT_TICKS, 0.0F, 1.0F);
         int centerX = root.x() + root.width() / 2;
         int centerY = root.y() + root.height() / 2 - 12;
-        int jitter = failureImpactTicks > 13 ? ((failureImpactTicks & 1) == 0 ? 3 : -3) : 0;
+        int jitter = resultRevealTicks > 13 ? ((resultRevealTicks & 1) == 0 ? 3 : -3) : 0;
 
         graphics.fill(root.x(), root.y(), root.right(), root.bottom(), 0xE6100D0A);
         renderSmokePuff(graphics, centerX - 82 + jitter, centerY - 28, 92 + (int) (progress * 36), 0x805D5750);
@@ -794,14 +805,16 @@ public class SynthesisStationScreen extends AbstractContainerScreen<SynthesisSta
     public void handleSynthesisResult(SynthesisResultPayload payload) {
         if (payload.containerId() == menu.containerId) {
             pendingResult = new SynthesisResultOverlay(payload.outcomeClass(), payload.outputs(), payload.byproducts());
-            failureImpactTicks = SynthesisResultOverlay.impactTicksFor(payload.outcomeClass());
+            resultRevealTicks = SynthesisResultOverlay.revealTicksFor(payload.outcomeClass());
+            resultRevealDuration = resultRevealTicks;
             spatialPrototype.resetAfterSynthesis();
         }
     }
 
     private void clearResult() {
         pendingResult = null;
-        failureImpactTicks = 0;
+        resultRevealTicks = 0;
+        resultRevealDuration = 0;
     }
 
     private ScreenRect absolute(ScreenRect rect) {

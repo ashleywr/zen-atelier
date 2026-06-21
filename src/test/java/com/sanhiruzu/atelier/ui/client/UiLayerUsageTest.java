@@ -44,7 +44,7 @@ class UiLayerUsageTest {
 
         assertThat(source)
                 .as("Result overlay backdrop/panel must render above item icons, which renderFakeItem raises in z.")
-                .contains("UiLayer.POPUP.run(graphics, () -> renderFailureImpact(graphics, partialTick))")
+                .contains("UiLayer.POPUP.run(graphics, () -> renderResultReveal(graphics, partialTick))")
                 .contains("UiLayer.POPUP.run(graphics, () -> pendingResult.render(graphics, font, origin()))")
                 .contains("UiLayer.POPUP_CONTENT.run(graphics, () -> confirmButton.render(graphics, mouseX, mouseY, partialTick))");
     }

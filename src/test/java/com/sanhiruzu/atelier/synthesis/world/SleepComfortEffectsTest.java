@@ -101,9 +101,45 @@ class SleepComfortEffectsTest {
                 EnvironmentEffects.modifyComfort("sleep_decor_restful", 0.35f),
                 EnvironmentEffects.modifyComfort("sleep_lighting_pleasant", 0.25f),
                 EnvironmentEffects.modifyComfort("sleep_nature_plants", 0.25f)
-        ));
+        ), new UUID(1L, 2L), 42L, new BlockPos(10, 64, -5), 2);
 
         assertThat(reward.tier()).isEqualTo(3);
+    }
+
+    @Test
+    void exceptionalComfortStartsAtMildReward() {
+        SleepComfortEffects.SleepReward reward = SleepComfortEffects.rewardFor(exceptionalComfortEffects());
+
+        assertThat(reward.tier()).isEqualTo(1);
+        assertThat(reward.boons()).hasSize(1);
+    }
+
+    @Test
+    void sleepComfortBuildsOneTierAtATimeTowardTarget() {
+        assertThat(SleepComfortEffects.nextRestedTier(0, 3)).isEqualTo(1);
+        assertThat(SleepComfortEffects.nextRestedTier(1, 3)).isEqualTo(2);
+        assertThat(SleepComfortEffects.nextRestedTier(2, 3)).isEqualTo(3);
+    }
+
+    @Test
+    void sleepComfortOnlyBuildsOncePerDay() {
+        assertThat(SleepComfortEffects.nextRestedTier(1, 3, 42L, 42L)).isEqualTo(1);
+        assertThat(SleepComfortEffects.nextRestedTier(1, 3, 43L, 42L)).isEqualTo(2);
+    }
+
+    @Test
+    void nearbyBedMovesKeepBelonging() {
+        BlockPos originalBed = new BlockPos(10, 64, -5);
+
+        assertThat(SleepComfortEffects.isSameBelongingBed(originalBed, new BlockPos(14, 66, -1))).isTrue();
+        assertThat(SleepComfortEffects.isSameBelongingBed(originalBed, new BlockPos(15, 64, -5))).isFalse();
+        assertThat(SleepComfortEffects.isSameBelongingBed(originalBed, new BlockPos(10, 67, -5))).isFalse();
+    }
+
+    @Test
+    void sleepComfortDropsToLowerCurrentTarget() {
+        assertThat(SleepComfortEffects.nextRestedTier(3, 1)).isEqualTo(1);
+        assertThat(SleepComfortEffects.nextRestedTier(2, 0)).isZero();
     }
 
     @Test
@@ -112,8 +148,8 @@ class SleepComfortEffectsTest {
         UUID playerId = new UUID(1L, 2L);
         BlockPos bedPos = new BlockPos(10, 64, -5);
 
-        SleepComfortEffects.SleepReward first = SleepComfortEffects.rewardFor(effects, playerId, 42L, bedPos);
-        SleepComfortEffects.SleepReward second = SleepComfortEffects.rewardFor(effects, playerId, 42L, bedPos);
+        SleepComfortEffects.SleepReward first = SleepComfortEffects.rewardFor(effects, playerId, 42L, bedPos, 2);
+        SleepComfortEffects.SleepReward second = SleepComfortEffects.rewardFor(effects, playerId, 42L, bedPos, 2);
 
         assertThat(first.boons()).isEqualTo(second.boons());
         assertThat(first.boons()).hasSize(3);
@@ -126,7 +162,7 @@ class SleepComfortEffectsTest {
         BlockPos bedPos = new BlockPos(10, 64, -5);
 
         Set<List<SleepComfortEffects.SleepBoon>> rolledBoons = LongStream.range(0, 20)
-                .mapToObj(day -> SleepComfortEffects.rewardFor(effects, playerId, day, bedPos).boons())
+                .mapToObj(day -> SleepComfortEffects.rewardFor(effects, playerId, day, bedPos, 2).boons())
                 .collect(Collectors.toSet());
 
         assertThat(rolledBoons).hasSizeGreaterThan(1);
@@ -146,8 +182,8 @@ class SleepComfortEffectsTest {
                 EnvironmentEffects.modifyComfort("sleep_shelter_covered", 0.35f),
                 EnvironmentEffects.modifyComfort("sleep_bedding_soft", 0.35f),
                 EnvironmentEffects.modifyComfort("sleep_decor_restful", 0.35f)
-        ), playerId, 42L, bedPos);
-        SleepComfortEffects.SleepReward tierThree = SleepComfortEffects.rewardFor(exceptionalComfortEffects(), playerId, 42L, bedPos);
+        ), playerId, 42L, bedPos, 1);
+        SleepComfortEffects.SleepReward tierThree = SleepComfortEffects.rewardFor(exceptionalComfortEffects(), playerId, 42L, bedPos, 2);
 
         assertThat(tierOne.boons()).hasSize(1);
         assertThat(tierTwo.boons()).hasSize(2);

@@ -32,6 +32,11 @@ public final class SleepComfortEffects {
     public static final String SLEEP_ACTION = "zen_atelier:sleep";
     public static final String WELL_RESTED_TIER_KEY = "zen_atelier.well_rested_tier";
     public static final String WELL_RESTED_UNTIL_KEY = "zen_atelier.well_rested_until";
+    private static final String SLEEP_BELONGING_TIER_KEY = "zen_atelier.sleep_belonging_tier";
+    private static final String SLEEP_BELONGING_LAST_DAY_KEY = "zen_atelier.sleep_belonging_last_day";
+    private static final String SLEEP_BELONGING_BED_X_KEY = "zen_atelier.sleep_belonging_bed_x";
+    private static final String SLEEP_BELONGING_BED_Y_KEY = "zen_atelier.sleep_belonging_bed_y";
+    private static final String SLEEP_BELONGING_BED_Z_KEY = "zen_atelier.sleep_belonging_bed_z";
     private static final String SLEEP_BED_X_KEY = "zen_atelier.sleep_bed_x";
     private static final String SLEEP_BED_Y_KEY = "zen_atelier.sleep_bed_y";
     private static final String SLEEP_BED_Z_KEY = "zen_atelier.sleep_bed_z";
@@ -39,6 +44,8 @@ public final class SleepComfortEffects {
     private static final int REWARD_DURATION_TICKS = 24000;
     private static final int MIN_REST_TICKS = 100;
     private static final int ENVIRONMENT_RADIUS = 6;
+    private static final int SAME_BED_HORIZONTAL_RADIUS = 4;
+    private static final int SAME_BED_VERTICAL_RADIUS = 2;
     private static final EnvironmentInfluenceProfile SLEEP_COMFORT_PROFILE = new EnvironmentInfluenceProfile(
             EnvironmentEffectType.COMFORT_MODIFIER,
             List.of(
@@ -98,8 +105,23 @@ public final class SleepComfortEffects {
     }
 
     public static SleepReward rewardFor(List<EnvironmentEffect> effects, UUID playerId, long day, BlockPos bedPos) {
+        return rewardFor(effects, playerId, day, bedPos, 0);
+    }
+
+    static SleepReward rewardFor(List<EnvironmentEffect> effects, UUID playerId, long day, BlockPos bedPos, int currentRestedTier) {
+        return rewardFor(effects, playerId, day, bedPos, currentRestedTier, Long.MIN_VALUE);
+    }
+
+    static SleepReward rewardFor(
+            List<EnvironmentEffect> effects,
+            UUID playerId,
+            long day,
+            BlockPos bedPos,
+            int currentRestedTier,
+            long lastRewardDay
+    ) {
         EnvironmentInfluenceResult comfort = comfortResultFor(effects);
-        int tier = comfort.tier();
+        int tier = nextRestedTier(currentRestedTier, comfort.tier(), day, lastRewardDay);
         if (tier <= 0) {
             return SleepReward.NONE;
         }
@@ -112,6 +134,34 @@ public final class SleepComfortEffects {
 
     static boolean restedLongEnough(long startedAt, long wokeAt) {
         return wokeAt - startedAt >= MIN_REST_TICKS;
+    }
+
+    static int nextRestedTier(int currentTier, int targetTier) {
+        return nextRestedTier(currentTier, targetTier, 0L, Long.MIN_VALUE);
+    }
+
+    static int nextRestedTier(int currentTier, int targetTier, long day, long lastRewardDay) {
+        int current = Math.clamp(currentTier, 0, 3);
+        int target = Math.clamp(targetTier, 0, 3);
+        if (target <= 0) {
+            return 0;
+        }
+        if (current >= target) {
+            return target;
+        }
+        if (current > 0 && day == lastRewardDay) {
+            return current;
+        }
+        return current + 1;
+    }
+
+    static boolean isSameBelongingBed(BlockPos storedBedPos, BlockPos currentBedPos) {
+        if (storedBedPos == null || currentBedPos == null) {
+            return false;
+        }
+        return Math.abs(storedBedPos.getX() - currentBedPos.getX()) <= SAME_BED_HORIZONTAL_RADIUS
+                && Math.abs(storedBedPos.getZ() - currentBedPos.getZ()) <= SAME_BED_HORIZONTAL_RADIUS
+                && Math.abs(storedBedPos.getY() - currentBedPos.getY()) <= SAME_BED_VERTICAL_RADIUS;
     }
 
     @SubscribeEvent
@@ -142,21 +192,75 @@ public final class SleepComfortEffects {
                 ENVIRONMENT_RADIUS
         );
         long day = level.getGameTime() / REWARD_DURATION_TICKS;
-        SleepReward reward = rewardFor(effects, player.getUUID(), day, bedPos);
+        BlockPos belongingBedPos = storedBelongingBed(player);
+        boolean sameBelongingBed = isSameBelongingBed(belongingBedPos, bedPos);
+        SleepReward reward = rewardFor(
+                effects,
+                player.getUUID(),
+                day,
+                bedPos,
+                sameBelongingBed ? currentBelongingTier(player) : 0,
+                sameBelongingBed ? lastBelongingDay(player) : Long.MIN_VALUE
+        );
         if (reward.tier() <= 0) {
+            clearWellRestedProgress(player);
             return;
         }
-        applyReward(player, reward, level.getGameTime());
+        applyReward(player, reward, level.getGameTime(), bedPos);
     }
 
-    private static void applyReward(ServerPlayer player, SleepReward reward, long gameTime) {
+    private static void applyReward(ServerPlayer player, SleepReward reward, long gameTime, BlockPos bedPos) {
         CompoundTag data = player.getPersistentData();
         data.putInt(WELL_RESTED_TIER_KEY, reward.tier());
         data.putLong(WELL_RESTED_UNTIL_KEY, gameTime + reward.durationTicks());
+        data.putInt(SLEEP_BELONGING_TIER_KEY, reward.tier());
+        data.putLong(SLEEP_BELONGING_LAST_DAY_KEY, gameTime / REWARD_DURATION_TICKS);
+        data.putInt(SLEEP_BELONGING_BED_X_KEY, bedPos.getX());
+        data.putInt(SLEEP_BELONGING_BED_Y_KEY, bedPos.getY());
+        data.putInt(SLEEP_BELONGING_BED_Z_KEY, bedPos.getZ());
         for (SleepBoon boon : reward.boons()) {
             boon.apply(player, reward.durationTicks());
         }
         player.displayClientMessage(Component.translatable("message.zen_atelier.sleep_comfort.reward", reward.tier()), true);
+    }
+
+    private static int currentBelongingTier(ServerPlayer player) {
+        CompoundTag data = player.getPersistentData();
+        return data.contains(SLEEP_BELONGING_TIER_KEY)
+                ? data.getInt(SLEEP_BELONGING_TIER_KEY)
+                : data.getInt(WELL_RESTED_TIER_KEY);
+    }
+
+    private static long lastBelongingDay(ServerPlayer player) {
+        CompoundTag data = player.getPersistentData();
+        return data.contains(SLEEP_BELONGING_LAST_DAY_KEY)
+                ? data.getLong(SLEEP_BELONGING_LAST_DAY_KEY)
+                : Long.MIN_VALUE;
+    }
+
+    private static BlockPos storedBelongingBed(ServerPlayer player) {
+        CompoundTag data = player.getPersistentData();
+        if (!data.contains(SLEEP_BELONGING_BED_X_KEY)
+                || !data.contains(SLEEP_BELONGING_BED_Y_KEY)
+                || !data.contains(SLEEP_BELONGING_BED_Z_KEY)) {
+            return null;
+        }
+        return new BlockPos(
+                data.getInt(SLEEP_BELONGING_BED_X_KEY),
+                data.getInt(SLEEP_BELONGING_BED_Y_KEY),
+                data.getInt(SLEEP_BELONGING_BED_Z_KEY)
+        );
+    }
+
+    private static void clearWellRestedProgress(ServerPlayer player) {
+        CompoundTag data = player.getPersistentData();
+        data.remove(WELL_RESTED_TIER_KEY);
+        data.remove(WELL_RESTED_UNTIL_KEY);
+        data.remove(SLEEP_BELONGING_TIER_KEY);
+        data.remove(SLEEP_BELONGING_LAST_DAY_KEY);
+        data.remove(SLEEP_BELONGING_BED_X_KEY);
+        data.remove(SLEEP_BELONGING_BED_Y_KEY);
+        data.remove(SLEEP_BELONGING_BED_Z_KEY);
     }
 
     private static List<SleepBoon> selectDailyBoons(

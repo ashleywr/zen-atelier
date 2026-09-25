@@ -433,4 +433,7 @@ idea {
 }
 
 ext.synesthesiaLocalModKey = 'zen_atelier'
-apply from: 'C:/WorkDir/synesthesia/tools/synesthesia-sync.gradle'
+def synesthesiaSyncScript = file('C:/WorkDir/synesthesia/tools/synesthesia-sync.gradle')
+if (synesthesiaSyncScript.exists()) {
+    apply from: synesthesiaSyncScript
+}

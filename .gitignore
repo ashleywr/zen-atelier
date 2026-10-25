@@ -13,7 +13,7 @@ reports/
 logs/
 libs/
 net/
-META-INF/
+/META-INF/
 vendor-sources/
 assets/
 !src/main/resources/assets/
